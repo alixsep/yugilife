@@ -31,7 +31,7 @@
     "format:check": "prettier --check .",
     "setup:browsers": "playwright install chromium firefox",
     "setup:browsers:with-deps": "playwright install --with-deps chromium firefox",
-    "check:portable": "node ./scripts/check-playwright-browsers.mjs chromium firefox && node ./scripts/check-port.mjs 4173 && pnpm lint && pnpm format:check && pnpm check:generated && pnpm typecheck && pnpm test && pnpm build && pnpm --filter yugilife-cli verify:packed && bddgen && playwright test",
+    "check:portable": "node ./scripts/check-playwright-browsers.mjs chromium firefox && node ./scripts/check-port.mjs 4173 && pnpm check:generated && pnpm build && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm --filter yugilife-cli verify:packed && bddgen && playwright test",
     "check": "node ./scripts/check-visual-platform.mjs && node ./scripts/check-port.mjs 4174 && pnpm check:portable && pnpm test:visual"
   },
   "devDependencies": {
