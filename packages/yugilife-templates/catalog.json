@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "card": "card/series-10"
+  },
+  "bundledTemplates": ["card/series-10"]
+}

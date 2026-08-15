@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/yugilife-logo.svg" />
+    <title>Yugilife</title>
+    <script>
+      ;(() => {
+        try {
+          const raw = localStorage.getItem("yugilife-preferences")
+          const parsed = raw ? JSON.parse(raw) : null
+          const state = parsed?.state ?? parsed
+          const storedTheme = state?.theme ?? localStorage.getItem("yugilife-theme")
+
+          if (storedTheme === "light" || storedTheme === "dark") {
+            document.documentElement.classList.add(storedTheme)
+          }
+        } catch {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

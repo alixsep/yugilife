@@ -1,0 +1,28 @@
+{
+  "id": "dingirsu-the-orcust-of-the-evening-star",
+  "cardName": "Dingirsu, the Orcust of the Evening Star",
+  "printing": {
+    "setName": "Dark Neostorm",
+    "setCode": "DANE-EN038",
+    "edition": "1st Edition",
+    "databaseId": "93854893",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dingirsu%2C%20the%20Orcust%20of%20the%20Evening%20Star"
+  },
+  "card": {
+    "name": "Dingirsu, the Orcust of the Evening Star",
+    "cardVariant": "xyz",
+    "attribute": "DARK",
+    "types": ["Machine", "Xyz", "Effect"],
+    "description": [
+      "2 Level 8 monsters\nYou can only Special Summon \"Dingirsu, the Orcust of the Evening Star(s)\" once per turn. You can also Xyz Summon this card by using an \"Orcust\" Link Monster you control as material. If a card(s) you control would be destroyed by battle or card effect, you can detach 1 material from this card instead. If this card is Special Summoned: You can activate 1 of these effects;\n● Send 1 card your opponent controls to the GY.\n● Attach 1 of your banished Machine monsters to this card as material."
+    ],
+    "attack": "2600",
+    "cardCode": "DANE-EN038",
+    "serialNumber": "93854893",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "2100",
+    "rank": 8,
+    "pendulum": false
+  }
+}

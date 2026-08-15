@@ -1,0 +1,26 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "yugilife-core": ["../../packages/yugilife-core/src/index.ts"],
+      "yugilife-core/advanced": ["../../packages/yugilife-core/src/advanced.ts"],
+      "yugilife-core/color-grading": ["../../packages/yugilife-core/src/public/color-grading.ts"],
+      "yugilife-templates": ["../../packages/yugilife-templates/src/index.ts"]
+    },
+
+    /* Bundler mode */
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["src"]
+}

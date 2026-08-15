@@ -1,0 +1,28 @@
+{
+  "id": "dinowrestler-pankratops",
+  "cardName": "Dinowrestler Pankratops",
+  "printing": {
+    "setName": "Soul Fusion",
+    "setCode": "SOFU-EN009",
+    "edition": "1st Edition",
+    "databaseId": "82385847",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dinowrestler%20Pankratops"
+  },
+  "card": {
+    "name": "Dinowrestler Pankratops",
+    "cardVariant": "effect",
+    "attribute": "EARTH",
+    "types": ["Dinosaur", "Effect"],
+    "description": [
+      "If your opponent controls more monsters than you do, you can Special Summon this card (from your hand). You can only Special Summon \"Dinowrestler Pankratops\" once per turn this way. (Quick Effect): You can Tribute 1 \"Dinowrestler\" monster, then target 1 card your opponent controls; destroy it. You can only use this effect of \"Dinowrestler Pankratops\" once per turn."
+    ],
+    "attack": "2600",
+    "cardCode": "SOFU-EN009",
+    "serialNumber": "82385847",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "0",
+    "level": 7,
+    "pendulum": false
+  }
+}

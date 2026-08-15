@@ -1,0 +1,23 @@
+{
+  "id": "pot-of-extravagance",
+  "cardName": "Pot of Extravagance",
+  "printing": {
+    "setName": "Savage Strike",
+    "setCode": "SAST-EN067",
+    "edition": "1st Edition",
+    "databaseId": "49238328",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Pot%20of%20Extravagance"
+  },
+  "card": {
+    "name": "Pot of Extravagance",
+    "cardVariant": "spell",
+    "description": [
+      "At the start of your Main Phase 1: Banish 3 or 6 random face-down cards from your Extra Deck, face-down; draw 1 card for every 3 cards banished. For the rest of this turn after this card resolves, you cannot draw any cards by card effects."
+    ],
+    "cardCode": "SAST-EN067",
+    "serialNumber": "49238328",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "normal"
+  }
+}

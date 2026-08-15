@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build output and caches
+dist/
+dist-ssr/
+coverage/
+.vite/
+.features-gen/
+*.tsbuildinfo
+.vitest/
+.nyc_output/
+.cache/
+temp/
+.temp/
+tmp/
+.tmp/
+*.tmp
+
+# Test output
+playwright-report/
+test-results/
+
+# Color-preset artifacts are committed; diagnostics and intermediates are not
+packages/yugilife-templates/templates/**/report.json
+packages/yugilife-templates/templates/**/reports/
+packages/yugilife-templates/templates/**/textures/
+packages/yugilife-templates/templates/**/presets/
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editors and IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating system files
+.DS_Store
+Thumbs.db

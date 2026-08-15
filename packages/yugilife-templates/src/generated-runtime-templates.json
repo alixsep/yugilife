@@ -1,0 +1,4617 @@
+[
+  {
+    "schemaVersion": 1,
+    "dimensions": {
+      "width": 813,
+      "height": 1185
+    },
+    "fonts": {
+      "DFP-ReiSho-W6": "font.dfp-reisho-w6-jajwa",
+      "StoneSerifStd-Bold": "font.itc-stone-serif-std-bold",
+      "StoneSerifITCTTBold-ArtificialSC": "font.stone-serif-itc-tt-sc-bold",
+      "MatrixRegularSmallCaps": "font.matrix-regular-small-caps",
+      "MatrixBoldSmallCaps": "font.matrix-bold-small-caps",
+      "MatrixBook": "font.matrix-book",
+      "ITCStoneSerifMediumItalic": "font.itc-stone-serif-medium-italic",
+      "RoGSanSrfStd-Bd": "font.rogsansrfstd-bd",
+      "ITCStoneSerifMedium": "font.itc-stone-serif-medium",
+      "Stone Serif ITC Semi": "font.stone-serif-itc-semi"
+    },
+    "textDefaults": {
+      "autoScaleXQuantifier": 0.01,
+      "maxAutoCompressionX": 0.2
+    },
+    "fitProfileSets": {
+      "description": [
+        {
+          "id": "large",
+          "label": "Large",
+          "fontSize": 30,
+          "lineHeight": 30,
+          "maxLines": 5
+        },
+        {
+          "id": "medium",
+          "label": "Medium",
+          "fontSize": 24.4,
+          "lineHeight": 25,
+          "maxLines": 6
+        },
+        {
+          "id": "small",
+          "label": "Small",
+          "fontSize": 21,
+          "lineHeight": 22,
+          "maxLines": 7
+        },
+        {
+          "id": "extra-small",
+          "label": "Extra Small",
+          "fontSize": 17,
+          "lineHeight": 16.67,
+          "maxLines": 9
+        }
+      ],
+      "lore": [
+        {
+          "id": "large",
+          "label": "Large",
+          "fontSize": 28,
+          "lineHeight": 28,
+          "maxLines": 2
+        },
+        {
+          "id": "medium",
+          "label": "Medium",
+          "fontSize": 26.5,
+          "lineHeight": 27,
+          "maxLines": 3
+        },
+        {
+          "id": "small",
+          "label": "Small",
+          "fontSize": 25,
+          "lineHeight": 25.5,
+          "maxLines": 4
+        },
+        {
+          "id": "extra-small",
+          "label": "Extra Small",
+          "fontSize": 22,
+          "lineHeight": 22.5,
+          "maxLines": 5
+        }
+      ],
+      "pendulum-effect": [
+        {
+          "id": "large",
+          "label": "Large",
+          "fontSize": 30,
+          "lineHeight": 29.5,
+          "maxLines": 7
+        },
+        {
+          "id": "medium",
+          "label": "Medium",
+          "fontSize": 24.4,
+          "lineHeight": 25,
+          "maxLines": 8
+        },
+        {
+          "id": "small",
+          "label": "Small",
+          "fontSize": 21,
+          "lineHeight": 21,
+          "maxLines": 9
+        }
+      ],
+      "type-line": [
+        {
+          "id": "type-big",
+          "label": "Type big",
+          "fontSize": 31
+        },
+        {
+          "id": "type-small",
+          "label": "Type small",
+          "fontSize": 24
+        }
+      ]
+    },
+    "typographyPresets": {
+      "lore": {
+        "fontFamily": "ITCStoneSerifMediumItalic",
+        "fontSize": 28,
+        "lineHeight": 28,
+        "fitProfileSet": "lore",
+        "maxWidth": 690
+      },
+      "extra-deck-leading-line": {
+        "fitBlocks": {
+          "split": "leading-authored-line",
+          "leading": {
+            "mode": "prefer-lines",
+            "preferredMaxLines": 1
+          },
+          "remainder": {
+            "mode": "layer-fit"
+          }
+        }
+      }
+    },
+    "masks": [
+      {
+        "id": "artwork-mask",
+        "assetId": "card.series-10.artwork-mask",
+        "invert": true
+      },
+      {
+        "id": "link-arrows",
+        "assetId": "card.series-10.link-arrows-mask"
+      },
+      {
+        "id": "pendulum-artwork-mask",
+        "assetId": "card.series-10.pendulum-artwork-mask"
+      },
+      {
+        "id": "pendulum-artwork-cutout",
+        "assetId": "card.series-10.pendulum-artwork-mask",
+        "invert": true
+      },
+      {
+        "id": "pendulum-frame-spell",
+        "assetId": "card.series-10.pendulum-frame-mask.spell"
+      },
+      {
+        "id": "pendulum-effect-box-small",
+        "assetId": "card.series-10.pendulum-effect-mask.small"
+      },
+      {
+        "id": "pendulum-effect-box-medium",
+        "assetId": "card.series-10.pendulum-effect-mask.medium"
+      },
+      {
+        "id": "pendulum-effect-box-large",
+        "assetId": "card.series-10.pendulum-effect-mask.large"
+      },
+      {
+        "id": "pendulum-effect-box-large-lower",
+        "assetId": "card.series-10.pendulum-effect-mask.large-lower"
+      }
+    ],
+    "cardFields": [
+      {
+        "name": "name",
+        "kind": "text",
+        "label": "Name",
+        "maxLength": 80,
+        "defaultValue": "Sample Card Title"
+      },
+      {
+        "name": "attribute",
+        "kind": "text",
+        "label": "Attribute",
+        "automaticWhen": {
+          "path": "kind",
+          "equals": "monster"
+        },
+        "options": [
+          "DARK",
+          "LIGHT",
+          "EARTH",
+          "WATER",
+          "FIRE",
+          "WIND",
+          "DIVINE"
+        ],
+        "defaultValue": "DARK"
+      },
+      {
+        "name": "cardVariant",
+        "kind": "text",
+        "label": "Card variant",
+        "required": true,
+        "options": [
+          "normal",
+          "effect",
+          "ritual",
+          "fusion",
+          "synchro",
+          "xyz",
+          "link",
+          "token",
+          "token-with-stats",
+          "spell",
+          "trap"
+        ],
+        "defaultValue": "effect"
+      },
+      {
+        "name": "pendulum",
+        "kind": "boolean",
+        "label": "Pendulum",
+        "automaticWhen": {
+          "all": [
+            {
+              "path": "kind",
+              "equals": "monster"
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "defaultValue": false
+      },
+      {
+        "name": "pendulumSize",
+        "kind": "text",
+        "label": "Pendulum size",
+        "automaticWhen": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "options": [
+          "small",
+          "medium",
+          "large"
+        ],
+        "defaultValue": "medium"
+      },
+      {
+        "name": "scales",
+        "kind": "number-pair",
+        "label": "Pendulum scales",
+        "automaticWhen": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "min": 0,
+        "max": 13,
+        "defaultValue": [
+          1,
+          1
+        ]
+      },
+      {
+        "name": "pendulumEffect",
+        "kind": "multiline",
+        "label": "Pendulum effect",
+        "automaticFitLayer": "pendulumEffect",
+        "automaticWhen": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "maxItems": 8,
+        "defaultValue": "This is configurable Pendulum effect text."
+      },
+      {
+        "name": "spellTrapType",
+        "kind": "text",
+        "label": "Spell/Trap subtype",
+        "automaticWhen": [
+          {
+            "path": "kind",
+            "equals": "spell"
+          },
+          {
+            "path": "kind",
+            "equals": "trap"
+          }
+        ],
+        "options": [
+          "normal",
+          "continuous",
+          "counter",
+          "equip",
+          "field",
+          "quick-play",
+          "ritual"
+        ],
+        "defaultValue": "normal"
+      },
+      {
+        "name": "level",
+        "kind": "number",
+        "label": "Level",
+        "automaticWhen": [
+          {
+            "path": "monster.frame",
+            "equals": "normal"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "effect"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "ritual"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "fusion"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "synchro"
+          }
+        ],
+        "min": 1,
+        "max": 13,
+        "defaultValue": 8
+      },
+      {
+        "name": "rank",
+        "kind": "number",
+        "label": "Rank",
+        "automaticWhen": {
+          "path": "monster.frame",
+          "equals": "xyz"
+        },
+        "min": 1,
+        "max": 13
+      },
+      {
+        "name": "types",
+        "kind": "text-list",
+        "label": "Types",
+        "automaticWhen": [
+          {
+            "path": "monster.frame",
+            "equals": "normal"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "effect"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "ritual"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "fusion"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "synchro"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "xyz"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "link"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "token-with-stats"
+          }
+        ],
+        "maxItems": 6,
+        "defaultValue": [
+          "Dragon",
+          "Effect"
+        ]
+      },
+      {
+        "name": "description",
+        "kind": "multiline",
+        "label": "Monster text",
+        "automaticFitLayer": "description",
+        "maxItems": 12,
+        "defaultValue": "This is configurable Effect Monster text.\nBuild, compare, and export a card from Yugilife."
+      },
+      {
+        "name": "attack",
+        "kind": "text",
+        "label": "ATK",
+        "automaticWhen": [
+          {
+            "path": "monster.frame",
+            "equals": "normal"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "effect"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "ritual"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "fusion"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "synchro"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "xyz"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "link"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "token-with-stats"
+          }
+        ],
+        "defaultValue": "2500"
+      },
+      {
+        "name": "defense",
+        "kind": "text",
+        "label": "DEF",
+        "automaticWhen": [
+          {
+            "path": "monster.frame",
+            "equals": "normal"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "effect"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "ritual"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "fusion"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "synchro"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "xyz"
+          },
+          {
+            "path": "monster.frame",
+            "equals": "token-with-stats"
+          }
+        ],
+        "defaultValue": "2000"
+      },
+      {
+        "name": "link",
+        "kind": "number",
+        "label": "Manual Link rating (0 = automatic)",
+        "advancedOnly": true,
+        "min": 0,
+        "max": 8,
+        "defaultValue": 0
+      },
+      {
+        "name": "linkArrows",
+        "kind": "text-list",
+        "label": "Active Link arrows",
+        "automaticWhen": {
+          "path": "monster.frame",
+          "equals": "link"
+        },
+        "maxItems": 8,
+        "options": [
+          "top-left",
+          "top-center",
+          "top-right",
+          "right-center",
+          "bottom-right",
+          "bottom-center",
+          "bottom-left",
+          "left-center"
+        ],
+        "defaultValue": [
+          "bottom-center"
+        ]
+      },
+      {
+        "name": "cardCode",
+        "kind": "text",
+        "label": "Set code",
+        "maxLength": 24,
+        "defaultValue": "CARD-EN001"
+      },
+      {
+        "name": "serialNumber",
+        "kind": "text",
+        "label": "Passcode",
+        "maxLength": 16,
+        "defaultValue": "12345678"
+      },
+      {
+        "name": "edition",
+        "kind": "text",
+        "label": "Edition",
+        "maxLength": 48,
+        "defaultValue": "1<sup>st</sup> Edition",
+        "suggestions": [
+          {
+            "label": "1st Edition",
+            "value": "1<sup>st</sup> Edition"
+          },
+          {
+            "label": "Limited Edition",
+            "value": "LIMITED EDITION"
+          }
+        ]
+      },
+      {
+        "name": "copyright",
+        "kind": "text",
+        "label": "Copyright",
+        "maxLength": 64,
+        "defaultValue": "©1996 KAZUKI TAKAHASHI",
+        "suggestions": [
+          {
+            "value": "©1996 KAZUKI TAKAHASHI"
+          },
+          {
+            "value": "©<scale x=\"0.7\">2020 Studio Dice/SHUEISHA, TV TOKYO, KONAMI</scale>"
+          }
+        ]
+      },
+      {
+        "name": "artwork",
+        "kind": "image",
+        "label": "Artwork"
+      }
+    ],
+    "semanticBindings": {
+      "bindings": [
+        {
+          "path": "kind",
+          "source": {
+            "field": "cardVariant"
+          },
+          "transform": {
+            "kind": "lookup",
+            "values": {
+              "normal": "monster",
+              "effect": "monster",
+              "ritual": "monster",
+              "fusion": "monster",
+              "synchro": "monster",
+              "xyz": "monster",
+              "link": "monster",
+              "token": "monster",
+              "token-with-stats": "monster",
+              "spell": "spell",
+              "trap": "trap"
+            }
+          }
+        },
+        {
+          "path": "monster.attribute",
+          "source": {
+            "field": "attribute"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "monster"
+          }
+        },
+        {
+          "path": "monster.attributeGlyph",
+          "source": {
+            "field": "attribute"
+          },
+          "transform": {
+            "kind": "lookup",
+            "values": {
+              "DARK": "闇",
+              "DIVINE": "神",
+              "EARTH": "地",
+              "FIRE": "炎",
+              "LIGHT": "光",
+              "WATER": "水",
+              "WIND": "風"
+            }
+          },
+          "when": {
+            "path": "kind",
+            "equals": "monster"
+          }
+        },
+        {
+          "path": "monster.frame",
+          "source": {
+            "field": "cardVariant"
+          },
+          "transform": {
+            "kind": "lookup",
+            "values": {
+              "normal": "normal",
+              "effect": "effect",
+              "ritual": "ritual",
+              "fusion": "fusion",
+              "synchro": "synchro",
+              "xyz": "xyz",
+              "link": "link",
+              "token": "token",
+              "token-with-stats": "token-with-stats"
+            }
+          },
+          "when": {
+            "path": "kind",
+            "equals": "monster"
+          }
+        },
+        {
+          "path": "monster.pendulum",
+          "source": {
+            "field": "pendulum"
+          },
+          "fallback": {
+            "kind": "value",
+            "value": false
+          },
+          "when": {
+            "path": "kind",
+            "equals": "monster"
+          }
+        },
+        {
+          "path": "monster.pendulumSupported",
+          "source": {
+            "field": "cardVariant"
+          },
+          "transform": {
+            "kind": "lookup",
+            "values": {
+              "normal": true,
+              "effect": true,
+              "ritual": true,
+              "fusion": true,
+              "synchro": true,
+              "xyz": true,
+              "link": false,
+              "token": false,
+              "token-with-stats": false
+            }
+          },
+          "when": {
+            "path": "kind",
+            "equals": "monster"
+          }
+        },
+        {
+          "path": "monster.pendulum.size",
+          "source": {
+            "field": "pendulumSize"
+          },
+          "fallback": {
+            "kind": "value",
+            "value": "medium"
+          },
+          "when": {
+            "all": [
+              {
+                "path": "kind",
+                "equals": "monster"
+              },
+              {
+                "path": "monster.pendulum",
+                "equals": true
+              },
+              {
+                "path": "monster.pendulumSupported",
+                "equals": true
+              }
+            ]
+          }
+        },
+        {
+          "path": "spellTrap.type",
+          "source": {
+            "field": "spellTrapType"
+          },
+          "when": {
+            "path": "kind",
+            "in": [
+              "spell",
+              "trap"
+            ]
+          }
+        },
+        {
+          "path": "spell.type",
+          "source": {
+            "field": "spellTrapType"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "spell"
+          }
+        },
+        {
+          "path": "trap.type",
+          "source": {
+            "field": "spellTrapType"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "trap"
+          }
+        },
+        {
+          "path": "spell.label",
+          "source": {
+            "value": "[Spell Card]"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "spell"
+          }
+        },
+        {
+          "path": "trap.label",
+          "source": {
+            "value": "[Trap Card]"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "trap"
+          }
+        },
+        {
+          "path": "spell.presentationLabel",
+          "source": {
+            "field": "spellTrapType"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "spell"
+          },
+          "transform": {
+            "kind": "lookup",
+            "values": {
+              "normal": "[Spell Card]",
+              "continuous": "[Spell Card<space width=\"44px\"/>]",
+              "counter": "[Spell Card<space width=\"44px\"/>]",
+              "equip": "[Spell Card<space width=\"44px\"/>]",
+              "field": "[Spell Card<space width=\"44px\"/>]",
+              "quick-play": "[Spell Card<space width=\"44px\"/>]",
+              "ritual": "[Spell Card<space width=\"44px\"/>]"
+            }
+          }
+        },
+        {
+          "path": "trap.presentationLabel",
+          "source": {
+            "field": "spellTrapType"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "trap"
+          },
+          "transform": {
+            "kind": "lookup",
+            "values": {
+              "normal": "[Trap Card]",
+              "continuous": "[Trap Card<space width=\"44px\"/>]",
+              "counter": "[Trap Card<space width=\"44px\"/>]",
+              "equip": "[Trap Card<space width=\"44px\"/>]",
+              "field": "[Trap Card<space width=\"44px\"/>]",
+              "quick-play": "[Trap Card<space width=\"44px\"/>]",
+              "ritual": "[Trap Card<space width=\"44px\"/>]"
+            }
+          }
+        },
+        {
+          "path": "monster.atkLabel",
+          "source": {
+            "value": "ATK<space width=\"4px\"/>/"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "monster"
+          }
+        },
+        {
+          "path": "monster.defLabel",
+          "source": {
+            "value": "DEF<space width=\"4px\"/>/"
+          },
+          "when": {
+            "path": "kind",
+            "equals": "monster"
+          }
+        },
+        {
+          "path": "monster.linkArrows",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "unique-list"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.link.rating",
+          "source": {
+            "field": "link"
+          },
+          "fallbackValues": [
+            0
+          ],
+          "fallback": {
+            "kind": "list-length",
+            "minimum": 1,
+            "source": {
+              "path": "monster.linkArrows"
+            }
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.link.label",
+          "source": {
+            "value": "LINK-"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.top-left",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "top-left"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.top-center",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "top-center"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.top-right",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "top-right"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.right-center",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "right-center"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.bottom-right",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "bottom-right"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.bottom-center",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "bottom-center"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.bottom-left",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "bottom-left"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        },
+        {
+          "path": "monster.linkArrows.left-center",
+          "source": {
+            "field": "linkArrows"
+          },
+          "transform": {
+            "kind": "includes",
+            "value": "left-center"
+          },
+          "when": {
+            "path": "monster.frame",
+            "equals": "link"
+          }
+        }
+      ]
+    },
+    "layers": [
+      {
+        "id": "cardBackground",
+        "kind": "svg",
+        "label": "White card background",
+        "group": "Background",
+        "editorVisible": false,
+        "element": {
+          "tag": "rect",
+          "attributes": {
+            "x": 0,
+            "y": 0,
+            "width": 813,
+            "height": 1185,
+            "fill": "#ffffff"
+          }
+        }
+      },
+      {
+        "id": "border",
+        "kind": "image",
+        "label": "Border",
+        "group": "Artwork and frames",
+        "assetId": "card.series-10.border",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "frameTexture",
+        "kind": "raster",
+        "label": "Frame texture",
+        "group": "Artwork and frames",
+        "renderer": "color-texture",
+        "assetId": "card.series-10.frame-texture",
+        "region": {
+          "x": 28,
+          "y": 28,
+          "width": 757,
+          "height": 1128
+        },
+        "presetTarget": "frame"
+      },
+      {
+        "id": "pendulumMonsterFrameTexture",
+        "kind": "raster",
+        "label": "Pendulum monster frame texture",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "renderer": "color-texture-bevel",
+        "assetId": "card.series-10.frame-texture",
+        "region": {
+          "x": 28,
+          "y": 28,
+          "width": 757,
+          "height": 1128
+        },
+        "presetTarget": "frame",
+        "options": {
+          "thickness": {
+            "top": 3,
+            "right": 3,
+            "bottom": 3,
+            "left": 3
+          },
+          "highlightColor": "#ffffff52",
+          "shadowColor": "#0000005e"
+        }
+      },
+      {
+        "id": "pendulumXyzFrameTexture",
+        "kind": "raster",
+        "label": "Pendulum XYZ frame texture",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "renderer": "color-texture-bevel",
+        "assetId": "card.series-10.xyz-texture",
+        "region": {
+          "x": 28,
+          "y": 28,
+          "width": 757,
+          "height": 1128
+        },
+        "options": {
+          "thickness": {
+            "top": 3,
+            "right": 3,
+            "bottom": 3,
+            "left": 3
+          },
+          "highlightColor": "#efdfdf52",
+          "shadowColor": "#5a47475e"
+        }
+      },
+      {
+        "id": "pendulumSpellFrameTexture",
+        "kind": "raster",
+        "label": "Pendulum Spell frame texture",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "renderer": "color-texture-bevel",
+        "assetId": "card.series-10.frame-texture",
+        "region": {
+          "x": 28,
+          "y": 28,
+          "width": 757,
+          "height": 1128
+        },
+        "defaultPreset": "spell-frame-s10",
+        "options": {
+          "thickness": {
+            "top": 3,
+            "right": 3,
+            "bottom": 3,
+            "left": 3
+          },
+          "highlightColor": "#ffffff52",
+          "shadowColor": "#0000005e"
+        }
+      },
+      {
+        "id": "linkFrame",
+        "kind": "image",
+        "label": "Link frame",
+        "group": "Artwork and frames",
+        "assetId": "card.series-10.link-texture",
+        "defaultVisible": false,
+        "region": {
+          "x": 28,
+          "y": 28,
+          "width": 757,
+          "height": 1128
+        }
+      },
+      {
+        "id": "xyzFrame",
+        "kind": "image",
+        "label": "XYZ frame",
+        "group": "Artwork and frames",
+        "assetId": "card.series-10.xyz-texture",
+        "defaultVisible": false,
+        "region": {
+          "x": 28,
+          "y": 28,
+          "width": 757,
+          "height": 1128
+        }
+      },
+      {
+        "id": "artwork",
+        "kind": "artwork",
+        "label": "Artwork",
+        "group": "Artwork and frames",
+        "field": "artwork",
+        "region": {
+          "x": 100,
+          "y": 219,
+          "width": 613,
+          "height": 613
+        }
+      },
+      {
+        "id": "pendulumArtwork",
+        "kind": "artwork",
+        "label": "Pendulum artwork",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "field": "artwork",
+        "fit": "width",
+        "region": {
+          "x": 55,
+          "y": 212,
+          "width": 703,
+          "height": 903
+        }
+      },
+      {
+        "id": "artworkBox",
+        "kind": "image",
+        "label": "Artwork box",
+        "group": "Artwork and frames",
+        "assetId": "card.series-10.artwork-box",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "effectBoxTexture",
+        "kind": "raster",
+        "label": "Effect box texture",
+        "group": "Artwork and frames",
+        "renderer": "color-texture",
+        "assetId": "card.series-10.frame-texture",
+        "region": {
+          "x": 52,
+          "y": 882,
+          "width": 709,
+          "height": 237
+        },
+        "sourceRegion": {
+          "x": 24,
+          "y": 854,
+          "width": 709,
+          "height": 237
+        },
+        "presetTarget": "effect-box",
+        "defaultPreset": "effect-box-s10"
+      },
+      {
+        "id": "xyzEffectBoxOverlay",
+        "kind": "svg",
+        "label": "XYZ effect box overlay",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "element": {
+          "tag": "rect",
+          "attributes": {
+            "x": 52,
+            "y": 882,
+            "width": 709,
+            "height": 237,
+            "fill": "#fffbfc",
+            "opacity": 0.89
+          }
+        }
+      },
+      {
+        "id": "pendulumEffectTexture",
+        "kind": "raster",
+        "label": "Pendulum Spell effect texture",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "renderer": "color-texture",
+        "assetId": "card.series-10.frame-texture",
+        "region": {
+          "x": 52,
+          "y": 645,
+          "width": 709,
+          "height": 237
+        },
+        "sourceRegion": {
+          "x": 24,
+          "y": 854,
+          "width": 709,
+          "height": 237
+        },
+        "defaultPreset": "spell-effect-box-s10"
+      },
+      {
+        "id": "pendulumEffectTextureLarge",
+        "kind": "raster",
+        "label": "Large Pendulum effect box texture",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "renderer": "color-texture",
+        "assetId": "card.series-10.frame-texture",
+        "region": {
+          "x": 52,
+          "y": 676,
+          "width": 709,
+          "height": 237
+        },
+        "sourceRegion": {
+          "x": 24,
+          "y": 854,
+          "width": 709,
+          "height": 237
+        },
+        "defaultPreset": "spell-effect-box-s10"
+      },
+      {
+        "id": "effectBorder",
+        "kind": "image",
+        "label": "Effect border",
+        "group": "Artwork and frames",
+        "assetId": "card.series-10.effects-border",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "pendulumBorder",
+        "kind": "image",
+        "label": "Pendulum border",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "assetId": "card.series-10.pendulum-border.medium",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "pendulumScaleMarkerLeft",
+        "kind": "image",
+        "label": "Left Pendulum scale marker",
+        "group": "Card symbols",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "assetId": "card.series-10.pendulum-scale.left",
+        "region": {
+          "x": 59,
+          "y": 769,
+          "width": 51,
+          "height": 39
+        }
+      },
+      {
+        "id": "pendulumScaleMarkerRight",
+        "kind": "image",
+        "label": "Right Pendulum scale marker",
+        "group": "Card symbols",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "assetId": "card.series-10.pendulum-scale.right",
+        "region": {
+          "x": 704,
+          "y": 769,
+          "width": 51,
+          "height": 39
+        }
+      },
+      {
+        "id": "outerBevel",
+        "kind": "canvas",
+        "label": "Outer bevel",
+        "group": "Artwork and frames",
+        "renderer": "bevel",
+        "region": {
+          "x": 28,
+          "y": 28,
+          "width": 757,
+          "height": 1128
+        },
+        "options": {
+          "thickness": {
+            "top": 3,
+            "right": 3,
+            "bottom": 3,
+            "left": 3
+          },
+          "highlightColor": "#ffffff52",
+          "shadowColor": "#0000005e"
+        }
+      },
+      {
+        "id": "titleBevel",
+        "kind": "canvas",
+        "label": "Title bevel",
+        "group": "Artwork and frames",
+        "renderer": "bevel",
+        "region": {
+          "x": 45,
+          "y": 47.5,
+          "width": 724,
+          "height": 91
+        },
+        "options": {
+          "thickness": {
+            "top": 7.5,
+            "right": 7.5,
+            "bottom": 7.5,
+            "left": 7.5
+          },
+          "highlightColor": "#ffffff59",
+          "shadowColor": "#00000066"
+        }
+      },
+      {
+        "id": "levelStar",
+        "kind": "repeated-image",
+        "label": "Level star",
+        "group": "Card symbols",
+        "assetId": "card.series-10.star.level",
+        "field": "level",
+        "offset": {
+          "x": -53.6,
+          "y": 0
+        },
+        "defaultVisible": false,
+        "region": {
+          "x": 680,
+          "y": 145,
+          "width": 49,
+          "height": 49
+        }
+      },
+      {
+        "id": "rankStar",
+        "kind": "repeated-image",
+        "label": "Rank star",
+        "group": "Card symbols",
+        "assetId": "card.series-10.star.rank",
+        "field": "rank",
+        "offset": {
+          "x": 53.6,
+          "y": 0
+        },
+        "defaultVisible": false,
+        "region": {
+          "x": 89.6,
+          "y": 145,
+          "width": 49,
+          "height": 49
+        }
+      },
+      {
+        "id": "linkArrowLayers",
+        "kind": "group",
+        "label": "Link arrows",
+        "layers": [
+          {
+            "id": "inactiveLinkArrowTopCenter",
+            "kind": "image",
+            "label": "Inactive top-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.top-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 326,
+              "y": 166,
+              "width": 161,
+              "height": 61
+            }
+          },
+          {
+            "id": "inactiveLinkArrowTopRight",
+            "kind": "image",
+            "label": "Inactive top-right Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.top-right",
+            "defaultVisible": false,
+            "region": {
+              "x": 663,
+              "y": 179,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "inactiveLinkArrowRightCenter",
+            "kind": "image",
+            "label": "Inactive right-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.right-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 706,
+              "y": 446,
+              "width": 61,
+              "height": 158
+            }
+          },
+          {
+            "id": "inactiveLinkArrowBottomRight",
+            "kind": "image",
+            "label": "Inactive bottom-right Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.bottom-right",
+            "defaultVisible": false,
+            "region": {
+              "x": 663,
+              "y": 782,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "inactiveLinkArrowBottomCenter",
+            "kind": "image",
+            "label": "Inactive bottom-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.bottom-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 329,
+              "y": 824,
+              "width": 158,
+              "height": 61
+            }
+          },
+          {
+            "id": "inactiveLinkArrowBottomLeft",
+            "kind": "image",
+            "label": "Inactive bottom-left Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.bottom-left",
+            "defaultVisible": false,
+            "region": {
+              "x": 61,
+              "y": 782,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "inactiveLinkArrowLeftCenter",
+            "kind": "image",
+            "label": "Inactive left-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.left-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 48,
+              "y": 446,
+              "width": 61,
+              "height": 157
+            }
+          },
+          {
+            "id": "inactiveLinkArrowTopLeft",
+            "kind": "image",
+            "label": "Inactive top-left Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.top-left",
+            "defaultVisible": false,
+            "region": {
+              "x": 61,
+              "y": 179,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "activeLinkArrowTopCenter",
+            "kind": "image",
+            "label": "Active top-center Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.top-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 326,
+              "y": 166,
+              "width": 161,
+              "height": 61
+            }
+          },
+          {
+            "id": "activeLinkArrowTopRight",
+            "kind": "image",
+            "label": "Active top-right Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.top-right",
+            "defaultVisible": false,
+            "region": {
+              "x": 663,
+              "y": 179,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "activeLinkArrowRightCenter",
+            "kind": "image",
+            "label": "Active right-center Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.right-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 706,
+              "y": 446,
+              "width": 61,
+              "height": 158
+            }
+          },
+          {
+            "id": "activeLinkArrowBottomRight",
+            "kind": "image",
+            "label": "Active bottom-right Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.bottom-right",
+            "defaultVisible": false,
+            "region": {
+              "x": 663,
+              "y": 782,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "activeLinkArrowBottomCenter",
+            "kind": "image",
+            "label": "Active bottom-center Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.bottom-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 329,
+              "y": 824,
+              "width": 158,
+              "height": 61
+            }
+          },
+          {
+            "id": "activeLinkArrowBottomLeft",
+            "kind": "image",
+            "label": "Active bottom-left Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.bottom-left",
+            "defaultVisible": false,
+            "region": {
+              "x": 61,
+              "y": 782,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "activeLinkArrowLeftCenter",
+            "kind": "image",
+            "label": "Active left-center Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.left-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 48,
+              "y": 446,
+              "width": 61,
+              "height": 157
+            }
+          },
+          {
+            "id": "activeLinkArrowTopLeft",
+            "kind": "image",
+            "label": "Active top-left Link Arrow",
+            "group": "Active Link arrows",
+            "assetId": "card.series-10.link-arrow.active.top-left",
+            "defaultVisible": false,
+            "region": {
+              "x": 61,
+              "y": 179,
+              "width": 90,
+              "height": 90
+            }
+          }
+        ]
+      },
+      {
+        "id": "spellTrapIconContinuous",
+        "kind": "image",
+        "label": "Continuous Spell/Trap icon",
+        "group": "Spell and Trap symbols",
+        "assetId": "card.series-10.spell-trap.icon.continuous",
+        "defaultVisible": false,
+        "region": {
+          "x": 671,
+          "y": 148,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "id": "spellTrapIconCounter",
+        "kind": "image",
+        "label": "Counter Trap icon",
+        "group": "Spell and Trap symbols",
+        "assetId": "card.series-10.spell-trap.icon.counter",
+        "defaultVisible": false,
+        "region": {
+          "x": 671,
+          "y": 148,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "id": "spellTrapIconEquip",
+        "kind": "image",
+        "label": "Equip Spell icon",
+        "group": "Spell and Trap symbols",
+        "assetId": "card.series-10.spell-trap.icon.equip",
+        "defaultVisible": false,
+        "region": {
+          "x": 671,
+          "y": 148,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "id": "spellTrapIconField",
+        "kind": "image",
+        "label": "Field Spell icon",
+        "group": "Spell and Trap symbols",
+        "assetId": "card.series-10.spell-trap.icon.field",
+        "defaultVisible": false,
+        "region": {
+          "x": 671,
+          "y": 148,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "id": "spellTrapIconQuickPlay",
+        "kind": "image",
+        "label": "Quick-Play Spell icon",
+        "group": "Spell and Trap symbols",
+        "assetId": "card.series-10.spell-trap.icon.quick-play",
+        "defaultVisible": false,
+        "region": {
+          "x": 671,
+          "y": 148,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "id": "spellTrapIconRitual",
+        "kind": "image",
+        "label": "Ritual Spell icon",
+        "group": "Spell and Trap symbols",
+        "assetId": "card.series-10.spell-trap.icon.ritual",
+        "defaultVisible": false,
+        "region": {
+          "x": 671,
+          "y": 148,
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "id": "attributeBadge",
+        "kind": "group",
+        "label": "Attribute badge",
+        "layers": [
+          {
+            "id": "attributeDark",
+            "kind": "image",
+            "label": "DARK attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.dark",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeDivine",
+            "kind": "image",
+            "label": "DIVINE attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.divine",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeEarth",
+            "kind": "image",
+            "label": "EARTH attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.earth",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeFire",
+            "kind": "image",
+            "label": "FIRE attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.fire",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeLight",
+            "kind": "image",
+            "label": "LIGHT attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.light",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeSpell",
+            "kind": "image",
+            "label": "SPELL attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.spell",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeTrap",
+            "kind": "image",
+            "label": "TRAP attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.trap",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeWater",
+            "kind": "image",
+            "label": "WATER attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.water",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeWind",
+            "kind": "image",
+            "label": "WIND attribute background",
+            "group": "Card symbols",
+            "assetId": "card.series-10.attribute.wind",
+            "defaultVisible": false,
+            "region": {
+              "x": 678,
+              "y": 55,
+              "width": 76,
+              "height": 76
+            }
+          },
+          {
+            "id": "attributeGlyph",
+            "kind": "text",
+            "label": "Attribute base glyph",
+            "group": "Card symbols",
+            "semanticPath": "monster.attributeGlyph",
+            "defaultVisible": false,
+            "position": {
+              "x": 716,
+              "y": 119
+            },
+            "typography": {
+              "fill": "#ffffff",
+              "fontFamily": "DFP-ReiSho-W6",
+              "fontSize": 65,
+              "fontWeight": 400,
+              "textAnchor": "middle",
+              "fontAssetId": "font.dfp-reisho-w6-jajwa"
+            }
+          },
+          {
+            "id": "attribute",
+            "kind": "text",
+            "label": "Attribute top label",
+            "group": "Card symbols",
+            "semanticPath": "monster.attribute",
+            "defaultVisible": false,
+            "position": {
+              "x": 716,
+              "y": 70
+            },
+            "typography": {
+              "fill": "#ffffff",
+              "fontFamily": "StoneSerifStd-Bold",
+              "fontSize": 14,
+              "textAnchor": "middle",
+              "fontAssetId": "font.itc-stone-serif-std-bold"
+            }
+          }
+        ]
+      },
+      {
+        "id": "spellTrapLabelSpell",
+        "kind": "text",
+        "label": "Spell Card label",
+        "group": "Spell and Trap symbols",
+        "defaultVisible": false,
+        "semanticPath": "spell.presentationLabel",
+        "position": {
+          "x": 732,
+          "y": 184
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "StoneSerifITCTTBold-ArtificialSC",
+          "fontSize": 40,
+          "letterSpacing": 0.5,
+          "fit": "scale-x",
+          "textAnchor": "end",
+          "fontAssetId": "font.stone-serif-itc-tt-sc-bold"
+        },
+        "semanticStyles": [
+          {
+            "id": "normal",
+            "label": "Normal Spell Card label",
+            "when": {
+              "path": "spell.type",
+              "equals": "normal"
+            },
+            "typography": {
+              "maxWidth": 308
+            }
+          }
+        ]
+      },
+      {
+        "id": "spellTrapLabelTrap",
+        "kind": "text",
+        "label": "Trap Card label",
+        "group": "Spell and Trap symbols",
+        "defaultVisible": false,
+        "semanticPath": "trap.presentationLabel",
+        "position": {
+          "x": 732,
+          "y": 184
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "StoneSerifITCTTBold-ArtificialSC",
+          "fontSize": 40,
+          "letterSpacing": 0.5,
+          "fit": "scale-x",
+          "textAnchor": "end",
+          "fontAssetId": "font.stone-serif-itc-tt-sc-bold"
+        },
+        "semanticStyles": [
+          {
+            "id": "normal",
+            "label": "Normal Trap Card label",
+            "when": {
+              "path": "trap.type",
+              "equals": "normal"
+            },
+            "typography": {
+              "maxWidth": 299
+            }
+          }
+        ]
+      },
+      {
+        "id": "name",
+        "kind": "text",
+        "label": "Name",
+        "group": "Card text",
+        "field": "name",
+        "position": {
+          "x": 62,
+          "y": 116
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixRegularSmallCaps",
+          "fontSize": 90,
+          "fit": "scale-x",
+          "maxWidth": 608,
+          "fontAssetId": "font.matrix-regular-small-caps"
+        },
+        "semanticStyles": [
+          {
+            "id": "xyz",
+            "label": "Light card title",
+            "when": {
+              "any": [
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "xyz",
+                    "link"
+                  ]
+                },
+                {
+                  "path": "kind",
+                  "in": [
+                    "spell",
+                    "trap"
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fill": "#ffffff"
+            }
+          }
+        ]
+      },
+      {
+        "id": "scales",
+        "kind": "text",
+        "label": "Scales",
+        "group": "Card text",
+        "field": "scales",
+        "format": "pair",
+        "prefix": "SCALE ",
+        "separator": " / ",
+        "defaultVisible": false,
+        "position": {
+          "x": 742,
+          "y": 850
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBoldSmallCaps",
+          "fontSize": 17,
+          "textAnchor": "end",
+          "fontAssetId": "font.matrix-bold-small-caps"
+        },
+        "semanticStyles": [
+          {
+            "id": "xyz",
+            "label": "XYZ card text",
+            "when": {
+              "path": "monster.frame",
+              "equals": "xyz"
+            },
+            "typography": {
+              "fill": "#ffffff"
+            }
+          }
+        ]
+      },
+      {
+        "id": "pendulumScaleLeft",
+        "kind": "text",
+        "label": "Left Pendulum scale",
+        "group": "Card text",
+        "defaultVisible": false,
+        "field": "scales",
+        "format": "pair",
+        "pairIndex": 0,
+        "position": {
+          "x": 85,
+          "y": 849
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBoldSmallCaps",
+          "fontSize": 57,
+          "textAnchor": "middle",
+          "fontAssetId": "font.matrix-bold-small-caps"
+        }
+      },
+      {
+        "id": "pendulumScaleRight",
+        "kind": "text",
+        "label": "Right Pendulum scale",
+        "group": "Card text",
+        "defaultVisible": false,
+        "field": "scales",
+        "format": "pair",
+        "pairIndex": 1,
+        "position": {
+          "x": 730,
+          "y": 849
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBoldSmallCaps",
+          "fontSize": 57,
+          "textAnchor": "middle",
+          "fontAssetId": "font.matrix-bold-small-caps"
+        }
+      },
+      {
+        "id": "pendulumEffect",
+        "kind": "text",
+        "label": "Pendulum effect text",
+        "group": "Card text",
+        "defaultVisible": false,
+        "field": "pendulumEffect",
+        "format": "lines",
+        "position": {
+          "x": 130,
+          "y": 748
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBook",
+          "fontSize": 30,
+          "lineHeight": 30,
+          "maxHeight": 112,
+          "maxWidth": 556,
+          "textAlign": "justify",
+          "verticalAnchor": "top",
+          "wrap": "word",
+          "fitProfiles": [
+            {
+              "id": "large",
+              "label": "Large",
+              "fontSize": 30,
+              "lineHeight": 29.5,
+              "maxLines": 7
+            },
+            {
+              "id": "medium",
+              "label": "Medium",
+              "fontSize": 24.4,
+              "lineHeight": 25,
+              "maxLines": 8
+            },
+            {
+              "id": "small",
+              "label": "Small",
+              "fontSize": 21,
+              "lineHeight": 21,
+              "maxLines": 9
+            }
+          ],
+          "autoScaleXQuantifier": 0.01,
+          "maxAutoCompressionX": 0.2,
+          "fontAssetId": "font.matrix-book"
+        },
+        "semanticStyles": [
+          {
+            "id": "small",
+            "label": "Small Pendulum box",
+            "when": {
+              "path": "monster.pendulum.size",
+              "equals": "small"
+            },
+            "typography": {
+              "maxHeight": 72
+            }
+          },
+          {
+            "id": "medium",
+            "label": "Medium Pendulum box",
+            "when": {
+              "path": "monster.pendulum.size",
+              "equals": "medium"
+            },
+            "typography": {
+              "maxHeight": 127
+            }
+          },
+          {
+            "id": "large",
+            "label": "Large Pendulum box",
+            "when": {
+              "path": "monster.pendulum.size",
+              "equals": "large"
+            },
+            "typography": {
+              "maxHeight": 160
+            }
+          }
+        ]
+      },
+      {
+        "id": "typeLine",
+        "kind": "text",
+        "label": "Type line",
+        "group": "Card text",
+        "field": "types",
+        "format": "type-list",
+        "position": {
+          "x": 63.5,
+          "y": 918
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "StoneSerifITCTTBold-ArtificialSC",
+          "fontSize": 31,
+          "fit": "scale-x",
+          "maxWidth": 680,
+          "letterSpacing": 0.25,
+          "fitProfiles": [
+            {
+              "id": "type-big",
+              "label": "Type big",
+              "fontSize": 31
+            },
+            {
+              "id": "type-small",
+              "label": "Type small",
+              "fontSize": 24
+            }
+          ],
+          "autoScaleXQuantifier": 0.01,
+          "maxAutoCompressionX": 0.2,
+          "fontAssetId": "font.stone-serif-itc-tt-sc-bold"
+        }
+      },
+      {
+        "id": "description",
+        "kind": "text",
+        "label": "Monster text",
+        "group": "Card text",
+        "field": "description",
+        "format": "lines",
+        "position": {
+          "x": 65.5,
+          "y": 922
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBook",
+          "fontSize": 30,
+          "lineHeight": 30,
+          "maxHeight": 160,
+          "maxWidth": 684,
+          "textAlign": "justify",
+          "verticalAnchor": "top",
+          "wrap": "word",
+          "fitProfiles": [
+            {
+              "id": "large",
+              "label": "Large",
+              "fontSize": 30,
+              "lineHeight": 30,
+              "maxLines": 5
+            },
+            {
+              "id": "medium",
+              "label": "Medium",
+              "fontSize": 24.4,
+              "lineHeight": 25,
+              "maxLines": 6
+            },
+            {
+              "id": "small",
+              "label": "Small",
+              "fontSize": 21,
+              "lineHeight": 22,
+              "maxLines": 7
+            },
+            {
+              "id": "extra-small",
+              "label": "Extra Small",
+              "fontSize": 17,
+              "lineHeight": 16.67,
+              "maxLines": 9
+            }
+          ],
+          "autoScaleXQuantifier": 0.01,
+          "maxAutoCompressionX": 0.2,
+          "fontAssetId": "font.matrix-book"
+        },
+        "semanticStyles": [
+          {
+            "id": "lore",
+            "label": "Lore text",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.frame",
+                  "equals": "normal"
+                },
+                {
+                  "any": [
+                    {
+                      "path": "monster.pendulum",
+                      "equals": false
+                    },
+                    {
+                      "path": "monster.pendulumSupported",
+                      "equals": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fontFamily": "ITCStoneSerifMediumItalic",
+              "fontSize": 28,
+              "lineHeight": 28,
+              "maxWidth": 690,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                  "maxLines": 2
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 26.5,
+                  "lineHeight": 27,
+                  "maxLines": 3
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 25,
+                  "lineHeight": 25.5,
+                  "maxLines": 4
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 22,
+                  "lineHeight": 22.5,
+                  "maxLines": 5
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2,
+              "fontAssetId": "font.itc-stone-serif-medium-italic"
+            }
+          },
+          {
+            "id": "extra-deck",
+            "label": "Extra Deck monster text",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "fusion",
+                    "synchro",
+                    "xyz",
+                    "link"
+                  ]
+                },
+                {
+                  "any": [
+                    {
+                      "path": "monster.pendulum",
+                      "equals": false
+                    },
+                    {
+                      "path": "monster.pendulumSupported",
+                      "equals": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fitBlocks": {
+                "split": "leading-authored-line",
+                "leading": {
+                  "mode": "prefer-lines",
+                  "preferredMaxLines": 1
+                },
+                "remainder": {
+                  "mode": "layer-fit"
+                }
+              }
+            }
+          },
+          {
+            "id": "pendulum-small-main-deck",
+            "label": "Effect/Ritual Pendulum text (small box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "small"
+                },
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "effect",
+                    "ritual"
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "maxHeight": 160,
+              "fitProfileOverrides": {
+                "small": {
+                  "lineHeight": 21.5
+                }
+              }
+            }
+          },
+          {
+            "id": "pendulum-medium-main-deck",
+            "label": "Effect/Ritual Pendulum text (medium box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "medium"
+                },
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "effect",
+                    "ritual"
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "maxHeight": 160,
+              "fitProfileOverrides": {
+                "small": {
+                  "lineHeight": 21.5
+                }
+              }
+            }
+          },
+          {
+            "id": "pendulum-large-main-deck",
+            "label": "Effect/Ritual Pendulum text (large box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "large"
+                },
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "effect",
+                    "ritual"
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "maxHeight": 125,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 30,
+                  "lineHeight": 30,
+                  "maxLines": 4
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 24.4,
+                  "lineHeight": 25,
+                  "maxLines": 5
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 21,
+                  "lineHeight": 22,
+                  "maxLines": 6
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 17,
+                  "lineHeight": 16.5,
+                  "maxLines": 7
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2
+            }
+          },
+          {
+            "id": "pendulum-small-lore",
+            "label": "Normal Pendulum lore (small box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "small"
+                },
+                {
+                  "path": "monster.frame",
+                  "equals": "normal"
+                }
+              ]
+            },
+            "typography": {
+              "fontFamily": "ITCStoneSerifMediumItalic",
+              "fontSize": 28,
+              "lineHeight": 28,
+              "maxWidth": 690,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                  "maxLines": 2
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 26.5,
+                  "lineHeight": 27,
+                  "maxLines": 3
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 25,
+                  "lineHeight": 25.5,
+                  "maxLines": 4
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 22,
+                  "lineHeight": 22.5,
+                  "maxLines": 5
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2,
+              "fontAssetId": "font.itc-stone-serif-medium-italic"
+            }
+          },
+          {
+            "id": "pendulum-medium-lore",
+            "label": "Normal Pendulum lore (medium box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "medium"
+                },
+                {
+                  "path": "monster.frame",
+                  "equals": "normal"
+                }
+              ]
+            },
+            "typography": {
+              "fontFamily": "ITCStoneSerifMediumItalic",
+              "fontSize": 28,
+              "lineHeight": 28,
+              "maxWidth": 690,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                  "maxLines": 2
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 26.5,
+                  "lineHeight": 27,
+                  "maxLines": 3
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 25,
+                  "lineHeight": 25.5,
+                  "maxLines": 4
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 22,
+                  "lineHeight": 22.5,
+                  "maxLines": 5
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2,
+              "fontAssetId": "font.itc-stone-serif-medium-italic"
+            }
+          },
+          {
+            "id": "pendulum-large-lore",
+            "label": "Normal Pendulum lore (large box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "large"
+                },
+                {
+                  "path": "monster.frame",
+                  "equals": "normal"
+                }
+              ]
+            },
+            "typography": {
+              "fontFamily": "ITCStoneSerifMediumItalic",
+              "fontSize": 28,
+              "lineHeight": 28,
+              "maxWidth": 690,
+              "maxHeight": 125,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                  "maxLines": 2
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 26.5,
+                  "lineHeight": 27,
+                  "maxLines": 3
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 25,
+                  "lineHeight": 25.5,
+                  "maxLines": 4
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 22,
+                  "lineHeight": 22.5,
+                  "maxLines": 5
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2,
+              "fontAssetId": "font.itc-stone-serif-medium-italic"
+            }
+          },
+          {
+            "id": "pendulum-small",
+            "label": "Extra Deck Pendulum text (small box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "small"
+                },
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "fusion",
+                    "synchro",
+                    "xyz"
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fitBlocks": {
+                "split": "leading-authored-line",
+                "leading": {
+                  "mode": "prefer-lines",
+                  "preferredMaxLines": 1
+                },
+                "remainder": {
+                  "mode": "layer-fit"
+                }
+              },
+              "maxHeight": 160,
+              "fitProfileOverrides": {
+                "small": {
+                  "lineHeight": 21.5
+                }
+              }
+            }
+          },
+          {
+            "id": "pendulum-medium",
+            "label": "Extra Deck Pendulum text (medium box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "medium"
+                },
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "fusion",
+                    "synchro",
+                    "xyz"
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fitBlocks": {
+                "split": "leading-authored-line",
+                "leading": {
+                  "mode": "prefer-lines",
+                  "preferredMaxLines": 1
+                },
+                "remainder": {
+                  "mode": "layer-fit"
+                }
+              },
+              "maxHeight": 160,
+              "fitProfileOverrides": {
+                "small": {
+                  "lineHeight": 21.5
+                }
+              }
+            }
+          },
+          {
+            "id": "pendulum-large",
+            "label": "Extra Deck Pendulum text (large box)",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulum.size",
+                  "equals": "large"
+                },
+                {
+                  "path": "monster.frame",
+                  "in": [
+                    "fusion",
+                    "synchro",
+                    "xyz"
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fitBlocks": {
+                "split": "leading-authored-line",
+                "leading": {
+                  "mode": "prefer-lines",
+                  "preferredMaxLines": 1
+                },
+                "remainder": {
+                  "mode": "layer-fit"
+                }
+              },
+              "maxHeight": 125,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 30,
+                  "lineHeight": 30,
+                  "maxLines": 4
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 24.4,
+                  "lineHeight": 25,
+                  "maxLines": 5
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 21,
+                  "lineHeight": 22,
+                  "maxLines": 6
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 17,
+                  "lineHeight": 16.5,
+                  "maxLines": 7
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2
+            }
+          },
+          {
+            "id": "spell",
+            "label": "Spell text",
+            "when": {
+              "path": "kind",
+              "equals": "spell"
+            },
+            "typography": {
+              "maxHeight": 210,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 30,
+                  "lineHeight": 30,
+                  "maxLines": 7
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 24.4,
+                  "lineHeight": 25,
+                  "maxLines": 8
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 21,
+                  "lineHeight": 22,
+                  "maxLines": 9
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 17,
+                  "lineHeight": 16.67,
+                  "maxLines": 10
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2
+            }
+          },
+          {
+            "id": "trap",
+            "label": "Trap text",
+            "when": {
+              "path": "kind",
+              "equals": "trap"
+            },
+            "typography": {
+              "maxHeight": 210,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 30,
+                  "lineHeight": 30,
+                  "maxLines": 7
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 24.4,
+                  "lineHeight": 25,
+                  "maxLines": 8
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 21,
+                  "lineHeight": 22,
+                  "maxLines": 9
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 17,
+                  "lineHeight": 16.67,
+                  "maxLines": 10
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2
+            }
+          },
+          {
+            "id": "token",
+            "label": "Token text",
+            "when": {
+              "path": "monster.frame",
+              "equals": "token"
+            },
+            "typography": {
+              "maxHeight": 184,
+              "fitProfiles": [
+                {
+                  "id": "large",
+                  "label": "Large",
+                  "fontSize": 30,
+                  "lineHeight": 30,
+                  "maxLines": 5
+                },
+                {
+                  "id": "medium",
+                  "label": "Medium",
+                  "fontSize": 24.4,
+                  "lineHeight": 25,
+                  "maxLines": 7
+                },
+                {
+                  "id": "small",
+                  "label": "Small",
+                  "fontSize": 21,
+                  "lineHeight": 22,
+                  "maxLines": 8
+                },
+                {
+                  "id": "extra-small",
+                  "label": "Extra Small",
+                  "fontSize": 17,
+                  "lineHeight": 16.67,
+                  "maxLines": 9
+                }
+              ],
+              "autoScaleXQuantifier": 0.01,
+              "maxAutoCompressionX": 0.2
+            }
+          }
+        ]
+      },
+      {
+        "id": "statsSeparator",
+        "kind": "svg",
+        "label": "Stats separator",
+        "group": "Card text",
+        "element": {
+          "tag": "rect",
+          "attributes": {
+            "x": 65,
+            "y": 1076,
+            "width": 683,
+            "height": 2,
+            "fill": "#151515"
+          }
+        }
+      },
+      {
+        "id": "atkLabel",
+        "kind": "text",
+        "label": "ATK label",
+        "group": "Card text",
+        "semanticPath": "monster.atkLabel",
+        "position": {
+          "x": 432,
+          "y": 1106
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBoldSmallCaps",
+          "fontSize": 37,
+          "fontAssetId": "font.matrix-bold-small-caps"
+        }
+      },
+      {
+        "id": "atk",
+        "kind": "text",
+        "label": "ATK value",
+        "group": "Card text",
+        "field": "attack",
+        "position": {
+          "x": 583,
+          "y": 1106
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBoldSmallCaps",
+          "fontSize": 37,
+          "fit": "scale-x",
+          "maxWidth": 74,
+          "textAnchor": "end",
+          "fontAssetId": "font.matrix-bold-small-caps"
+        }
+      },
+      {
+        "id": "defLabel",
+        "kind": "text",
+        "label": "DEF label",
+        "group": "Card text",
+        "semanticPath": "monster.defLabel",
+        "position": {
+          "x": 600,
+          "y": 1106
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBoldSmallCaps",
+          "fontSize": 37,
+          "fontAssetId": "font.matrix-bold-small-caps"
+        }
+      },
+      {
+        "id": "def",
+        "kind": "text",
+        "label": "DEF value",
+        "group": "Card text",
+        "field": "defense",
+        "position": {
+          "x": 748,
+          "y": 1106
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "MatrixBoldSmallCaps",
+          "fontSize": 37,
+          "fit": "scale-x",
+          "maxWidth": 74,
+          "textAnchor": "end",
+          "fontAssetId": "font.matrix-bold-small-caps"
+        }
+      },
+      {
+        "id": "link",
+        "kind": "text",
+        "label": "LINK value",
+        "group": "Card text",
+        "field": "link",
+        "semanticPath": "monster.link.rating",
+        "prefix": "<scale x=\"1.35\">",
+        "suffix": "</scale>",
+        "defaultVisible": false,
+        "position": {
+          "x": 747,
+          "y": 1105.5
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "RoGSanSrfStd-Bd",
+          "fontSize": 25,
+          "textAnchor": "end",
+          "fontAssetId": "font.rogsansrfstd-bd"
+        }
+      },
+      {
+        "id": "linkLabel",
+        "kind": "text",
+        "label": "LINK label",
+        "group": "Card text",
+        "semanticPath": "monster.link.label",
+        "prefix": "<scale x=\"1.35\">",
+        "suffix": "</scale>",
+        "defaultVisible": false,
+        "position": {
+          "x": 718,
+          "y": 1105.5
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "RoGSanSrfStd-Bd",
+          "fontSize": 25,
+          "textAnchor": "end",
+          "fontAssetId": "font.rogsansrfstd-bd"
+        }
+      },
+      {
+        "id": "cardCode",
+        "kind": "text",
+        "label": "Set code",
+        "group": "Card text",
+        "field": "cardCode",
+        "position": {
+          "x": 727,
+          "y": 870
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "ITCStoneSerifMedium",
+          "fontSize": 23,
+          "textAnchor": "end",
+          "letterSpacing": 0,
+          "fontAssetId": "font.itc-stone-serif-medium"
+        },
+        "semanticStyles": [
+          {
+            "id": "xyz",
+            "label": "XYZ card text",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.frame",
+                  "equals": "xyz"
+                },
+                {
+                  "any": [
+                    {
+                      "path": "monster.pendulum",
+                      "equals": false
+                    },
+                    {
+                      "path": "monster.pendulumSupported",
+                      "equals": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fill": "#ffffff"
+            }
+          },
+          {
+            "id": "pendulum",
+            "label": "Pendulum card text",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": true
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": true
+                }
+              ]
+            },
+            "typography": {
+              "fill": "#111111",
+              "textAnchor": "start"
+            }
+          }
+        ]
+      },
+      {
+        "id": "serialNumber",
+        "kind": "text",
+        "label": "Passcode",
+        "group": "Card text",
+        "field": "serialNumber",
+        "position": {
+          "x": 36,
+          "y": 1149
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "ITCStoneSerifMedium",
+          "fontSize": 23,
+          "fontAssetId": "font.itc-stone-serif-medium"
+        },
+        "semanticStyles": [
+          {
+            "id": "xyz",
+            "label": "XYZ card text",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.frame",
+                  "equals": "xyz"
+                },
+                {
+                  "any": [
+                    {
+                      "path": "monster.pendulum",
+                      "equals": false
+                    },
+                    {
+                      "path": "monster.pendulumSupported",
+                      "equals": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fill": "#ffffff"
+            }
+          }
+        ]
+      },
+      {
+        "id": "edition",
+        "kind": "text",
+        "label": "Edition",
+        "group": "Card text",
+        "field": "edition",
+        "position": {
+          "x": 156,
+          "y": 1148.75
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "Stone Serif ITC Semi",
+          "fontSize": 24,
+          "textAnchor": "start",
+          "fontAssetId": "font.stone-serif-itc-semi"
+        },
+        "semanticStyles": [
+          {
+            "id": "xyz",
+            "label": "XYZ card text",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.frame",
+                  "equals": "xyz"
+                },
+                {
+                  "any": [
+                    {
+                      "path": "monster.pendulum",
+                      "equals": false
+                    },
+                    {
+                      "path": "monster.pendulumSupported",
+                      "equals": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fill": "#ffffff"
+            }
+          }
+        ]
+      },
+      {
+        "id": "copyright",
+        "kind": "text",
+        "label": "Copyright",
+        "group": "Card text",
+        "field": "copyright",
+        "position": {
+          "x": 732,
+          "y": 1147
+        },
+        "typography": {
+          "fill": "#111111",
+          "fontFamily": "ITCStoneSerifMedium",
+          "fontSize": 21,
+          "textAnchor": "end",
+          "letterSpacing": 0.2,
+          "fontAssetId": "font.itc-stone-serif-medium"
+        },
+        "semanticStyles": [
+          {
+            "id": "xyz",
+            "label": "XYZ card text",
+            "when": {
+              "all": [
+                {
+                  "path": "monster.frame",
+                  "equals": "xyz"
+                },
+                {
+                  "any": [
+                    {
+                      "path": "monster.pendulum",
+                      "equals": false
+                    },
+                    {
+                      "path": "monster.pendulumSupported",
+                      "equals": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "typography": {
+              "fill": "#ffffff"
+            }
+          }
+        ]
+      }
+    ],
+    "presentationRules": [
+      {
+        "id": "spell-card",
+        "when": {
+          "path": "kind",
+          "equals": "spell"
+        },
+        "presets": {
+          "frame": "spell-frame-s10",
+          "effect-box": "spell-effect-box-s10"
+        },
+        "maskSelections": {
+          "frameTexture": "artwork-mask"
+        },
+        "layerVisibility": {
+          "frameTexture": true,
+          "linkFrame": false,
+          "xyzFrame": false,
+          "attributeDark": false,
+          "attributeDivine": false,
+          "attributeEarth": false,
+          "attributeFire": false,
+          "attributeLight": false,
+          "attributeSpell": true,
+          "attributeTrap": false,
+          "attributeWater": false,
+          "attributeWind": false,
+          "attribute": true,
+          "attributeGlyph": true,
+          "levelStar": false,
+          "rankStar": false,
+          "statsSeparator": false,
+          "atkLabel": false,
+          "atk": false,
+          "defLabel": false,
+          "def": false,
+          "link": false,
+          "linkLabel": false,
+          "typeLine": false,
+          "spellTrapLabelSpell": true,
+          "spellTrapLabelTrap": false
+        },
+        "textValues": {
+          "attribute": "SPELL",
+          "attributeGlyph": "魔"
+        },
+        "textPositions": {
+          "description": {
+            "x": 65.5,
+            "y": 890
+          },
+          "attributeGlyph": {
+            "x": 714,
+            "y": 119
+          }
+        }
+      },
+      {
+        "id": "trap-card",
+        "when": {
+          "path": "kind",
+          "equals": "trap"
+        },
+        "presets": {
+          "frame": "trap-frame-s10",
+          "effect-box": "trap-effect-box-s10"
+        },
+        "maskSelections": {
+          "frameTexture": "artwork-mask"
+        },
+        "layerVisibility": {
+          "frameTexture": true,
+          "linkFrame": false,
+          "xyzFrame": false,
+          "attributeDark": false,
+          "attributeDivine": false,
+          "attributeEarth": false,
+          "attributeFire": false,
+          "attributeLight": false,
+          "attributeSpell": false,
+          "attributeTrap": true,
+          "attributeWater": false,
+          "attributeWind": false,
+          "attribute": true,
+          "attributeGlyph": true,
+          "levelStar": false,
+          "rankStar": false,
+          "statsSeparator": false,
+          "atkLabel": false,
+          "atk": false,
+          "defLabel": false,
+          "def": false,
+          "link": false,
+          "linkLabel": false,
+          "typeLine": false,
+          "spellTrapLabelSpell": false,
+          "spellTrapLabelTrap": true
+        },
+        "textValues": {
+          "attribute": "TRAP",
+          "attributeGlyph": "罠"
+        },
+        "textPositions": {
+          "description": {
+            "x": 65.5,
+            "y": 890
+          }
+        }
+      },
+      {
+        "id": "spell-trap-icon-continuous",
+        "when": {
+          "path": "spellTrap.type",
+          "equals": "continuous"
+        },
+        "layerVisibility": {
+          "spellTrapIconContinuous": true
+        }
+      },
+      {
+        "id": "spell-trap-icon-counter",
+        "when": {
+          "path": "spellTrap.type",
+          "equals": "counter"
+        },
+        "layerVisibility": {
+          "spellTrapIconCounter": true
+        }
+      },
+      {
+        "id": "spell-trap-icon-equip",
+        "when": {
+          "path": "spellTrap.type",
+          "equals": "equip"
+        },
+        "layerVisibility": {
+          "spellTrapIconEquip": true
+        }
+      },
+      {
+        "id": "spell-trap-icon-field",
+        "when": {
+          "path": "spellTrap.type",
+          "equals": "field"
+        },
+        "layerVisibility": {
+          "spellTrapIconField": true
+        }
+      },
+      {
+        "id": "spell-trap-icon-quick-play",
+        "when": {
+          "path": "spellTrap.type",
+          "equals": "quick-play"
+        },
+        "layerVisibility": {
+          "spellTrapIconQuickPlay": true
+        }
+      },
+      {
+        "id": "spell-trap-icon-ritual",
+        "when": {
+          "path": "spellTrap.type",
+          "equals": "ritual"
+        },
+        "layerVisibility": {
+          "spellTrapIconRitual": true
+        }
+      },
+      {
+        "id": "monster-attribute-text",
+        "when": {
+          "path": "kind",
+          "equals": "monster"
+        },
+        "layerVisibility": {
+          "attribute": true,
+          "attributeGlyph": true
+        }
+      },
+      {
+        "id": "monster-attribute-dark",
+        "when": {
+          "path": "monster.attribute",
+          "equals": "DARK"
+        },
+        "layerVisibility": {
+          "attributeDark": true
+        }
+      },
+      {
+        "id": "monster-attribute-divine",
+        "when": {
+          "path": "monster.attribute",
+          "equals": "DIVINE"
+        },
+        "layerVisibility": {
+          "attributeDivine": true
+        }
+      },
+      {
+        "id": "monster-attribute-earth",
+        "when": {
+          "path": "monster.attribute",
+          "equals": "EARTH"
+        },
+        "layerVisibility": {
+          "attributeEarth": true
+        }
+      },
+      {
+        "id": "monster-attribute-fire",
+        "when": {
+          "path": "monster.attribute",
+          "equals": "FIRE"
+        },
+        "layerVisibility": {
+          "attributeFire": true
+        }
+      },
+      {
+        "id": "monster-attribute-light",
+        "when": {
+          "path": "monster.attribute",
+          "equals": "LIGHT"
+        },
+        "layerVisibility": {
+          "attributeLight": true
+        }
+      },
+      {
+        "id": "monster-attribute-water",
+        "when": {
+          "path": "monster.attribute",
+          "equals": "WATER"
+        },
+        "layerVisibility": {
+          "attributeWater": true
+        }
+      },
+      {
+        "id": "monster-attribute-wind",
+        "when": {
+          "path": "monster.attribute",
+          "equals": "WIND"
+        },
+        "layerVisibility": {
+          "attributeWind": true
+        }
+      },
+      {
+        "id": "monster-pendulum",
+        "when": {
+          "all": [
+            {
+              "path": "kind",
+              "equals": "monster"
+            },
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "maskSelections": {
+          "pendulumMonsterFrameTexture": "pendulum-artwork-cutout",
+          "pendulumSpellFrameTexture": "pendulum-frame-spell",
+          "pendulumXyzFrameTexture": "pendulum-artwork-cutout",
+          "pendulumArtwork": "pendulum-artwork-mask"
+        },
+        "textPositions": {
+          "cardCode": {
+            "x": 68,
+            "y": 1105.5
+          }
+        },
+        "layerVisibility": {
+          "frameTexture": false,
+          "linkFrame": false,
+          "artwork": false,
+          "artworkBox": false,
+          "effectBorder": false,
+          "outerBevel": false,
+          "pendulumSpellFrameTexture": true,
+          "pendulumArtwork": true,
+          "pendulumBorder": true,
+          "pendulumEffect": true,
+          "pendulumScaleMarkerLeft": true,
+          "pendulumScaleMarkerRight": true,
+          "pendulumScaleLeft": true,
+          "pendulumScaleRight": true,
+          "typeLine": true,
+          "description": true,
+          "atk": true,
+          "atkLabel": true,
+          "def": true,
+          "defLabel": true,
+          "link": false,
+          "linkLabel": false,
+          "statsSeparator": true
+        }
+      },
+      {
+        "id": "monster-pendulum-frame-texture",
+        "when": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            },
+            {
+              "path": "monster.frame",
+              "in": [
+                "normal",
+                "effect",
+                "ritual",
+                "fusion",
+                "synchro"
+              ]
+            }
+          ]
+        },
+        "layerVisibility": {
+          "pendulumMonsterFrameTexture": true
+        }
+      },
+      {
+        "id": "monster-pendulum-level-stars",
+        "when": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            },
+            {
+              "path": "monster.frame",
+              "in": [
+                "normal",
+                "effect",
+                "ritual",
+                "fusion",
+                "synchro"
+              ]
+            }
+          ]
+        },
+        "layerVisibility": {
+          "levelStar": true
+        }
+      },
+      {
+        "id": "monster-pendulum-xyz",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "xyz"
+            },
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "layerVisibility": {
+          "xyzFrame": false,
+          "pendulumMonsterFrameTexture": false,
+          "pendulumXyzFrameTexture": true,
+          "rankStar": true
+        },
+        "layerOptions": {
+          "titleBevel": {
+            "highlightColor": "#efdfdf52",
+            "shadowColor": "#5a47475e"
+          }
+        }
+      },
+      {
+        "id": "monster-pendulum-spell-effect-box",
+        "when": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            },
+            {
+              "path": "monster.frame",
+              "in": [
+                "normal",
+                "effect",
+                "ritual",
+                "fusion",
+                "synchro",
+                "xyz"
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "effect-box": "spell-effect-box-s10"
+        }
+      },
+      {
+        "id": "monster-pendulum-frame-normal",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "normal"
+            },
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "presets": {
+          "frame": "normal-frame-s10"
+        }
+      },
+      {
+        "id": "monster-pendulum-frame-ritual",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "ritual"
+            },
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "presets": {
+          "frame": "ritual-frame-s10"
+        }
+      },
+      {
+        "id": "monster-pendulum-frame-fusion",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "fusion"
+            },
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "presets": {
+          "frame": "fusion-frame-s10"
+        }
+      },
+      {
+        "id": "monster-pendulum-frame-synchro",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "synchro"
+            },
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            }
+          ]
+        },
+        "presets": {
+          "frame": "synchro-frame-s10"
+        }
+      },
+      {
+        "id": "monster-pendulum-size-small",
+        "when": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulum.size",
+              "equals": "small"
+            }
+          ]
+        },
+        "assetSelections": {
+          "pendulumBorder": "card.series-10.pendulum-border.small"
+        },
+        "maskSelections": {
+          "pendulumEffectTexture": "pendulum-effect-box-small"
+        },
+        "layerVisibility": {
+          "effectBoxTexture": true,
+          "pendulumEffectTexture": true,
+          "pendulumEffectTextureLarge": false
+        },
+        "layerRegions": {
+          "pendulumScaleMarkerLeft": {
+            "x": 59,
+            "y": 793,
+            "width": 51,
+            "height": 39
+          },
+          "pendulumScaleMarkerRight": {
+            "x": 704,
+            "y": 793,
+            "width": 51,
+            "height": 39
+          }
+        },
+        "textPositions": {
+          "pendulumEffect": {
+            "x": 130,
+            "y": 788
+          },
+          "pendulumScaleLeft": {
+            "x": 85,
+            "y": 870
+          },
+          "pendulumScaleRight": {
+            "x": 730,
+            "y": 870
+          },
+          "typeLine": {
+            "x": 63.5,
+            "y": 918
+          },
+          "description": {
+            "x": 65.5,
+            "y": 922
+          }
+        }
+      },
+      {
+        "id": "monster-pendulum-size-medium",
+        "when": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulum.size",
+              "equals": "medium"
+            }
+          ]
+        },
+        "assetSelections": {
+          "pendulumBorder": "card.series-10.pendulum-border.medium"
+        },
+        "maskSelections": {
+          "pendulumEffectTexture": "pendulum-effect-box-medium"
+        },
+        "layerVisibility": {
+          "effectBoxTexture": true,
+          "pendulumEffectTexture": true,
+          "pendulumEffectTextureLarge": false
+        },
+        "layerRegions": {
+          "pendulumScaleMarkerLeft": {
+            "x": 59,
+            "y": 769,
+            "width": 51,
+            "height": 39
+          },
+          "pendulumScaleMarkerRight": {
+            "x": 704,
+            "y": 769,
+            "width": 51,
+            "height": 39
+          }
+        },
+        "textPositions": {
+          "pendulumEffect": {
+            "x": 130,
+            "y": 746
+          },
+          "pendulumScaleLeft": {
+            "x": 85,
+            "y": 849
+          },
+          "pendulumScaleRight": {
+            "x": 730,
+            "y": 849
+          },
+          "typeLine": {
+            "x": 63.5,
+            "y": 918
+          },
+          "description": {
+            "x": 65.5,
+            "y": 922
+          }
+        }
+      },
+      {
+        "id": "monster-pendulum-size-large",
+        "when": {
+          "all": [
+            {
+              "path": "monster.pendulum",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulumSupported",
+              "equals": true
+            },
+            {
+              "path": "monster.pendulum.size",
+              "equals": "large"
+            }
+          ]
+        },
+        "assetSelections": {
+          "pendulumBorder": "card.series-10.pendulum-border.large"
+        },
+        "maskSelections": {
+          "effectBoxTexture": "pendulum-effect-box-large-lower",
+          "pendulumEffectTextureLarge": "pendulum-effect-box-large"
+        },
+        "layerVisibility": {
+          "effectBoxTexture": true,
+          "pendulumEffectTexture": false,
+          "pendulumEffectTextureLarge": true
+        },
+        "layerRegions": {
+          "pendulumScaleMarkerLeft": {
+            "x": 59,
+            "y": 785,
+            "width": 51,
+            "height": 39
+          },
+          "pendulumScaleMarkerRight": {
+            "x": 704,
+            "y": 785,
+            "width": 51,
+            "height": 39
+          }
+        },
+        "textPositions": {
+          "pendulumEffect": {
+            "x": 130,
+            "y": 748
+          },
+          "pendulumScaleLeft": {
+            "x": 85,
+            "y": 865
+          },
+          "pendulumScaleRight": {
+            "x": 730,
+            "y": 865
+          },
+          "typeLine": {
+            "x": 63.5,
+            "y": 948
+          },
+          "description": {
+            "x": 65.5,
+            "y": 952
+          }
+        }
+      },
+      {
+        "id": "monster-standard-non-pendulum",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "in": [
+                "normal",
+                "effect",
+                "ritual",
+                "fusion",
+                "synchro"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "maskSelections": {
+          "frameTexture": "artwork-mask"
+        },
+        "layerVisibility": {
+          "atk": true,
+          "atkLabel": true,
+          "def": true,
+          "defLabel": true,
+          "frameTexture": true,
+          "levelStar": true,
+          "link": false,
+          "linkLabel": false,
+          "linkFrame": false,
+          "rankStar": false,
+          "statsSeparator": true
+        }
+      },
+      {
+        "id": "monster-normal",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "normal"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "frame": "normal-frame-s10",
+          "effect-box": "normal-effect-box-s10"
+        }
+      },
+      {
+        "id": "monster-effect",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "effect"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "effect-box": "effect-box-s10"
+        }
+      },
+      {
+        "id": "monster-ritual",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "ritual"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "frame": "ritual-frame-s10",
+          "effect-box": "ritual-effect-box-s10"
+        }
+      },
+      {
+        "id": "monster-fusion",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "fusion"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "frame": "fusion-frame-s10",
+          "effect-box": "fusion-effect-box-s10"
+        }
+      },
+      {
+        "id": "monster-synchro",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "synchro"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "frame": "synchro-frame-s10",
+          "effect-box": "synchro-effect-box-s10"
+        }
+      },
+      {
+        "id": "monster-xyz",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "xyz"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "maskSelections": {
+          "xyzFrame": "artwork-mask"
+        },
+        "layerVisibility": {
+          "atk": true,
+          "atkLabel": true,
+          "def": true,
+          "defLabel": true,
+          "effectBoxTexture": false,
+          "frameTexture": false,
+          "levelStar": false,
+          "link": false,
+          "linkLabel": false,
+          "linkFrame": false,
+          "rankStar": true,
+          "statsSeparator": true,
+          "xyzEffectBoxOverlay": true,
+          "xyzFrame": true
+        },
+        "layerOptions": {
+          "outerBevel": {
+            "highlightColor": "#efdfdf52",
+            "shadowColor": "#5a47475e"
+          },
+          "titleBevel": {
+            "highlightColor": "#efdfdf52",
+            "shadowColor": "#5a47475e"
+          }
+        }
+      },
+      {
+        "id": "monster-link",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "link"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "effect-box": "link-effect-box-s10"
+        },
+        "maskSelections": {
+          "linkFrame": "artwork-mask",
+          "linkArrowLayers": "link-arrows"
+        },
+        "layerVisibility": {
+          "atk": true,
+          "atkLabel": true,
+          "def": false,
+          "defLabel": false,
+          "frameTexture": false,
+          "levelStar": false,
+          "link": true,
+          "linkLabel": true,
+          "linkFrame": true,
+          "rankStar": false,
+          "statsSeparator": true
+        },
+        "layerOptions": {
+          "outerBevel": {
+            "highlightColor": "#ffe0f052"
+          },
+          "titleBevel": {
+            "highlightColor": "#ffe0f052"
+          }
+        },
+        "textPositions": {
+          "cardCode": {
+            "x": 666,
+            "y": 870
+          }
+        }
+      },
+      {
+        "id": "monster-token",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "token"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "frame": "token-frame-s10",
+          "effect-box": "token-effect-box-s10"
+        },
+        "maskSelections": {
+          "frameTexture": "artwork-mask"
+        },
+        "layerVisibility": {
+          "atk": false,
+          "atkLabel": false,
+          "def": false,
+          "defLabel": false,
+          "frameTexture": true,
+          "levelStar": false,
+          "link": false,
+          "linkLabel": false,
+          "linkFrame": false,
+          "rankStar": false,
+          "statsSeparator": false,
+          "typeLine": false
+        },
+        "textPositions": {
+          "description": {
+            "x": 65.5,
+            "y": 890
+          }
+        }
+      },
+      {
+        "id": "monster-token-with-stats",
+        "when": {
+          "all": [
+            {
+              "path": "monster.frame",
+              "equals": "token-with-stats"
+            },
+            {
+              "any": [
+                {
+                  "path": "monster.pendulum",
+                  "equals": false
+                },
+                {
+                  "path": "monster.pendulumSupported",
+                  "equals": false
+                }
+              ]
+            }
+          ]
+        },
+        "presets": {
+          "frame": "token-frame-s10",
+          "effect-box": "token-effect-box-s10"
+        },
+        "maskSelections": {
+          "frameTexture": "artwork-mask"
+        },
+        "layerVisibility": {
+          "atk": true,
+          "atkLabel": true,
+          "def": true,
+          "defLabel": true,
+          "frameTexture": true,
+          "levelStar": false,
+          "link": false,
+          "linkLabel": false,
+          "linkFrame": false,
+          "rankStar": false,
+          "statsSeparator": true,
+          "typeLine": true
+        }
+      },
+      {
+        "id": "link-arrow-top-left-active",
+        "when": {
+          "path": "monster.linkArrows.top-left",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowTopLeft": true,
+          "inactiveLinkArrowTopLeft": false
+        }
+      },
+      {
+        "id": "link-arrow-top-left-inactive",
+        "when": {
+          "path": "monster.linkArrows.top-left",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowTopLeft": false,
+          "inactiveLinkArrowTopLeft": true
+        }
+      },
+      {
+        "id": "link-arrow-top-center-active",
+        "when": {
+          "path": "monster.linkArrows.top-center",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowTopCenter": true,
+          "inactiveLinkArrowTopCenter": false
+        }
+      },
+      {
+        "id": "link-arrow-top-center-inactive",
+        "when": {
+          "path": "monster.linkArrows.top-center",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowTopCenter": false,
+          "inactiveLinkArrowTopCenter": true
+        }
+      },
+      {
+        "id": "link-arrow-top-right-active",
+        "when": {
+          "path": "monster.linkArrows.top-right",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowTopRight": true,
+          "inactiveLinkArrowTopRight": false
+        }
+      },
+      {
+        "id": "link-arrow-top-right-inactive",
+        "when": {
+          "path": "monster.linkArrows.top-right",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowTopRight": false,
+          "inactiveLinkArrowTopRight": true
+        }
+      },
+      {
+        "id": "link-arrow-right-center-active",
+        "when": {
+          "path": "monster.linkArrows.right-center",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowRightCenter": true,
+          "inactiveLinkArrowRightCenter": false
+        }
+      },
+      {
+        "id": "link-arrow-right-center-inactive",
+        "when": {
+          "path": "monster.linkArrows.right-center",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowRightCenter": false,
+          "inactiveLinkArrowRightCenter": true
+        }
+      },
+      {
+        "id": "link-arrow-bottom-right-active",
+        "when": {
+          "path": "monster.linkArrows.bottom-right",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowBottomRight": true,
+          "inactiveLinkArrowBottomRight": false
+        }
+      },
+      {
+        "id": "link-arrow-bottom-right-inactive",
+        "when": {
+          "path": "monster.linkArrows.bottom-right",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowBottomRight": false,
+          "inactiveLinkArrowBottomRight": true
+        }
+      },
+      {
+        "id": "link-arrow-bottom-center-active",
+        "when": {
+          "path": "monster.linkArrows.bottom-center",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowBottomCenter": true,
+          "inactiveLinkArrowBottomCenter": false
+        }
+      },
+      {
+        "id": "link-arrow-bottom-center-inactive",
+        "when": {
+          "path": "monster.linkArrows.bottom-center",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowBottomCenter": false,
+          "inactiveLinkArrowBottomCenter": true
+        }
+      },
+      {
+        "id": "link-arrow-bottom-left-active",
+        "when": {
+          "path": "monster.linkArrows.bottom-left",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowBottomLeft": true,
+          "inactiveLinkArrowBottomLeft": false
+        }
+      },
+      {
+        "id": "link-arrow-bottom-left-inactive",
+        "when": {
+          "path": "monster.linkArrows.bottom-left",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowBottomLeft": false,
+          "inactiveLinkArrowBottomLeft": true
+        }
+      },
+      {
+        "id": "link-arrow-left-center-active",
+        "when": {
+          "path": "monster.linkArrows.left-center",
+          "equals": true
+        },
+        "layerVisibility": {
+          "activeLinkArrowLeftCenter": true,
+          "inactiveLinkArrowLeftCenter": false
+        }
+      },
+      {
+        "id": "link-arrow-left-center-inactive",
+        "when": {
+          "path": "monster.linkArrows.left-center",
+          "equals": false
+        },
+        "layerVisibility": {
+          "activeLinkArrowLeftCenter": false,
+          "inactiveLinkArrowLeftCenter": true
+        }
+      }
+    ]
+  }
+]

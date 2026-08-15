@@ -1,0 +1,23 @@
+{
+  "id": "there-can-be-only-one",
+  "cardName": "There Can Be Only One",
+  "printing": {
+    "setName": "Extreme Force",
+    "setCode": "EXFO-EN076",
+    "edition": "1st Edition",
+    "databaseId": "24207889",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=There%20Can%20Be%20Only%20One"
+  },
+  "card": {
+    "name": "There Can Be Only One",
+    "cardVariant": "trap",
+    "description": [
+      "Each player can only control 1 monster of each Type. If a player controls 2 or more monsters of the same Type, they must send some to the GY so they control no more than 1 monster of that Type."
+    ],
+    "cardCode": "EXFO-EN076",
+    "serialNumber": "24207889",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "continuous"
+  }
+}

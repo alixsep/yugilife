@@ -1,0 +1,35 @@
+{
+  "id": "the-arrival-cyberse-at-ignister",
+  "cardName": "The Arrival Cyberse @Ignister",
+  "printing": {
+    "setName": "Eternity Code",
+    "setCode": "ETCO-EN050",
+    "edition": "1st Edition",
+    "databaseId": "11738489",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=The%20Arrival%20Cyberse%20%40Ignister"
+  },
+  "card": {
+    "name": "The Arrival Cyberse @Ignister",
+    "cardVariant": "link",
+    "attribute": "DARK",
+    "types": ["Cyberse", "Link", "Effect"],
+    "description": [
+      "3+ monsters with different Attributes\nYou can only control 1 \"The Arrival Cyberse @Ignister\". The original ATK of this card becomes 1000 x the number of Link Materials used for its Link Summon. Unaffected by other cards' effects. Once per turn: You can target 1 other monster on the field; destroy it, and if you do, Special Summon 1 \"@Ignister Token\" (Cyberse/DARK/Level 1/ATK 0/DEF 0) to your zone this card points to."
+    ],
+    "attack": "0",
+    "cardCode": "ETCO-EN050",
+    "serialNumber": "11738489",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "link": 0,
+    "linkArrows": [
+      "top-center",
+      "left-center",
+      "right-center",
+      "bottom-left",
+      "bottom-center",
+      "bottom-right"
+    ],
+    "pendulum": false
+  }
+}

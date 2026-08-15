@@ -1,0 +1,31 @@
+{
+  "id": "endymion-the-mighty-master-of-magic",
+  "cardName": "Endymion, the Mighty Master of Magic",
+  "printing": {
+    "setName": "Structure Deck: Order of the Spellcasters",
+    "setCode": "SR08-EN001",
+    "edition": "1st Edition",
+    "databaseId": "3611830",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Endymion%2C%20the%20Mighty%20Master%20of%20Magic"
+  },
+  "card": {
+    "name": "Endymion, the Mighty Master of Magic",
+    "cardVariant": "effect",
+    "attribute": "DARK",
+    "types": ["Spellcaster", "Pendulum", "Effect"],
+    "description": [
+      "Once per turn, when a Spell/Trap Card or effect is activated (Quick Effect): You can return 1 card you control with a Spell Counter to the hand, and if you do, negate the activation, and if you do that, destroy it. Then, you can place the same number of Spell Counters on this card that the returned card had. While this card has a Spell Counter, your opponent cannot target it with card effects, also it cannot be destroyed by your opponent's card effects. When this card with a Spell Counter is destroyed by battle: You can add 1 Normal Spell from your Deck to your hand."
+    ],
+    "attack": "2800",
+    "cardCode": "SR08-EN001",
+    "serialNumber": "3611830",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "1700",
+    "level": 7,
+    "pendulum": true,
+    "pendulumSize": "medium",
+    "scales": [8, 8],
+    "pendulumEffect": "You can remove 6 Spell Counters from your field; Special Summon this card from the Pendulum Zone, then count the number of cards you control that can have a Spell Counter, destroy up to that many cards on the field, and if you do, place Spell Counters on this card equal to the number of cards destroyed. You can only use this effect of \"Endymion, the Mighty Master of Magic\" once per turn."
+  }
+}

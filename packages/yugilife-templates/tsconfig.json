@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "yugilife-core": ["../yugilife-core/src/index.ts"]
+    },
+    "types": ["node", "vite/client"]
+  },
+  "include": [
+    "src",
+    "tests/**/*.ts",
+    "visual",
+    "playwright.visual.config.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
+}

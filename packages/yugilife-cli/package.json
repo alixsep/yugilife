@@ -1,0 +1,41 @@
+{
+  "name": "yugilife-cli",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "yugilife-cli": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "clean": "node ./scripts/clean.mjs",
+    "build": "pnpm clean && tsc -p tsconfig.build.json && node ./scripts/make-bin-executable.mjs && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --reporter=verbose",
+    "test:unit": "vitest run --reporter=verbose",
+    "verify:packed": "node ./scripts/verify-packed-consumer.mjs"
+  },
+  "dependencies": {
+    "@playwright/browser-chromium": "1.62.0",
+    "playwright-core": "1.62.0",
+    "yugilife-core": "workspace:*",
+    "yugilife-templates": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "typescript": "6.0.3",
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
+  }
+}

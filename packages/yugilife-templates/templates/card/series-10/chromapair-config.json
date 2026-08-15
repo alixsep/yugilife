@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "defaults": {
+    "source": "../../../shared/frame-texture.png",
+    "canvasSize": [813, 1185],
+    "sourceOrigin": [28, 28],
+    "areas": [35, 204, 67, 844],
+    "sampleSize": 8,
+    "metadata": {
+      "target": "frame"
+    }
+  },
+  "output": {
+    "directory": ".",
+    "combinedPresets": "color-presets.json",
+    "report": "report.json"
+  },
+  "jobs": [
+    {
+      "name": "normal-frame-s10",
+      "reference": "./references/bk_01.jpg"
+    },
+    {
+      "name": "synchro-frame-s10",
+      "reference": "./references/OddEyesMeteorburstDragon-SD29-JP-OP.png"
+    },
+    {
+      "name": "fusion-frame-s10",
+      "reference": "./references/AmazonessEmpress-JP-Anime-AV.png"
+    },
+    {
+      "name": "effect-box-s10",
+      "reference": "./references/AngelSageMinerva-SR05-JP-OP.png",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "link-effect-box-s10",
+      "reference": "./references/LinkDecoder-VX03-JP-OP.webp",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "normal-effect-box-s10",
+      "reference": "./references/bk_01.jpg",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "synchro-effect-box-s10",
+      "reference": "./references/OddEyesMeteorburstDragon-SD29-JP-OP.png",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "fusion-effect-box-s10",
+      "reference": "./references/AmazonessEmpress-JP-Anime-AV.png",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "ritual-frame-s10",
+      "reference": "./references/RevendreadSlayer-COTD-EN-1E-OP.png"
+    },
+    {
+      "name": "ritual-effect-box-s10",
+      "reference": "./references/RevendreadSlayer-COTD-EN-1E-OP.png",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "token-frame-s10",
+      "reference": "./references/Token-QCDB-JP-OP-ReginaldNumber32SharkDrake.webp"
+    },
+    {
+      "name": "token-effect-box-s10",
+      "reference": "./references/Token-QCDB-JP-OP-ReginaldNumber32SharkDrake.webp",
+      "areas": [71, 1084, 350, 1109],
+      "sampleSize": 1,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "trap-frame-s10",
+      "reference": "./references/ExecuteProtocols-SD36-JP-OP.webp"
+    },
+    {
+      "name": "trap-effect-box-s10",
+      "reference": "./references/ExecuteProtocols-SD36-JP-OP.webp",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    },
+    {
+      "name": "spell-frame-s10",
+      "reference": "./references/OrichalcosSwordofSealing-LOCH-JP-OP.webp",
+      "areas": [
+        [35, 204, 67, 844],
+        [45, 150, 405, 185]
+      ]
+    },
+    {
+      "name": "spell-effect-box-s10",
+      "reference": "./references/OrichalcosSwordofSealing-LOCH-JP-OP.webp",
+      "areas": [71, 1084, 426, 1109],
+      "sampleSize": 5,
+      "metadata": {
+        "target": "effect-box"
+      }
+    }
+  ]
+}

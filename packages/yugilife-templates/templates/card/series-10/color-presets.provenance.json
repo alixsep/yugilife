@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "generator": "chromapair@1.0.0",
+  "inputs": [
+    {
+      "path": "shared/frame-texture.png",
+      "sha256": "e4a93e61f4ab7f1d4aaba4c36f18a0cccf23aded33a9fdc23a04a07f65d1b362"
+    },
+    {
+      "path": "templates/card/series-10/chromapair-config.json",
+      "sha256": "4745b86f04635acc687608845a418918e5b19cc4a35dd676028ab64e9089b5bf"
+    },
+    {
+      "path": "templates/card/series-10/references/AmazonessEmpress-JP-Anime-AV.png",
+      "sha256": "cb918329a5acd8a109239b2b6b4a2f10b1c111d865769962ba61fe3849056f3a"
+    },
+    {
+      "path": "templates/card/series-10/references/AngelSageMinerva-SR05-JP-OP.png",
+      "sha256": "0efa706b1ae95ddd3adeeb940c1fa0c32d660ece1b172ce27462ea99a80ead53"
+    },
+    {
+      "path": "templates/card/series-10/references/ExecuteProtocols-SD36-JP-OP.webp",
+      "sha256": "a8e7c41059b8f5cca1b756851ec9145c94a8d1a8398c61d16fa3b21981c4f597"
+    },
+    {
+      "path": "templates/card/series-10/references/LinkDecoder-VX03-JP-OP.webp",
+      "sha256": "18705b25db7732f711c51b7c74668b9764f99f584f22c69810b8330f77d15bf5"
+    },
+    {
+      "path": "templates/card/series-10/references/OddEyesMeteorburstDragon-SD29-JP-OP.png",
+      "sha256": "1c932fa444df79efa892080bc1ba548e5eaf0379f2ae53b3574cf4322d84ab6d"
+    },
+    {
+      "path": "templates/card/series-10/references/OrichalcosSwordofSealing-LOCH-JP-OP.webp",
+      "sha256": "a00245a6bf8c2eba94d74b3a13d8bd73a561cf1d91c74b77637d5642a2e9291c"
+    },
+    {
+      "path": "templates/card/series-10/references/RevendreadSlayer-COTD-EN-1E-OP.png",
+      "sha256": "41125967b0be367b65bf490d706a270f01cda1147e22dcf18973281f22340b52"
+    },
+    {
+      "path": "templates/card/series-10/references/Token-QCDB-JP-OP-ReginaldNumber32SharkDrake.webp",
+      "sha256": "2348e15a3e42b24aafd0a87137f8b73905da640aae4d28a9655cdb0303706038"
+    },
+    {
+      "path": "templates/card/series-10/references/bk_01.jpg",
+      "sha256": "25026e90d5b1fd902138f656bac3e60c662038ccc0bcb6440d8ece26beeed049"
+    }
+  ],
+  "output": {
+    "path": "templates/card/series-10/color-presets.json",
+    "sha256": "89382c6af5c665a8b9e412f90a60662a718be07102a273eccbd001437d655eb1"
+  }
+}

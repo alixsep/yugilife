@@ -1,0 +1,23 @@
+{
+  "id": "living-fossil",
+  "cardName": "Living Fossil",
+  "printing": {
+    "setName": "Battles of Legend: Relentless Revenge",
+    "setCode": "BLRR-EN015",
+    "edition": "1st Edition",
+    "databaseId": "34959756",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Living%20Fossil"
+  },
+  "card": {
+    "name": "Living Fossil",
+    "cardVariant": "spell",
+    "description": [
+      "Activate this card by targeting 1 Level 4 or lower monster in your GY; Special Summon it and equip it with this card, but banish it when it leaves the field (even if this card has left the field). When this card leaves the field, banish the equipped monster. The equipped monster loses 1000 ATK/DEF, also its effects are negated. You can only activate 1 \"Living Fossil\" per turn."
+    ],
+    "cardCode": "BLRR-EN015",
+    "serialNumber": "34959756",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "equip"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "tornado-dragon",
+  "cardName": "Tornado Dragon",
+  "printing": {
+    "setName": "Maximum Crisis",
+    "setCode": "MACR-EN081",
+    "edition": "1st Edition",
+    "databaseId": "6983839",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Tornado%20Dragon"
+  },
+  "card": {
+    "name": "Tornado Dragon",
+    "cardVariant": "xyz",
+    "attribute": "WIND",
+    "types": ["Wyrm", "Xyz", "Effect"],
+    "description": [
+      "2 Level 4 monsters\nOnce per turn (Quick Effect): You can detach 1 material from this card, then target 1 Spell/Trap on the field; destroy it."
+    ],
+    "attack": "2100",
+    "cardCode": "MACR-EN081",
+    "serialNumber": "6983839",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "2000",
+    "rank": 4,
+    "pendulum": false
+  }
+}

@@ -1,0 +1,15 @@
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: #171717;
+  padding: 24px;
+}
+
+[data-visual-fixture] {
+  height: 1185px;
+  width: 813px;
+}

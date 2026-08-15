@@ -1,0 +1,28 @@
+{
+  "id": "gizmek-orochi-the-serpentron-sky-slasher",
+  "cardName": "Gizmek Orochi, the Serpentron Sky Slasher",
+  "printing": {
+    "setName": "Rising Rampage",
+    "setCode": "RIRA-EN029",
+    "edition": "1st Edition",
+    "databaseId": "71197066",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Gizmek%20Orochi%2C%20the%20Serpentron%20Sky%20Slasher"
+  },
+  "card": {
+    "name": "Gizmek Orochi, the Serpentron Sky Slasher",
+    "cardVariant": "effect",
+    "attribute": "DARK",
+    "types": ["Machine", "Effect"],
+    "description": [
+      "If this card is in your hand or GY (Quick Effect): You can banish 8 cards from the top of your Deck face-down; Special Summon this card. You can banish 3 cards from your Extra Deck face-down, then target 1 face-up monster on the field; destroy it. You can only use 1 \"Gizmek Orochi, the Serpentron Sky Slasher\" effect per turn, and only once that turn."
+    ],
+    "attack": "2450",
+    "cardCode": "RIRA-EN029",
+    "serialNumber": "71197066",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "2450",
+    "level": 8,
+    "pendulum": false
+  }
+}

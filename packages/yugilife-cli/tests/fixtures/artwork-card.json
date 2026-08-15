@@ -1,0 +1,14 @@
+{
+  "template": "card/series-10",
+  "card": {
+    "name": "YugiLife CLI Artwork",
+    "attribute": "DARK",
+    "cardVariant": "effect",
+    "level": 8,
+    "types": ["Dragon", "Effect"],
+    "description": "The artwork file is supplied through the CLI transport."
+  },
+  "files": {
+    "artwork": "../../../yugilife-templates/templates/card/series-10/references/bk_01.jpg"
+  }
+}

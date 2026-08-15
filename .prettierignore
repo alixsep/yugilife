@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+.features-gen
+**/*.feature
+.tmp
+pnpm-lock.yaml
+packages/yugilife-templates/src/generated-runtime-*.json
+packages/yugilife-templates/templates/**/color-presets.json
+packages/yugilife-templates/templates/**/presets
+packages/yugilife-templates/templates/**/report.json
+packages/yugilife-templates/templates/**/reports

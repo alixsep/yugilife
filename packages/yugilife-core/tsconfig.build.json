@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "inlineSourceMap": false,
+    "inlineSources": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": false,
+    "stripInternal": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "tests"]
+}

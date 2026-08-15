@@ -1,0 +1,31 @@
+{
+  "id": "odd-eyes-arc-pendulum-dragon",
+  "cardName": "Odd-Eyes Arc Pendulum Dragon",
+  "printing": {
+    "setName": "Legendary Arc-V Decks",
+    "setCode": "LAVD-ENO11",
+    "edition": "1st Edition",
+    "databaseId": "14105623",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Odd-Eyes%20Arc%20Pendulum%20Dragon"
+  },
+  "card": {
+    "name": "Odd-Eyes Arc Pendulum Dragon",
+    "cardVariant": "normal",
+    "attribute": "DARK",
+    "types": ["Dragon", "Pendulum", "Normal"],
+    "description": [
+      "Made from miracles, this valiant and beautiful dragon has gleaming eyes that reflect an arc drawn in the sky."
+    ],
+    "attack": "2700",
+    "cardCode": "LAVD-ENO11",
+    "serialNumber": "14105623",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "2000",
+    "level": 7,
+    "pendulum": true,
+    "pendulumSize": "large",
+    "scales": [8, 8],
+    "pendulumEffect": "If an \"Odd-Eyes\" card(s) you control is destroyed by battle or card effect: You can Special Summon 1 \"Odd-Eyes\" monster from your hand, Deck, or GY. You can only use this effect of \"Odd-Eyes Arc Pendulum Dragon\" once per turn."
+  }
+}

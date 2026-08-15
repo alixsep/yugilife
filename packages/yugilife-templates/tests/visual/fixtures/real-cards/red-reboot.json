@@ -1,0 +1,23 @@
+{
+  "id": "red-reboot",
+  "cardName": "Red Reboot",
+  "printing": {
+    "setName": "Flames of Destruction",
+    "setCode": "FLOD-EN068",
+    "edition": "1st Edition",
+    "databaseId": "23002292",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Red%20Reboot"
+  },
+  "card": {
+    "name": "Red Reboot",
+    "cardVariant": "trap",
+    "description": [
+      "When your opponent activates a Trap Card: Negate the activation, and if you do, Set that card face-down, then they can Set 1 other Trap directly from their Deck. For the rest of this turn after this card resolves, your opponent cannot activate Trap Cards. You can activate this card from your hand by paying half your LP."
+    ],
+    "cardCode": "FLOD-EN068",
+    "serialNumber": "23002292",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "counter"
+  }
+}

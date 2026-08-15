@@ -1,0 +1,28 @@
+{
+  "id": "galaxy-serpent",
+  "cardName": "Galaxy Serpent",
+  "printing": {
+    "setName": "Judgment of the Light",
+    "setCode": "JOTL-EN000",
+    "edition": "1st Edition",
+    "databaseId": "11066358",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Galaxy%20Serpent"
+  },
+  "card": {
+    "name": "Galaxy Serpent",
+    "cardVariant": "normal",
+    "attribute": "LIGHT",
+    "types": ["Dragon", "Tuner", "Normal"],
+    "description": [
+      "Your hopes and dreams will be refreshed if you catch a glimpse of this rare creature in the evening twilight, soaring in the Sea of Stars."
+    ],
+    "attack": "1000",
+    "cardCode": "JOTL-EN000",
+    "serialNumber": "11066358",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "0",
+    "level": 2,
+    "pendulum": false
+  }
+}

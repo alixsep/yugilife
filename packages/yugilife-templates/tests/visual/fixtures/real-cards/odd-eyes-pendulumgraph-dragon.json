@@ -1,0 +1,31 @@
+{
+  "id": "odd-eyes-pendulumgraph-dragon",
+  "cardName": "Odd-Eyes Pendulumgraph Dragon",
+  "printing": {
+    "setName": "Dimension Force",
+    "setCode": "DIFO-EN034",
+    "edition": "1st Edition",
+    "databaseId": "66425726",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Odd-Eyes%20Pendulumgraph%20Dragon"
+  },
+  "card": {
+    "name": "Odd-Eyes Pendulumgraph Dragon",
+    "cardVariant": "ritual",
+    "attribute": "LIGHT",
+    "types": ["Dragon", "Ritual", "Pendulum", "Effect"],
+    "description": [
+      "You can Ritual Summon this card with \"Odd-Eyes Advent\". Must be either Ritual Summoned, or Pendulum Summoned from your hand. Each time your opponent Special Summons a monster(s) from the Extra Deck, inflict 300 damage to them. Once per turn, when your opponent activates a Spell Card or effect (Quick Effect): You can place this card in your Pendulum Zone, and if you do, negate that effect, then, if you placed this Ritual Summoned card in the Pendulum Zone, you can Special Summon 1 \"Odd-Eyes\" monster from your Extra Deck."
+    ],
+    "attack": "2700",
+    "cardCode": "DIFO-EN034",
+    "serialNumber": "66425726",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "2500",
+    "level": 7,
+    "pendulum": true,
+    "pendulumSize": "medium",
+    "scales": [4, 4],
+    "pendulumEffect": "During the End Phase: You can add 1 Ritual Spell from your Deck or GY to your hand, then return this card to the hand. You can only use this effect of \"Odd-Eyes Pendulumgraph Dragon\" once per turn."
+  }
+}

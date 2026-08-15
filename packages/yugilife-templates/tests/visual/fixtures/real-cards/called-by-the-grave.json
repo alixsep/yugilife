@@ -1,0 +1,23 @@
+{
+  "id": "called-by-the-grave",
+  "cardName": "Called by the Grave",
+  "printing": {
+    "setName": "Flames of Destruction",
+    "setCode": "FLOD-EN065",
+    "edition": "1st Edition",
+    "databaseId": "24224830",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Called%20by%20the%20Grave"
+  },
+  "card": {
+    "name": "Called by the Grave",
+    "cardVariant": "spell",
+    "description": [
+      "Target 1 monster in your opponent's GY; banish it, and if you do, until the end of the next turn, its effects are negated, as well as the activated effects and effects on the field of monsters with the same original name."
+    ],
+    "cardCode": "FLOD-EN065",
+    "serialNumber": "24224830",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "quick-play"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "mystic-mine",
+  "cardName": "Mystic Mine",
+  "printing": {
+    "setName": "Dark Neostorm",
+    "setCode": "DANE-EN064",
+    "edition": "1st Edition",
+    "databaseId": "76375976",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Mystic%20Mine"
+  },
+  "card": {
+    "name": "Mystic Mine",
+    "cardVariant": "spell",
+    "description": [
+      "If your opponent controls more monsters than you do, your opponent cannot activate monster effects or declare an attack. If you control more monsters than your opponent does, you cannot activate monster effects or declare an attack. Once per turn, during the End Phase, if both players control the same number of monsters: Destroy this card."
+    ],
+    "cardCode": "DANE-EN064",
+    "serialNumber": "76375976",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "field"
+  }
+}

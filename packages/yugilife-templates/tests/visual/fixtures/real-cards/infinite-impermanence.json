@@ -1,0 +1,23 @@
+{
+  "id": "infinite-impermanence",
+  "cardName": "Infinite Impermanence",
+  "printing": {
+    "setName": "Flames of Destruction",
+    "setCode": "FLOD-EN077",
+    "edition": "1st Edition",
+    "databaseId": "10045474",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Infinite%20Impermanence"
+  },
+  "card": {
+    "name": "Infinite Impermanence",
+    "cardVariant": "trap",
+    "description": [
+      "Target 1 face-up monster your opponent controls; negate its effects (until the end of this turn), then, if this card was Set before activation and is on the field at resolution, for the rest of this turn all other Spell/Trap effects in this column are negated. If you control no cards, you can activate this card from your hand."
+    ],
+    "cardCode": "FLOD-EN077",
+    "serialNumber": "10045474",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "normal"
+  }
+}

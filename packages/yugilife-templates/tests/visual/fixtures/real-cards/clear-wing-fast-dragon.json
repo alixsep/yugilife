@@ -1,0 +1,31 @@
+{
+  "id": "clear-wing-fast-dragon",
+  "cardName": "Clear Wing Fast Dragon",
+  "printing": {
+    "setName": "Yu-Gi-Oh! ARC-V Volume 2 promotional card",
+    "setCode": "YA02-EN001",
+    "edition": "1st Edition",
+    "databaseId": "90036274",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Clear%20Wing%20Fast%20Dragon"
+  },
+  "card": {
+    "name": "Clear Wing Fast Dragon",
+    "cardVariant": "synchro",
+    "attribute": "WIND",
+    "types": ["Dragon", "Synchro", "Pendulum", "Effect"],
+    "description": [
+      "1 Tuner + 1+ non-Tuner WIND monsters\n(Quick Effect): You can target 1 face-up monster your opponent controls that was Special Summoned from the Extra Deck; until the end of this turn, change its ATK to 0, also negate that face-up monster's effects. You can only use this effect of \"Clear Wing Fast Dragon\" once per turn. If this card in the Monster Zone is destroyed by battle or card effect: You can place this card in your Pendulum Zone."
+    ],
+    "attack": "2500",
+    "cardCode": "YA02-EN001",
+    "serialNumber": "90036274",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "2000",
+    "level": 7,
+    "pendulum": true,
+    "pendulumSize": "medium",
+    "scales": [4, 4],
+    "pendulumEffect": "You can send 1 face-up \"Speedroid\" Tuner and 1 face-up non-Tuner monster you control to the GY, whose total Levels equal 7; Special Summon this card from your Pendulum Zone. You can only use this effect of \"Clear Wing Fast Dragon\" once per turn."
+  }
+}

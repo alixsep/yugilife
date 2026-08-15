@@ -1,0 +1,28 @@
+{
+  "id": "vendread-battlelord",
+  "cardName": "Vendread Battlelord",
+  "printing": {
+    "setName": "Extreme Force",
+    "setCode": "EXFO-EN082",
+    "edition": "1st Edition",
+    "databaseId": "3909436",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Vendread%20Battlelord"
+  },
+  "card": {
+    "name": "Vendread Battlelord",
+    "cardVariant": "ritual",
+    "attribute": "DARK",
+    "types": ["Zombie", "Ritual", "Effect"],
+    "description": [
+      "You can Ritual Summon this card with any \"Vendread\" Ritual Spell. You can banish 1 \"Vendread\" card from your GY and declare 1 type of card (Monster, Spell, or Trap); for the rest of this turn, your opponent cannot activate cards or effects of that type. If this Ritual Summoned card is sent to the GY: You can add 1 Ritual Monster from your Deck to your hand, and if you do, send 1 \"Vendread\" monster from your Deck to the GY. You can only use each effect of \"Vendread Battlelord\" once per turn."
+    ],
+    "attack": "2700",
+    "cardCode": "EXFO-EN082",
+    "serialNumber": "3909436",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "0",
+    "level": 7,
+    "pendulum": false
+  }
+}

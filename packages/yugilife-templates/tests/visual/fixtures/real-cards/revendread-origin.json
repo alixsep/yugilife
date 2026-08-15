@@ -1,0 +1,23 @@
+{
+  "id": "revendread-origin",
+  "cardName": "Revendread Origin",
+  "printing": {
+    "setName": "Code of the Duelist",
+    "setCode": "COTD-EN084",
+    "edition": "1st Edition",
+    "databaseId": "94666032",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Revendread%20Origin"
+  },
+  "card": {
+    "name": "Revendread Origin",
+    "cardVariant": "spell",
+    "description": [
+      "This card can be used to Ritual Summon any \"Vendread\" Ritual Monster from your hand or GY. You must also Tribute monsters from your hand or field, and/or banish Zombie monsters from your GY, whose total Levels equal or exceed the Level of the Ritual Monster you Ritual Summon. If \"Revendread Slayer(s)\" you control would be destroyed by battle or card effect, you can banish this card from your GY instead."
+    ],
+    "cardCode": "COTD-EN084",
+    "serialNumber": "94666032",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "spellTrapType": "ritual"
+  }
+}

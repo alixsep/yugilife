@@ -1,0 +1,28 @@
+{
+  "id": "salamangreat-violet-chimera",
+  "cardName": "Salamangreat Violet Chimera",
+  "printing": {
+    "setName": "Savage Strike",
+    "setCode": "SAST-EN034",
+    "edition": "1st Edition",
+    "databaseId": "37261776",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Salamangreat%20Violet%20Chimera"
+  },
+  "card": {
+    "name": "Salamangreat Violet Chimera",
+    "cardVariant": "fusion",
+    "attribute": "FIRE",
+    "types": ["Cyberse", "Fusion", "Effect"],
+    "description": [
+      "1 \"Salamangreat\" monster + 1 Link Monster\nIf this card is Fusion Summoned: You can make this card gain ATK equal to half the combined original ATK of the materials used to Summon it, until the end of this turn. Once per battle, during damage calculation, if this monster battles a monster whose current ATK is different from its original ATK (Quick Effect): You can double this card's ATK during damage calculation only. If this card that was Fusion Summoned using \"Salamangreat Violet Chimera\" as material battles a monster, that monster's ATK becomes 0 during damage calculation only."
+    ],
+    "attack": "2800",
+    "cardCode": "SAST-EN034",
+    "serialNumber": "37261776",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "defense": "2000",
+    "level": 8,
+    "pendulum": false
+  }
+}

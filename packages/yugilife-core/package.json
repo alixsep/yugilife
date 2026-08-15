@@ -1,0 +1,59 @@
+{
+  "name": "yugilife-core",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./advanced": {
+      "types": "./dist/advanced.d.ts",
+      "import": "./dist/advanced.js"
+    },
+    "./color-grading": {
+      "types": "./dist/public/color-grading.d.ts",
+      "import": "./dist/color-grading.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "pnpm clean && vite build && node ./scripts/build-fontkit-runtime.mjs && tsc -p tsconfig.build.json && node ./scripts/verify-package.mjs && pnpm verify:packed",
+    "clean": "node ./scripts/clean.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --reporter=verbose",
+    "test:unit": "vitest run --reporter=verbose",
+    "test:watch": "vitest --reporter=verbose",
+    "verify:package": "node ./scripts/verify-package.mjs",
+    "verify:packed": "node ./scripts/verify-packed-consumer.mjs"
+  },
+  "devDependencies": {
+    "@types/fontkit": "^2.0.9",
+    "@types/node": "^24.13.3",
+    "esbuild": "0.28.1",
+    "jsdom": "^29.1.1",
+    "tar": "^7.5.22",
+    "tsx": "^4.23.10",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "fontkit": "^2.0.4"
+  }
+}

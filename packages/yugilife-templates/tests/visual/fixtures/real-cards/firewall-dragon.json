@@ -1,0 +1,28 @@
+{
+  "id": "firewall-dragon",
+  "cardName": "Firewall Dragon",
+  "printing": {
+    "setName": "Code of the Duelist",
+    "setCode": "COTD-EN043",
+    "edition": "1st Edition",
+    "databaseId": "5043010",
+    "databaseUrl": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Firewall%20Dragon"
+  },
+  "card": {
+    "name": "Firewall Dragon",
+    "cardVariant": "link",
+    "attribute": "LIGHT",
+    "types": ["Cyberse", "Link", "Effect"],
+    "description": [
+      "2+ monsters\nOnce while face-up on the field (Quick Effect): You can target monsters on the field and/or GY up to the number of monsters co-linked to this card; return them to the hand. If a monster this card points to is destroyed by battle or sent to the GY: You can Special Summon 1 Cyberse monster from your hand. You can only use each effect of \"Firewall Dragon\" once per turn."
+    ],
+    "attack": "2500",
+    "cardCode": "COTD-EN043",
+    "serialNumber": "5043010",
+    "edition": "1<sup>st</sup> Edition",
+    "copyright": "©1996 KAZUKI TAKAHASHI",
+    "link": 0,
+    "linkArrows": ["top-center", "left-center", "right-center", "bottom-center"],
+    "pendulum": false
+  }
+}

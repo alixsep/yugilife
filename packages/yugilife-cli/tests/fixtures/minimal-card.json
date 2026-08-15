@@ -1,0 +1,17 @@
+{
+  "template": "card/series-10",
+  "card": {
+    "name": "YugiLife CLI Smoke",
+    "attribute": "DARK",
+    "cardVariant": "effect",
+    "level": 8,
+    "types": ["Dragon", "Effect"],
+    "description": "Rendered through the browser renderer.",
+    "attack": "2500",
+    "defense": "2000",
+    "cardCode": "CLI-001",
+    "serialNumber": "12345678",
+    "edition": "1st Edition",
+    "copyright": "YUGILIFE"
+  }
+}
