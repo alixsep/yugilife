@@ -77,7 +77,10 @@ describe("Card render ordering", () => {
       vector: {
         output: "vector" as const,
         render({ vectorLayers }: Parameters<LayerRenderer["render"]>[0]) {
-          vectorLayers.push({ tag: "text", text: "middle" })
+          vectorLayers.push({
+            attributes: { height: 1, id: "middle", width: 1 },
+            tag: "rect",
+          })
         },
       },
     }
@@ -101,7 +104,7 @@ describe("Card render ordering", () => {
         element.tagName.toLocaleLowerCase(),
       ),
     ).toEqual(["canvas", "svg", "canvas"])
-    expect(container.querySelector("svg")?.textContent).toBe("middle")
+    expect(container.querySelector("svg rect")?.getAttribute("id")).toBe("middle")
     act(() => root.unmount())
   })
 
@@ -113,7 +116,7 @@ describe("Card render ordering", () => {
       output: "vector",
       async render({ card, vectorLayers }) {
         await (card.name === "First" ? first.promise : second.promise)
-        vectorLayers.push({ tag: "text", text: card.name })
+        vectorLayers.push({ attributes: { id: card.name }, tag: "rect" })
       },
     }
     const container = document.createElement("div")
@@ -147,7 +150,7 @@ describe("Card render ordering", () => {
       await second.promise
       await Promise.resolve()
     })
-    expect(container.querySelector("svg")?.textContent).toBe("Second")
+    expect(container.querySelector("svg rect")?.getAttribute("id")).toBe("Second")
     expect(onReady).toHaveBeenCalledOnce()
 
     await act(async () => {
@@ -155,7 +158,7 @@ describe("Card render ordering", () => {
       await first.promise
       await Promise.resolve()
     })
-    expect(container.querySelector("svg")?.textContent).toBe("Second")
+    expect(container.querySelector("svg rect")?.getAttribute("id")).toBe("Second")
     expect(onReady).toHaveBeenCalledOnce()
 
     act(() => root.unmount())

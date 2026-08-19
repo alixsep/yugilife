@@ -21,7 +21,9 @@ When("I navigate to the Yugilife home", async ({ page }) => {
 })
 
 Then("the landing scene is rendered", async ({ page }) => {
-  await expect(page.locator("canvas")).toBeVisible()
+  const landingPage = page.locator("main.landing-page")
+  await expect(landingPage).toHaveAttribute("data-landing-ready", "true")
+  await expect(landingPage.locator(".landing-canvas-slot canvas")).toBeVisible()
 })
 
 Given("I open the card builder", async ({ page }) => {
@@ -111,14 +113,10 @@ Then("the card name is {string}", async ({ page }, value: string) => {
   await expect(cardName(page)).toHaveValue(value)
 })
 
-Then("the Salamangreat preview uses outlined glyphs in Firefox", async ({ page, browserName }) => {
+Then("the Salamangreat preview uses outlined glyphs", async ({ page }) => {
   const card = page.locator('[data-template="card/series-10"]')
-  if (browserName === "firefox") {
-    await expect(card.locator("svg text, svg tspan")).toHaveCount(0)
-    expect(await card.locator("svg path").count()).toBeGreaterThan(0)
-    return
-  }
-  expect(await card.locator("svg text, svg tspan").count()).toBeGreaterThan(0)
+  await expect(card.locator("svg text, svg tspan")).toHaveCount(0)
+  expect(await card.locator("svg path").count()).toBeGreaterThan(0)
 })
 
 Then("the export dimensions are {string}", async ({ page }, value: string) => {

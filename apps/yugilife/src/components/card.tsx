@@ -56,10 +56,6 @@ function summarizeCard(card: CardData) {
   )
 }
 
-function needsOutlinedPreview() {
-  return typeof navigator !== "undefined" && /Firefox\//.test(navigator.userAgent)
-}
-
 function summarizeRenderOptions({
   assets,
   layerRenderers,
@@ -171,7 +167,7 @@ export function Card({
   )
 
   if (debugLogging) {
-    console.log("[YugiLife Card] component render", {
+    console.log("[Yugilife Card] component render", {
       card: summarizeCard(card),
       templateId: templateBundle.manifest.id,
       segmentCount: renderSegments.length,
@@ -222,7 +218,7 @@ export function Card({
 
     if (debugLogging) {
       console.groupCollapsed(
-        `[YugiLife Card] render attempt #${renderAttempt} (instance ${debugInstanceId.current})`,
+        `[Yugilife Card] render attempt #${renderAttempt} (instance ${debugInstanceId.current})`,
       )
       console.log("effect dependency identities changed:", changedInputs)
       console.log("render input summary:", {
@@ -252,7 +248,7 @@ export function Card({
       .then(async (rendered) => {
         settled = true
         if (debugLogging) {
-          console.log("[YugiLife Card] render completed", {
+          console.log("[Yugilife Card] render completed", {
             instance: debugInstanceId.current,
             renderAttempt,
             durationMs: startedAt === 0 ? undefined : performance.now() - startedAt,
@@ -262,9 +258,7 @@ export function Card({
           })
         }
         if (!active || controller.signal.aborted) return
-        const previewSegments = needsOutlinedPreview()
-          ? await rendered.toOutlinedSegments()
-          : rendered.renderSegments
+        const previewSegments = await rendered.toOutlinedSegments()
         if (!active || controller.signal.aborted) return
         setError(undefined)
         setRenderSegments(previewSegments)
@@ -273,7 +267,7 @@ export function Card({
       .catch((reason: unknown) => {
         settled = true
         if (debugLogging) {
-          console.error("[YugiLife Card] render failed or was aborted", {
+          console.error("[Yugilife Card] render failed or was aborted", {
             instance: instanceId,
             renderAttempt,
             durationMs: startedAt === 0 ? undefined : performance.now() - startedAt,
@@ -297,7 +291,7 @@ export function Card({
       suppliedSignalForRender?.removeEventListener("abort", abortFromSuppliedSignal)
       controller.abort()
       if (debugLogging) {
-        console.warn("[YugiLife Card] render cleanup / abort", {
+        console.warn("[Yugilife Card] render cleanup / abort", {
           instance: instanceId,
           renderAttempt,
           settled,

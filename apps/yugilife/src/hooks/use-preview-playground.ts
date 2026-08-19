@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { animate, motionValue } from "framer-motion"
+import { animate, motionValue, useMotionTemplate } from "framer-motion"
 
 import {
   clampPreviewZoom,
@@ -24,18 +24,16 @@ interface UsePreviewPlaygroundOptions {
 }
 
 interface PreviewLayout {
-  height: number
   left: number
   top: number
-  width: number
 }
 
 function createPreviewMotionValues() {
   return {
-    height: motionValue(1),
     left: motionValue(0),
+    scale: motionValue(1),
     top: motionValue(0),
-    width: motionValue(1),
+    willChange: motionValue("auto"),
   }
 }
 
@@ -49,9 +47,10 @@ export function usePreviewPlayground({
   const previousPinch = useRef<ReturnType<typeof previewPinchGesture>>(undefined)
   const hasMeasuredLayout = useRef(false)
   const offsetRef = useRef({ x: 0, y: 0 })
+  const transformIdleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const zoomRef = useRef(1)
   const [motionValues] = useState(createPreviewMotionValues)
-  const { height, left, top, width } = motionValues
+  const { left, scale, top, willChange } = motionValues
   const [dragging, setDragging] = useState(false)
   const [viewport, setViewport] = useState({ height: 0, width: 0 })
   const [zoomLimits, setZoomLimits] = useState({ canZoomIn: true, canZoomOut: true })
@@ -60,19 +59,27 @@ export function usePreviewPlayground({
     { height: contentHeight, width: contentWidth },
     padding,
   )
+  const fittedWidth = contentWidth * fitScale
+  const fittedHeight = contentHeight * fitScale
+  const transform = useMotionTemplate`translate3d(${left}px, ${top}px, 0) scale(${scale})`
+
+  const markTransforming = useCallback(() => {
+    willChange.set("transform")
+    if (transformIdleTimer.current !== undefined) clearTimeout(transformIdleTimer.current)
+    transformIdleTimer.current = setTimeout(() => {
+      willChange.set("auto")
+      transformIdleTimer.current = undefined
+    }, 160)
+  }, [willChange])
 
   const layoutFor = useCallback(
     (zoom: number, offset = offsetRef.current): PreviewLayout => {
-      const nextWidth = contentWidth * fitScale * zoom
-      const nextHeight = contentHeight * fitScale * zoom
       return {
-        height: nextHeight,
-        left: (viewport.width - nextWidth) / 2 + offset.x,
-        top: (viewport.height - nextHeight) / 2 + offset.y,
-        width: nextWidth,
+        left: (viewport.width - fittedWidth * zoom) / 2 + offset.x,
+        top: (viewport.height - fittedHeight * zoom) / 2 + offset.y,
       }
     },
-    [contentHeight, contentWidth, fitScale, viewport.height, viewport.width],
+    [fittedHeight, fittedWidth, viewport.height, viewport.width],
   )
 
   useEffect(() => {
@@ -91,40 +98,44 @@ export function usePreviewPlayground({
 
   useEffect(
     () => () => {
-      height.destroy()
       left.destroy()
+      scale.destroy()
       top.destroy()
-      width.destroy()
+      willChange.destroy()
     },
-    [height, left, top, width],
+    [left, scale, top, willChange],
+  )
+
+  useEffect(
+    () => () => {
+      if (transformIdleTimer.current !== undefined) clearTimeout(transformIdleTimer.current)
+    },
+    [],
   )
 
   useEffect(() => {
     const next = layoutFor(zoomRef.current)
     if (!hasMeasuredLayout.current) {
-      height.set(next.height)
       left.set(next.left)
+      scale.set(zoomRef.current)
       top.set(next.top)
-      width.set(next.width)
       if (viewport.height > 0 && viewport.width > 0) hasMeasuredLayout.current = true
       return
     }
-    animate(height, next.height, spring.moderate)
     animate(left, next.left, spring.moderate)
     animate(top, next.top, spring.moderate)
-    animate(width, next.width, spring.moderate)
-  }, [height, layoutFor, left, top, viewport.height, viewport.width, width])
+  }, [layoutFor, left, scale, top, viewport.height, viewport.width])
 
   const resetView = useCallback(() => {
+    markTransforming()
     zoomRef.current = 1
     offsetRef.current = { x: 0, y: 0 }
     setZoomLimits({ canZoomIn: true, canZoomOut: true })
     const next = layoutFor(1)
-    animate(height, next.height, spring.moderate)
+    animate(scale, 1, spring.moderate)
     animate(left, next.left, spring.moderate)
     animate(top, next.top, spring.moderate)
-    animate(width, next.width, spring.moderate)
-  }, [height, layoutFor, left, top, width])
+  }, [layoutFor, left, markTransforming, scale, top])
 
   const zoomAt = useCallback(
     (
@@ -135,10 +146,11 @@ export function usePreviewPlayground({
       const currentZoom = zoomRef.current
       const nextZoom = clampPreviewZoom(requestedZoom)
       if (nextZoom === currentZoom) return
+      markTransforming()
 
       const nextSize = {
-        height: contentHeight * fitScale * nextZoom,
-        width: contentWidth * fitScale * nextZoom,
+        height: fittedHeight * nextZoom,
+        width: fittedWidth * nextZoom,
       }
       const nextPosition = offsetForPreviewZoom(
         { x: left.get(), y: top.get() },
@@ -162,18 +174,16 @@ export function usePreviewPlayground({
       })
 
       if (transition === "direct") {
-        height.set(nextSize.height)
+        scale.set(nextZoom)
         left.set(nextPosition.x)
         top.set(nextPosition.y)
-        width.set(nextSize.width)
         return
       }
-      animate(height, nextSize.height, spring.fast)
+      animate(scale, nextZoom, spring.fast)
       animate(left, nextPosition.x, spring.fast)
       animate(top, nextPosition.y, spring.fast)
-      animate(width, nextSize.width, spring.fast)
     },
-    [contentHeight, contentWidth, fitScale, height, left, top, viewport, width],
+    [fittedHeight, fittedWidth, left, markTransforming, scale, top, viewport],
   )
 
   const zoomIn = useCallback(() => zoomAt(zoomRef.current * PREVIEW_ZOOM_STEP), [zoomAt])
@@ -209,16 +219,17 @@ export function usePreviewPlayground({
 
   const panBy = useCallback(
     (x: number, y: number) => {
+      markTransforming()
       const nextLeft = left.get() + x
       const nextTop = top.get() + y
       left.set(nextLeft)
       top.set(nextTop)
       offsetRef.current = {
-        x: nextLeft - (viewport.width - width.get()) / 2,
-        y: nextTop - (viewport.height - height.get()) / 2,
+        x: nextLeft - (viewport.width - fittedWidth * zoomRef.current) / 2,
+        y: nextTop - (viewport.height - fittedHeight * zoomRef.current) / 2,
       }
     },
-    [height, left, top, viewport.height, viewport.width, width],
+    [fittedHeight, fittedWidth, left, markTransforming, top, viewport.height, viewport.width],
   )
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -292,11 +303,12 @@ export function usePreviewPlayground({
     const delta = movement[event.key]
     if (!delta) return
     event.preventDefault()
+    markTransforming()
     const nextLeft = left.get() + delta.x
     const nextTop = top.get() + delta.y
     offsetRef.current = {
-      x: nextLeft - (viewport.width - width.get()) / 2,
-      y: nextTop - (viewport.height - height.get()) / 2,
+      x: nextLeft - (viewport.width - fittedWidth * zoomRef.current) / 2,
+      y: nextTop - (viewport.height - fittedHeight * zoomRef.current) / 2,
     }
     animate(left, nextLeft, spring.fast)
     animate(top, nextTop, spring.fast)
@@ -305,7 +317,15 @@ export function usePreviewPlayground({
   return {
     canZoomIn: zoomLimits.canZoomIn,
     canZoomOut: zoomLimits.canZoomOut,
-    contentStyle: { height, left, top, width },
+    contentStyle: {
+      height: fittedHeight,
+      left: 0,
+      top: 0,
+      transform,
+      transformOrigin: "top left",
+      width: fittedWidth,
+      willChange,
+    },
     dragging,
     playgroundProps: {
       onDoubleClick: resetView,

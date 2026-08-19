@@ -140,7 +140,10 @@ export function Home({ onReady = () => undefined }: { onReady?: () => void }) {
   }, [landingReady, onReady])
 
   return (
-    <main className="landing-page bg-background text-foreground flex min-h-dvh flex-col">
+    <main
+      className="landing-page bg-background text-foreground flex min-h-dvh flex-col"
+      data-landing-ready={landingReady ? "true" : "false"}
+    >
       <AppNavigation />
 
       <section className="landing-stage mx-auto flex min-h-0 w-full max-w-[1920px] flex-none flex-col items-start gap-3 p-3 pt-0 sm:gap-4 sm:p-4 sm:pt-0 lg:flex-row lg:gap-4">

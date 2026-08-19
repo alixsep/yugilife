@@ -48,6 +48,6 @@ Feature: Smoke
     And the inventory contains "Odd-Eyes Arc Pendulum Dragon"
     And the inventory contains "Dinowrestler Pankratops"
 
-  Scenario: Salamangreat preview uses outlined text in Firefox
+  Scenario: Salamangreat preview uses outlined text
     Given I open the Salamangreat card builder
-    Then the Salamangreat preview uses outlined glyphs in Firefox
+    Then the Salamangreat preview uses outlined glyphs
