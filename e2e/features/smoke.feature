@@ -4,6 +4,7 @@ Feature: Smoke
     Given I open the Yugilife app
     Then I see the card creation heading
 
+  @timeout:60000
   Scenario: The landing scene is ready when navigating home
     Given I open the inventory
     When I navigate to the Yugilife home

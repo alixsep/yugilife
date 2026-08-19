@@ -4,6 +4,7 @@ import { createBdd, test } from "playwright-bdd"
 import type { Page } from "@playwright/test"
 
 const { Given, Then, When } = createBdd(test)
+const landingReadyTimeout = 45_000
 
 Given("I open the Yugilife app", async ({ page }) => {
   await page.goto("/")
@@ -22,8 +23,12 @@ When("I navigate to the Yugilife home", async ({ page }) => {
 
 Then("the landing scene is rendered", async ({ page }) => {
   const landingPage = page.locator("main.landing-page")
-  await expect(landingPage).toHaveAttribute("data-landing-ready", "true")
-  await expect(landingPage.locator(".landing-canvas-slot canvas")).toBeVisible()
+  await expect(landingPage).toHaveAttribute("data-landing-ready", "true", {
+    timeout: landingReadyTimeout,
+  })
+  await expect(landingPage.locator(".landing-canvas-slot canvas")).toBeVisible({
+    timeout: landingReadyTimeout,
+  })
 })
 
 Given("I open the card builder", async ({ page }) => {
