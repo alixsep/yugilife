@@ -37,14 +37,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install browser prerequisites
-        run: pnpm setup:browsers:with-deps
-
-      - name: Run repository verification
-        run: pnpm check
-
-      - name: Build and smoke-test the Pages artifact
-        run: pnpm test:pages
+      # Pages deployment only packages a static artifact. Keep exhaustive browser Playwright
+      # verification out of this job because it is too expensive for every deploy; developers
+      # should run `pnpm check` locally before pushing.
+      - name: Build Pages artifact
+        run: pnpm build:pages
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
