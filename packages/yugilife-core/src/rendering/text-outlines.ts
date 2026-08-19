@@ -297,6 +297,11 @@ function number(value: number) {
   return String(rounded)
 }
 
+/** Firefox exposes SVG's `text-before-edge` as the equivalent CSS `text-top` value. */
+export function isTopDominantBaseline(value: string) {
+  return value === "text-before-edge" || value === "text-top"
+}
+
 function glyphFill(glyph: Glyph, fallback: string) {
   return (
     glyph.layers?.map(({ color, glyph: layerGlyph }) => ({
@@ -428,8 +433,9 @@ async function outlineText(
       const stretch = naturalLength > 0 ? renderedLength / naturalLength : 1
       const scaleY = style.fontSize / style.font.unitsPerEm
       const scaleX = scaleY * (Number.isFinite(stretch) && stretch > 0 ? stretch : 1)
-      const baselineOffset =
-        style.dominantBaseline === "text-before-edge" ? style.font.ascent * scaleY : 0
+      const baselineOffset = isTopDominantBaseline(style.dominantBaseline)
+        ? style.font.ascent * scaleY
+        : 0
       const layout = style.font.layout(grapheme)
       let penX = 0
       let penY = 0
