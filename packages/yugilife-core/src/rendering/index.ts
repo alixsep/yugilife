@@ -225,15 +225,7 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
   const completedVectorLayers = Object.freeze([...vectorLayers])
   const completedWarnings = Object.freeze([...richTextWarnings])
 
-  const toSvg: RenderedCard["toSvg"] = async (exportOptions) => {
-    const requestedMode: unknown = exportOptions?.textMode ?? "paths"
-    assertSvgTextMode(requestedMode)
-    if (requestedMode === "text") {
-      return serializeCardSvg(template, completedSegments, {
-        ...exportOptions,
-        textMode: requestedMode,
-      })
-    }
+  const toOutlinedSegments: RenderedCard["toOutlinedSegments"] = async () => {
     const exportSegments: RenderSegment[] = []
     for (const segment of completedSegments) {
       if (segment.kind === "raster") {
@@ -252,7 +244,19 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
       )
     }
     throwIfAborted(options.signal)
-    return serializeCardSvg(template, exportSegments, {
+    return Object.freeze(exportSegments)
+  }
+
+  const toSvg: RenderedCard["toSvg"] = async (exportOptions) => {
+    const requestedMode: unknown = exportOptions?.textMode ?? "paths"
+    assertSvgTextMode(requestedMode)
+    if (requestedMode === "text") {
+      return serializeCardSvg(template, completedSegments, {
+        ...exportOptions,
+        textMode: requestedMode,
+      })
+    }
+    return serializeCardSvg(template, await toOutlinedSegments(), {
       ...exportOptions,
       textMode: requestedMode,
     })
@@ -276,6 +280,7 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
         ...(exportOptions?.scale === undefined ? {} : { size: { scale: exportOptions.scale } }),
       })
     },
+    toOutlinedSegments,
     toSvg,
     vectorLayers: completedVectorLayers,
   }

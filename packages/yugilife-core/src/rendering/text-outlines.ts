@@ -25,6 +25,7 @@ interface DomElementPair {
 }
 
 interface TextRun {
+  naturalElement: SVGTextContentElement
   renderedElement: SVGTextContentElement
   start: number
   text: string
@@ -210,6 +211,7 @@ function textRuns(
     if (!pair) throw new Error("Could not measure rendered SVG text.")
     if (entry.text !== undefined && entry.text.length > 0) {
       runs.push({
+        naturalElement: pair.natural as SVGTextContentElement,
         renderedElement: pair.rendered as SVGTextContentElement,
         start: cursor.value,
         text: entry.text,
@@ -220,6 +222,30 @@ function textRuns(
   }
   visit(definition)
   return runs
+}
+
+export function declaredTextLengthScale(
+  lengthAdjust: string | null,
+  textLength: string | null,
+  naturalLength: number,
+) {
+  if (lengthAdjust !== "spacingAndGlyphs") return undefined
+  const targetLength = Number.parseFloat(textLength ?? "")
+  if (!Number.isFinite(targetLength) || !(targetLength > 0) || !(naturalLength > 0)) {
+    return undefined
+  }
+  return targetLength / naturalLength
+}
+
+function textLengthScale(
+  renderedElement: SVGTextContentElement,
+  naturalElement: SVGTextContentElement,
+) {
+  return declaredTextLengthScale(
+    renderedElement.getAttribute("lengthAdjust"),
+    renderedElement.getAttribute("textLength"),
+    naturalElement.getSubStringLength(0, naturalElement.getNumberOfChars()),
+  )
 }
 
 function fontAssetIds(presentation: ResolvedCardPresentation) {
@@ -422,17 +448,47 @@ async function outlineText(
   for (const run of runs) {
     throwIfAborted(signal)
     const style = await outlinedStyle(run.renderedElement, assetIds, assets, fonts, signal)
-    let index = run.start
+    const declaredStretch = textLengthScale(run.renderedElement, run.naturalElement)
+    const naturalRunLength = run.naturalElement.getSubStringLength(0, run.text.length)
+    const renderedRunLength = run.renderedElement.getSubStringLength(0, run.text.length)
+    const browserStretch = naturalRunLength > 0 ? renderedRunLength / naturalRunLength : 1
+    // Firefox currently reports natural widths for textLength runs. Keep the browser's exact
+    // character positions where its metrics honor textLength, and reconstruct only the affected
+    // run locally when the measured and declared scales disagree.
+    const useManualTextLength =
+      declaredStretch !== undefined && Math.abs(browserStretch - declaredStretch) > 0.000001
+    const renderedOrigin = useManualTextLength
+      ? run.renderedElement.getStartPositionOfChar(0)
+      : undefined
+    const naturalOrigin = useManualTextLength
+      ? run.naturalElement.getStartPositionOfChar(0)
+      : undefined
+    let index = 0
     for (const grapheme of graphemeSegments(run.text)) {
       throwIfAborted(signal)
       assertGlyphCoverage(style.font, style.fontFamily, grapheme)
-      const start = renderedRoot.getStartPositionOfChar(index)
-      const rotation = renderedRoot.getRotationOfChar(index)
-      const renderedLength = renderedRoot.getSubStringLength(index, grapheme.length)
-      const naturalLength = naturalRoot.getSubStringLength(index, grapheme.length)
-      const stretch = naturalLength > 0 ? renderedLength / naturalLength : 1
+      const globalIndex = run.start + index
+      const stretch = useManualTextLength ? declaredStretch : undefined
+      const start = useManualTextLength
+        ? (() => {
+            const naturalStart = run.naturalElement.getStartPositionOfChar(index)
+            return {
+              x: renderedOrigin!.x + (naturalStart.x - naturalOrigin!.x) * stretch!,
+              y: renderedOrigin!.y + (naturalStart.y - naturalOrigin!.y),
+            }
+          })()
+        : renderedRoot.getStartPositionOfChar(globalIndex)
+      const rotation = useManualTextLength
+        ? run.renderedElement.getRotationOfChar(index)
+        : renderedRoot.getRotationOfChar(globalIndex)
       const scaleY = style.fontSize / style.font.unitsPerEm
-      const scaleX = scaleY * (Number.isFinite(stretch) && stretch > 0 ? stretch : 1)
+      const renderedLength = useManualTextLength
+        ? run.naturalElement.getSubStringLength(index, grapheme.length) * stretch!
+        : renderedRoot.getSubStringLength(globalIndex, grapheme.length)
+      const naturalLength = run.naturalElement.getSubStringLength(index, grapheme.length)
+      const measuredStretch = naturalLength > 0 ? renderedLength / naturalLength : 1
+      const scaleX =
+        scaleY * (Number.isFinite(measuredStretch) && measuredStretch > 0 ? measuredStretch : 1)
       const baselineOffset = isTopDominantBaseline(style.dominantBaseline)
         ? style.font.ascent * scaleY
         : 0

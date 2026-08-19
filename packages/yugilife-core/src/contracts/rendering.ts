@@ -101,6 +101,8 @@ export interface RenderedCard {
   template: CardTemplate
   /** Rasterizes the complete ordered composition to a PNG Blob at the requested scale. */
   toPng(options?: PngExportOptions): Promise<Blob>
+  /** Returns ordered segments with live SVG text replaced by font outlines. */
+  toOutlinedSegments(): Promise<readonly RenderSegment[]>
   /** Asynchronously serializes this render; defaults to portable outlined text paths. */
   toSvg(options?: SvgExportOptions): Promise<string>
   /** All vector elements in template order; use renderSegments when compositing. */

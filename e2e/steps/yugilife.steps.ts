@@ -29,6 +29,17 @@ Given("I open the card builder", async ({ page }) => {
   await expect(cardName(page)).toBeVisible()
 })
 
+Given("I open the Salamangreat card builder", async ({ page }) => {
+  await page.goto("/inventory")
+  await expect(page.getByRole("heading", { exact: true, name: "Inventory" })).toBeVisible()
+  await page.getByRole("button", { name: /^Salamangreat Violet Chimera/ }).click()
+  await expect(
+    page.getByRole("heading", { exact: true, name: "Salamangreat Violet Chimera" }),
+  ).toBeVisible()
+  await page.getByRole("link", { exact: true, name: "Edit card" }).click()
+  await expect(page.locator('[data-template="card/series-10"] svg').first()).toBeVisible()
+})
+
 Given("I open the inventory", async ({ page }) => {
   await page.goto("/inventory")
   await expect(page.getByRole("heading", { exact: true, name: "Inventory" })).toBeVisible()
@@ -98,6 +109,16 @@ When("I select WebP at 2× export size", async ({ page }) => {
 
 Then("the card name is {string}", async ({ page }, value: string) => {
   await expect(cardName(page)).toHaveValue(value)
+})
+
+Then("the Salamangreat preview uses outlined glyphs in Firefox", async ({ page, browserName }) => {
+  const card = page.locator('[data-template="card/series-10"]')
+  if (browserName === "firefox") {
+    await expect(card.locator("svg text, svg tspan")).toHaveCount(0)
+    expect(await card.locator("svg path").count()).toBeGreaterThan(0)
+    return
+  }
+  expect(await card.locator("svg text, svg tspan").count()).toBeGreaterThan(0)
 })
 
 Then("the export dimensions are {string}", async ({ page }, value: string) => {

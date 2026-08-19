@@ -56,6 +56,10 @@ function summarizeCard(card: CardData) {
   )
 }
 
+function needsOutlinedPreview() {
+  return typeof navigator !== "undefined" && /Firefox\//.test(navigator.userAgent)
+}
+
 function summarizeRenderOptions({
   assets,
   layerRenderers,
@@ -245,7 +249,7 @@ export function Card({
     // Reading the revision makes explicit that it is an invalidation token, not renderer data.
     void renderRevision
     void renderCard(card, options)
-      .then((rendered) => {
+      .then(async (rendered) => {
         settled = true
         if (debugLogging) {
           console.log("[YugiLife Card] render completed", {
@@ -258,8 +262,12 @@ export function Card({
           })
         }
         if (!active || controller.signal.aborted) return
+        const previewSegments = needsOutlinedPreview()
+          ? await rendered.toOutlinedSegments()
+          : rendered.renderSegments
+        if (!active || controller.signal.aborted) return
         setError(undefined)
-        setRenderSegments(rendered.renderSegments)
+        setRenderSegments(previewSegments)
         callbacks.current.onReady?.()
       })
       .catch((reason: unknown) => {
