@@ -1,0 +1,159 @@
+import buildPage from "./assets/build-page.webp"
+import inventoryPage from "./assets/inventory-page.webp"
+import oldLogo from "./assets/old-yugilife-logo.ico"
+import referenceSideBySide from "./assets/reference-side-by-side.webp"
+import newLogo from "./assets/yugilife-logo-new.svg"
+
+In my [previous post](/blog/return-after-six-years) I explained why I ended up disappearing from Yugilife for 6 years. Now I'm going to announce a totally new release rebuilt from scratch. There are so many new things to talk about, but before anything, there is one thing more important than everything else:
+
+Yugilife is now open source!
+
+The code, template definitions, and assets are available in the [GitHub repository](https://github.com/alixsep/yugilife).
+
+<figure>
+  <img src={buildPage} alt="The new Yugilife app with a finished card preview visible." />
+</figure>
+
+There's a lot more: now you have an inventory, the template has been redesigned, templates have open layers, you can import/export cards with JSON, there's now a CLI to create cards from your command line, you can also export WebP, SVG, and JPG in any size you need, and the list goes on. I'll explain the most important ones later in this post.
+
+## A new reworked and even better template, and the template is open too
+
+This version has the most accurate Series 10 template Yugilife has ever had. I revised the frame textures, effect boxes, Pendulum layouts, Link arrows, artwork masks, typography, rich-text fitting, spacing, and a lot of small details which are easy to miss. I compared the result against real cards and kept the calibration material with the template work instead of treating the old website's output as an unquestionable source of truth. But true accuracy is something that is near impossible to achieve, and once you go past a threshold, the effort required to make it more accurate becomes unreasonably high. I might make another blog post on accuracy since there's so much to talk about. Nevertheless, since templates are editable, they could be improved without the need to change Yugilife's internal code.
+
+For example, one of the problems people emailed me about was the card title moving downwards in the exported image, especially on phones. The preview looked correct, but the downloaded card did not. That issue is fixed now, but it was a font issue which didn't even have anything to do with the app. Now that the templates and renderer are decoupled, problems like these would be easily solved by swapping the problematic asset from the template.
+
+Textures, fonts, typography, dimensions, masks, color presets, layer order, fields, and presentation rules are represented as template data and assets in the repository. The renderer does not have knowledge of what it's going to render. It receives a template and renders what the template declares.
+
+That openness matters because the template is where much of the visual truth lives. If a texture is wrong, the texture can be inspected. If a title is too low, the typography and its position can be inspected. If a card family needs a different presentation, the semantic rules can be inspected. Someone else can find a mistake, suggest a correction, or use the same structure for another template without editing the renderer's code.
+
+The rendering code is separated into `yugilife-core`, which is a general renderer. It owns validation, rich text, text fitting, ordered layers, masks, fonts, color grading, SVG, PNG, JPEG, and WebP export. It does not even have knowledge of what a Yu-Gi-Oh! card is. The application supplies a template bundle, and the core renders it.
+
+```
+├── apps
+│   └── yugilife <-- the website you are reading this blog from
+└── packages
+    ├── yugilife-cli <-- use yugilife-core on command line/terminal
+    ├── yugilife-core <-- render tool
+    └── yugilife-templates <-- templates you need for yugilife-core
+```
+
+This gives the project a lot more room for the future. Yugilife can remain a card editor while the core can be used by a command-line tool, another application, or even changed to something else.
+
+## Inventory
+
+The biggest practical difference is that Yugilife now has an Inventory. You can create multiple cards, save them in the browser, duplicate them, delete them, and return to any of them later. Each card has its own identity, artwork, template version, saved preview, and editing state.
+
+<figure>
+  <img src={inventoryPage} alt="The Yugilife Inventory showing several saved cards." />
+</figure>
+
+The old version was essentially centered around one card at a time. Now Yugilife treats cards as actual documents. The editor is a working session, and pressing Save commits a complete snapshot to your local collection. If a render or save fails, the previous saved version stays safe. If you edit something while a save is happening, Yugilife keeps those edits visibly unsaved.
+
+## More export formats and editable projects
+
+The new export system supports PNG, JPEG, WebP, and SVG. Raster exports can use the original size, half size, 2x, 4x, 8x, or a custom width or height while preserving the card's proportions. JPEG and WebP expose quality controls, and JPEG lets you choose its background color. SVG is resolution-independent and defaults to outlined text for portability.
+
+There is also an editable JSON project format. It contains the card fields, presentation choices, template identity, and uploaded card artwork, so you can download a card project and import it later. It is a real document with a bounded, versioned shape, and Yugilife validates it before applying it.
+
+The browser Inventory is still the convenient way to manage a collection of cards. The JSON project is for exchanging or backing up one editable card. Keeping those two things separate makes both of them less confusing.
+
+## A lot more customizability
+
+Now that the template has open layers, it should also allow users to have more freedom to customize. The editor now has two modes: Automatic, which is the default, and Advanced.
+
+Automatic mode is for making a card without having to understand how the card renderer is built. You choose the card variant and fill in the relevant fields. Yugilife figures out which parts of the card should be visible and which presentation rules should be active.
+
+Advanced mode is there for when Automatic mode makes a reasonable choice but you want something else, like deliberately overriding presentation rules or creating custom cards that are unofficial (like a Pendulum Trap Card). It exposes typography, text fitting, appearance presets, individual layer visibility, masks, and other presentation controls.
+
+Switching card variants or moving between Automatic and Advanced mode preserves the information on the card. You can also see which custom settings are active and clear them individually or all at once. If you write something in a field that is currently inactive, that value stays attached to the card and can become active again later, meaning that experimenting with a card is much less destructive.
+
+## Rich text support
+
+Now Yugilife treats card text as a small, deliberately limited syntax. The exact source stays inside the card document, so you can write things like:
+
+```text
+1<sup>st</sup> Edition
+<b>Important effect</b>
+ATK<space width="8px"/>/DEF
+<scale x="0.7">2020 Studio Dice/SHUEISHA, TV TOKYO, KONAMI</scale>
+```
+
+There are also tags for italic text, colors, subscripts, ruby annotations, explicit alignment, local scaling, spacing, and controlled line wrapping. The source is preserved exactly. Preview, SVG, and image export all use the same interpretation of it.
+
+Text fitting has also been rebuilt. Descriptions and Pendulum effects have declared size profiles, and Automatic mode can select the largest profile that fits. If a line is a little too wide, it can be compressed within a known limit instead of suddenly becoming unreadably small. The system can also understand the common card-writing case where the first authored line is meant to stay as a separate leading line if possible. (I have seen it happen for Fusion, Synchro, Xyz, and Link.) These details are invisible most of the time, which is exactly how they should be.
+
+## yugilife-cli
+
+I also wanted Yugilife to work without opening the website. The `yugilife-cli` package lets you create a card document as JSON and render it from the command line. This is useful if you want to generate cards from scripts, keep card definitions in a repository, or just prefer not to use a browser for every card.
+
+The input is a small JSON document which contains the card fields, an optional template, and local file references for things such as artwork:
+
+```json
+{
+  "template": "card/series-10",
+  "card": {
+    "name": "Example Card",
+    "cardVariant": "effect",
+    "description": "Rendered from the command line"
+  },
+  "files": {
+    "artwork": "./artwork.png"
+  }
+}
+```
+
+The CLI uses the same browser renderer as `yugilife-core`. It does not import the React application, and rendering does not download anything, so a card made from the website and a card made from the command line go through the same rendering code. The image paths are resolved relative to the JSON file, which makes it possible to keep a card and all of its assets together in one folder.
+
+The output file extension decides whether the result is SVG, PNG, JPEG, or WebP. For raster images you can use the original template size, a scale, or a custom width or height, and JPEG and WebP have quality controls. SVG uses outlined text by default, so the result does not depend on the fonts installed on the other person's computer. You can also choose SVG text when you need the output to remain selectable.
+
+Templates are a separate part of the CLI. The Series 10 template is included with it, while other exact template versions can be installed and listed locally. Installing a template checks its declared size, verifies its SHA-256 hash, validates the template with the current core schema, and only then moves it into the local template storage. Rendering itself remains local and does not silently change the templates on your machine.
+
+There is also a `doctor` command which checks the CLI and core versions, the exact Chromium build, the local browser harness, and a small renderer smoke test. I added it because errors caused by a missing browser are not very interesting to debug, and the CLI should be able to tell you whether it is ready before you try to render a whole collection of cards.
+
+## Better preview and newly added reference comparison
+
+The card preview also has a better playground. You can pan and zoom it with a mouse, keyboard, trackpad, or touch gestures. Pinch zooming is also supported.
+
+The new editor has a References section where you can add finished cards or source images from your own device. You can compare them side by side or place them over the live preview with adjustable opacity. The reference can be moved, stretched independently on each axis, rotated, and reset when you make a mess of the alignment.
+
+The reference images stay local to your browser. I wanted this feature because visual calibration is much easier when you can put the thing you are trying to reproduce directly over the thing you are building. It is also useful when you are checking a card against a scan, comparing a translated version, or tweaking minor details.
+
+<figure>
+  <img
+    src={referenceSideBySide}
+    alt="A reference card or scan overlaid on the live Yugilife preview."
+  />
+</figure>
+
+## Input suggestions
+
+For repeated values such as Edition and Copyright, the template can provide suggestions while still allowing custom text. For example, choosing "1st Edition" writes the correct superscript markup into the card, and choosing a copyright recommendation can write the appropriate text.
+
+## New Yugilife logo
+
+It's a small change, but even the logo couldn't be saved from a total redesign. Here is the before and after:
+
+<figure className="grid grid-cols-2 gap-4">
+  <div className="border-border grid min-h-40 place-items-center border bg-white p-8">
+    <img className="!size-16 !border-0 object-contain" src={oldLogo} alt="The old Yugilife logo." />
+  </div>
+  <div className="border-border grid min-h-40 place-items-center border bg-white p-8">
+    <img className="!size-16 !border-0 object-contain" src={newLogo} alt="The new Yugilife logo." />
+  </div>
+</figure>
+
+The old logo was inspired by the icon of quick effect spells. Now it's Y and L stuck together, representing the brand name.
+
+## A lot of invisible work
+
+The visible features are only one part of the rebuild. The codebase has tests for the core's contracts, validation, rich text, fonts, masks, layer order, SVG and raster export, asset loading, and render cancellation. The app tests editor transitions, migrations, template storage, and Inventory persistence. The template package has contract, semantics, and visual regression tests, and the CLI has tests for JSON transport, output options, and template installation.
+
+Playwright runs the browser tests in Chromium and Firefox. The visual suite renders real card fixtures and compares lossless WebP snapshots pixel by pixel, including frame variants, Pendulum layouts, rich text, masks, and font outlines. The CLI launches its own pinned Playwright Chromium build, so command-line rendering is tested in a real browser too.
+
+A lot of the work is in failure cases. Untrusted JSON is validated before it is used. User transitions preserve inactive data. Failed downloads do not activate half a template. Failed saves do not replace a valid card with a broken snapshot. A newer render cannot be replaced by an older one. Rendering can be cancelled, and generated assets are checked instead of being silently rewritten during normal tests.
+
+I also spent a lot of time on performance. Fonts and heavy assets are not all pushed into the first application load, gallery cards use saved previews instead of mounting a full renderer for every card, and raster work can use GPU color grading where it is available.
+
+Every time I tried to fix one old problem, I found that the real problem was deeper in the structure. So instead of putting another patch on top of the old project, I decided to make the whole thing properly this time.
+
+There are so many details I can write about. I am excited to talk about them over time.

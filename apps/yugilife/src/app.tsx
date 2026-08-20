@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { lazy, Suspense, useCallback, useState } from "react"
 
 import { BrowserRouter, HashRouter, Route, Routes } from "react-router"
 
@@ -8,12 +8,28 @@ import { ThemeProvider } from "@/lib/theme-context"
 import { CustomCursor } from "./components/custom-cursor"
 import { LogoLoadingScreen } from "./components/logo-loading-screen"
 import { PageTransition } from "./components/page-transition"
-import BlogIndex from "./content/blog/index.mdx"
+import { usePageTransitionReady } from "./components/page-transition-ready"
 import { AccentColorProvider } from "./lib/accent-color-context"
-import { Blog } from "./pages/blog"
-import { Build } from "./pages/build"
-import { Home } from "./pages/home"
-import { Inventory } from "./pages/inventory"
+import { BlogIndexPage, BlogPostPage } from "./pages/blog"
+
+const Build = lazy(() => import("./pages/build").then((module) => ({ default: module.Build })))
+const Home = lazy(() => import("./pages/home").then((module) => ({ default: module.Home })))
+const Inventory = lazy(() =>
+  import("./pages/inventory").then((module) => ({ default: module.Inventory })),
+)
+
+function RouteLoadingFallback() {
+  usePageTransitionReady(false)
+
+  return (
+    <main
+      aria-label="Loading page"
+      aria-live="polite"
+      className="bg-background min-h-dvh"
+      role="status"
+    />
+  )
+}
 
 export default function App() {
   const usesHashRouting = import.meta.env.BASE_URL !== "/"
@@ -30,7 +46,7 @@ export default function App() {
   const prepareLanding = useCallback(() => setLandingPreparing(true), [])
   const completeStartup = useCallback(() => setStartupComplete(true), [])
   const completeLanding = useCallback(() => setLandingReady(true), [])
-  const showApplication = startupComplete || (landingEntry && landingPreparing)
+  const showApplication = startupComplete || !landingEntry || landingPreparing
 
   return (
     <ThemeProvider>
@@ -49,13 +65,16 @@ export default function App() {
               <Router>
                 <PageTransition>
                   {(displayLocation) => (
-                    <Routes location={displayLocation}>
-                      <Route index element={<Home onReady={completeLanding} />} />
-                      <Route path="build" element={<Build />} />
-                      <Route path="build/:cardId" element={<Build />} />
-                      <Route path="inventory" element={<Inventory />} />
-                      <Route path="blog" element={<Blog content={<BlogIndex />} />} />
-                    </Routes>
+                    <Suspense fallback={<RouteLoadingFallback />}>
+                      <Routes location={displayLocation}>
+                        <Route index element={<Home onReady={completeLanding} />} />
+                        <Route path="build" element={<Build />} />
+                        <Route path="build/:cardId" element={<Build />} />
+                        <Route path="inventory" element={<Inventory />} />
+                        <Route path="blog" element={<BlogIndexPage />} />
+                        <Route path="blog/:slug" element={<BlogPostPage />} />
+                      </Routes>
+                    </Suspense>
                   )}
                 </PageTransition>
               </Router>

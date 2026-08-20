@@ -1,6 +1,6 @@
 import { useCallback, useId, useLayoutEffect, useRef, useState } from "react"
 
-import { useLocation } from "react-router"
+import { useLocation, useNavigationType } from "react-router"
 
 import { cn } from "@/lib/utils"
 
@@ -92,6 +92,7 @@ function transitionPath(
 
 export function PageTransition({ children }: { children: (location: Location) => ReactNode }) {
   const location = useLocation()
+  const navigationType = useNavigationType()
   const [displayLocation, setDisplayLocation] = useState(location)
   const [isAnimating, setIsAnimating] = useState(false)
   const displayLocationRef = useRef(location)
@@ -101,6 +102,7 @@ export function PageTransition({ children }: { children: (location: Location) =>
   const routeReadyRef = useRef(true)
   const coveredRef = useRef(false)
   const transitionIdRef = useRef(0)
+  const scrollPositionsRef = useRef(new Map<string, { left: number; top: number }>())
   const clipId = useId().replace(/:/g, "")
   const pathId = `${clipId}-path`
 
@@ -140,6 +142,17 @@ export function PageTransition({ children }: { children: (location: Location) =>
   }, [])
 
   useLayoutEffect(() => {
+    if (!("scrollRestoration" in window.history)) return
+
+    const previousScrollRestoration = window.history.scrollRestoration
+    window.history.scrollRestoration = "manual"
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration
+    }
+  }, [])
+
+  useLayoutEffect(() => {
     const displayed = displayLocationRef.current
     if (
       location.pathname === displayed.pathname &&
@@ -154,6 +167,12 @@ export function PageTransition({ children }: { children: (location: Location) =>
 
     const transitionId = ++transitionIdRef.current
     const nextLocation = location
+    const nextNavigationType = navigationType
+
+    scrollPositionsRef.current.set(displayed.key, {
+      left: window.scrollX,
+      top: window.scrollY,
+    })
 
     const run = async () => {
       const alreadyCovered = coveredRef.current
@@ -191,6 +210,25 @@ export function PageTransition({ children }: { children: (location: Location) =>
       const ready = await waitForRouteReady()
       if (!ready || transitionId !== transitionIdRef.current) return
 
+      if (nextNavigationType === "POP") {
+        const savedPosition = scrollPositionsRef.current.get(nextLocation.key)
+        window.scrollTo(savedPosition?.left ?? 0, savedPosition?.top ?? 0)
+      } else if (nextLocation.hash) {
+        const encodedHash = nextLocation.hash.slice(1)
+        let hash = encodedHash
+        try {
+          hash = decodeURIComponent(encodedHash)
+        } catch {
+          // Keep the literal fragment when it contains malformed escape sequences.
+        }
+
+        const target = document.getElementById(hash)
+        if (target) target.scrollIntoView()
+        else window.scrollTo(0, 0)
+      } else {
+        window.scrollTo(0, 0)
+      }
+
       path.setAttribute("d", paths.exit.filled)
 
       const opening = await transitionPath(
@@ -226,7 +264,7 @@ export function PageTransition({ children }: { children: (location: Location) =>
       readyWaitCancelRef.current?.()
       readyWaitCancelRef.current = null
     }
-  }, [location, waitForRouteReady])
+  }, [location, navigationType, waitForRouteReady])
 
   return (
     <>
