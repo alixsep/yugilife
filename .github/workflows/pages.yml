@@ -36,6 +36,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
       # Pages deployment only packages a static artifact. Keep exhaustive browser Playwright
       # verification out of this job because it is too expensive for every deploy; developers
