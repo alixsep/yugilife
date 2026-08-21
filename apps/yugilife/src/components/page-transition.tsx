@@ -1,6 +1,6 @@
 import { useCallback, useId, useLayoutEffect, useRef, useState } from "react"
 
-import { useLocation, useNavigationType } from "react-router"
+import { NavigationType, useLocation, useNavigationType } from "react-router"
 
 import { cn } from "@/lib/utils"
 
@@ -210,7 +210,7 @@ export function PageTransition({ children }: { children: (location: Location) =>
       const ready = await waitForRouteReady()
       if (!ready || transitionId !== transitionIdRef.current) return
 
-      if (nextNavigationType === "POP") {
+      if (nextNavigationType === NavigationType.Pop) {
         const savedPosition = scrollPositionsRef.current.get(nextLocation.key)
         window.scrollTo(savedPosition?.left ?? 0, savedPosition?.top ?? 0)
       } else if (nextLocation.hash) {

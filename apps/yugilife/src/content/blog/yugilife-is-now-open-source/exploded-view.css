@@ -1,0 +1,110 @@
+.exploded-view {
+  --exploded-card-width: clamp(11.5rem, 50vw, 17rem);
+  margin-block: 3rem;
+}
+
+.exploded-view__stage {
+  position: relative;
+  display: grid;
+  height: clamp(31rem, 78vw, 39rem);
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--muted);
+  cursor: grab;
+  perspective: 1250px;
+  perspective-origin: 50% 46%;
+  touch-action: none;
+  user-select: none;
+}
+
+.exploded-view__stage[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.exploded-view__scene {
+  position: relative;
+  width: calc(var(--exploded-card-width) * var(--zoom, 1));
+  aspect-ratio: 813 / 1185;
+  transform: translate3d(var(--pan-x, 0), var(--pan-y, 0), 0) rotateX(var(--rotate-x, -5deg))
+    rotateY(var(--rotate-y, 14deg));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.exploded-view__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.exploded-view__layer > img,
+.exploded-view__layer > svg,
+.exploded-view__layer > div {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.exploded-view__layer:not([data-layer="cardBackground"])::before {
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 45%) 0 8px, transparent 8px 16px) top / 100%
+      1px no-repeat,
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 45%) 0 8px, transparent 8px 16px) bottom /
+      100% 1px no-repeat,
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 45%) 0 8px, transparent 8px 16px) left / 1px
+      100% no-repeat,
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 45%) 0 8px, transparent 8px 16px) right / 1px
+      100% no-repeat,
+    rgb(255 255 255 / 4%);
+  content: "";
+}
+
+.exploded-view__card-surface {
+  border-radius: 2.4%;
+  background: white;
+  box-shadow: 0 16px 22px rgb(0 0 0 / 30%);
+}
+
+.exploded-view__controls {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem 0.25rem 0;
+}
+
+.exploded-view__hint {
+  margin: 0 !important;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  line-height: 1rem !important;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .exploded-view {
+    --exploded-card-width: clamp(10.5rem, 52vw, 13rem);
+  }
+
+  .exploded-view__stage {
+    height: 30rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exploded-view__scene {
+    will-change: auto;
+  }
+}

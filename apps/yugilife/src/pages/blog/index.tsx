@@ -1,9 +1,11 @@
 import { lazy, Suspense } from "react"
+
+import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Link, Navigate, useParams } from "react-router"
 
+import { Button } from "@/components/ui/button"
 import BlogIndexIntro from "@/content/blog/index.mdx"
 import { blogPosts, getAdjacentBlogPosts, getBlogPost } from "@/content/blog/posts"
-
 import { useAccentColorContext } from "@/lib/accent-color-context"
 
 import type { AnchorHTMLAttributes, CSSProperties, ReactNode } from "react"
@@ -24,7 +26,7 @@ const blogShortDateFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 })
 
-export function formatBlogDate(date: string) {
+function formatBlogDate(date: string) {
   return blogDateFormatter.format(new Date(`${date}T00:00:00Z`))
 }
 
@@ -42,7 +44,7 @@ function BlogLayout({ children }: { children: ReactNode }) {
       </Suspense>
       <div className="mx-auto flex w-full max-w-[900px] flex-1 justify-center px-5 py-14 sm:px-8 sm:py-20">
         <article
-          className="[&_code]:bg-muted [&_figcaption]:text-muted-foreground [&_li]:text-muted-foreground [&_p]:text-muted-foreground [&_pre]:bg-muted [&_code]:text-foreground [&_img]:border-border [&_pre]:border-border w-full max-w-[68ch] text-left [&_code]:rounded-sm [&_code]:box-decoration-clone [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-sm [&_figure]:my-12 [&_h1]:mt-0 [&_h1]:max-w-[18ch] [&_h1]:text-[clamp(2.35rem,6vw,3.65rem)] [&_h1]:leading-[1.04] [&_h1]:font-medium [&_h1]:tracking-[-0.045em] [&_h1]:text-balance [&_h2]:mt-14 [&_h2]:text-2xl [&_h2]:font-medium [&_h2]:tracking-[-0.02em] [&_h2]:text-balance [&_h3]:mt-10 [&_h3]:text-xl [&_h3]:font-medium [&_h3]:text-balance [&_img]:mx-auto [&_img]:max-h-[70vh] [&_img]:w-full [&_img]:border [&_li]:mt-2 [&_p]:mt-6 [&_p]:leading-8 [&_pre]:mt-8 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:p-4 [&_pre]:text-[0.8125rem] [&_pre]:leading-6 [&_pre]:[overflow-wrap:anywhere] [&_pre]:whitespace-pre-wrap [&_pre_code]:rounded-none [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit [&_ul]:mt-6 [&_ul]:list-disc [&_ul]:pl-6"
+          className="[&_code]:bg-muted [&_figcaption]:text-muted-foreground [&_li]:text-muted-foreground [&_p]:text-muted-foreground [&_pre]:bg-muted [&_code]:text-foreground [&_img]:border-border [&_pre]:border-border w-full max-w-[68ch] text-left [&_code]:rounded-sm [&_code]:box-decoration-clone [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-sm [&_figure]:my-12 [&_h1]:mt-0 [&_h1]:max-w-[18ch] [&_h1]:text-[clamp(2.35rem,6vw,3.65rem)] [&_h1]:leading-[1.04] [&_h1]:font-medium [&_h1]:tracking-[-0.045em] [&_h1]:text-balance [&_h2]:mt-14 [&_h2]:text-2xl [&_h2]:font-medium [&_h2]:tracking-[-0.02em] [&_h2]:text-balance [&_h3]:mt-10 [&_h3]:text-xl [&_h3]:font-medium [&_h3]:text-balance [&_img]:mx-auto [&_img]:max-h-[70vh] [&_img]:w-full [&_img]:rounded-lg [&_img]:border [&_li]:mt-2 [&_p]:mt-6 [&_p]:leading-8 [&_pre]:mt-8 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:p-4 [&_pre]:text-[0.8125rem] [&_pre]:leading-6 [&_pre]:[overflow-wrap:anywhere] [&_pre]:whitespace-pre-wrap [&_pre_code]:rounded-none [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit [&_ul]:mt-6 [&_ul]:list-disc [&_ul]:pl-6"
           style={{ "--blog-accent": accentColor } as CSSProperties}
         >
           {children}
@@ -114,7 +116,7 @@ function BlogPostNavigationLink({
 }) {
   const isPrevious = direction === "previous"
   const label = isPrevious ? "Previous post" : "Next post"
-  const arrow = isPrevious ? "←" : "→"
+  const Arrow = isPrevious ? ArrowLeft : ArrowRight
 
   return (
     <Link
@@ -122,8 +124,10 @@ function BlogPostNavigationLink({
       aria-label={`${label}: ${post.title}`}
       className={`group flex min-w-0 flex-col gap-1 rounded-sm no-underline outline-none focus-visible:ring-2 focus-visible:ring-(--blog-accent) focus-visible:ring-offset-4 focus-visible:ring-offset-(--background) ${isPrevious ? "items-start text-left" : "items-end text-right"}`}
     >
-      <span className="text-sm text-(--blog-accent)">
-        {arrow} {label}
+      <span className="flex items-center gap-1.5 text-sm text-(--blog-accent)">
+        {isPrevious ? <Arrow aria-hidden="true" className="size-4" /> : null}
+        {label}
+        {!isPrevious ? <Arrow aria-hidden="true" className="size-4" /> : null}
       </span>
       <span className="text-muted-foreground group-hover:text-foreground line-clamp-2 text-sm [overflow-wrap:anywhere] transition-colors">
         {post.title}
@@ -175,6 +179,15 @@ export function BlogPostPage() {
 
   return (
     <BlogLayout>
+      <Button
+        asChild
+        className="mb-10 -ml-3"
+        leadingIcon={ArrowLeft}
+        variant="ghost"
+        style={{ color: "var(--blog-accent)" }}
+      >
+        <Link to="/blog">Back to blog</Link>
+      </Button>
       <header className="mb-12">
         <h1>{post.title}</h1>
         <time className="text-muted-foreground mt-5 block text-sm" dateTime={post.date}>

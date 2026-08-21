@@ -3,9 +3,8 @@ import returnAfterSixYearsMetadata from "./return-after-six-years/metadata"
 import YugilifeIsNowOpenSource from "./yugilife-is-now-open-source/index.mdx"
 import yugilifeIsNowOpenSourceMetadata from "./yugilife-is-now-open-source/metadata"
 
-import type { AnchorHTMLAttributes, ComponentType } from "react"
-
 import type { BlogPostMetadata } from "./types"
+import type { AnchorHTMLAttributes, ComponentType } from "react"
 
 export interface BlogPostComponentProps {
   readonly components?: {

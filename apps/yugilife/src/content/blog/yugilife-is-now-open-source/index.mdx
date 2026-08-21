@@ -1,8 +1,9 @@
 import buildPage from "./assets/build-page.webp"
 import inventoryPage from "./assets/inventory-page.webp"
-import oldLogo from "./assets/old-yugilife-logo.ico"
+import oldLogo from "./assets/old-yugilife-logo.webp"
 import referenceSideBySide from "./assets/reference-side-by-side.webp"
 import newLogo from "./assets/yugilife-logo-new.svg"
+import { ExplodedView } from "./exploded-view"
 
 In my [previous post](/blog/return-after-six-years) I explained why I ended up disappearing from Yugilife for 6 years. Now I'm going to announce a totally new release rebuilt from scratch. There are so many new things to talk about, but before anything, there is one thing more important than everything else:
 
@@ -23,6 +24,8 @@ This version has the most accurate Series 10 template Yugilife has ever had. I r
 For example, one of the problems people emailed me about was the card title moving downwards in the exported image, especially on phones. The preview looked correct, but the downloaded card did not. That issue is fixed now, but it was a font issue which didn't even have anything to do with the app. Now that the templates and renderer are decoupled, problems like these would be easily solved by swapping the problematic asset from the template.
 
 Textures, fonts, typography, dimensions, masks, color presets, layer order, fields, and presentation rules are represented as template data and assets in the repository. The renderer does not have knowledge of what it's going to render. It receives a template and renders what the template declares.
+
+<ExplodedView />
 
 That openness matters because the template is where much of the visual truth lives. If a texture is wrong, the texture can be inspected. If a title is too low, the typography and its position can be inspected. If a card family needs a different presentation, the semantic rules can be inspected. Someone else can find a mistake, suggest a correction, or use the same structure for another template without editing the renderer's code.
 
@@ -134,10 +137,10 @@ For repeated values such as Edition and Copyright, the template can provide sugg
 It's a small change, but even the logo couldn't be saved from a total redesign. Here is the before and after:
 
 <figure className="grid grid-cols-2 gap-4">
-  <div className="border-border grid min-h-40 place-items-center border bg-white p-8">
+  <div className="border-border grid min-h-40 place-items-center rounded-lg border bg-white p-8">
     <img className="!size-16 !border-0 object-contain" src={oldLogo} alt="The old Yugilife logo." />
   </div>
-  <div className="border-border grid min-h-40 place-items-center border bg-white p-8">
+  <div className="border-border grid min-h-40 place-items-center rounded-lg border bg-white p-8">
     <img className="!size-16 !border-0 object-contain" src={newLogo} alt="The new Yugilife logo." />
   </div>
 </figure>
