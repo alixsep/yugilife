@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { offsetForPreviewZoom, previewPinchGesture } from "./preview-viewport"
+import { clampZoom, offsetForPreviewZoom, previewPinchGesture } from "./preview-viewport"
 
 describe("preview gestures", () => {
   it("derives pinch distance and midpoint from two active pointers", () => {
@@ -17,5 +17,16 @@ describe("preview gestures", () => {
       x: -60,
       y: -90,
     })
+  })
+
+  it("supports zoom translations relative to a fixed center", () => {
+    expect(
+      offsetForPreviewZoom({ x: 10, y: 5 }, { x: 150, y: 80 }, 0.75, 1.5, { x: 100, y: 100 }),
+    ).toEqual({ x: -30, y: 30 })
+  })
+
+  it("clamps configurable zoom ranges", () => {
+    expect(clampZoom(0.25, 0.55, 1.8)).toBe(0.55)
+    expect(clampZoom(3, 0.55, 1.8)).toBe(1.8)
   })
 })

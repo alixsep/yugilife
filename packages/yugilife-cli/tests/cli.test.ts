@@ -68,7 +68,7 @@ describe("CLI argument boundary", () => {
     await expect(runCli(["templates", "list"], captured.io)).resolves.toBe(0)
     expect(captured.read()).toEqual({
       stderr: "",
-      stdout: "card/series-10@2026.08.15\tpackaged\tSeries 10\n",
+      stdout: "card/series-10@2026.08.23\tpackaged\tSeries 10\n",
     })
   })
 
@@ -76,11 +76,11 @@ describe("CLI argument boundary", () => {
     const captured = output()
 
     await expect(
-      runCli(["templates", "install", "card/series-10@2026.08.15"], captured.io),
+      runCli(["templates", "install", "card/series-10@2026.08.23"], captured.io),
     ).resolves.toBe(0)
     expect(captured.read()).toEqual({
       stderr: "",
-      stdout: "card/series-10@2026.08.15 is already available locally.\n",
+      stdout: "card/series-10@2026.08.23 is already available locally.\n",
     })
   })
 
@@ -210,7 +210,7 @@ describe("JSON transport", () => {
     expect(request.format).toBe("svg")
     expect(request.templateBundle.manifest).toMatchObject({
       id: "card/series-10",
-      version: "2026.08.15",
+      version: "2026.08.23",
     })
     expect(request.files.artwork).toMatch(/^data:image\/png;base64,/u)
   })

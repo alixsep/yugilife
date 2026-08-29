@@ -3,7 +3,7 @@
     "id": "card/series-10",
     "kind": "card",
     "name": "Series 10",
-    "version": "2026.08.15",
+    "version": "2026.08.23",
     "template": "./template.json",
     "assets": {
       "card.series-10.artwork-mask": "./assets/artwork-mask.webp",

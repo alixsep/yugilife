@@ -586,6 +586,11 @@
         "name": "artwork",
         "kind": "image",
         "label": "Artwork"
+      },
+      {
+        "name": "artworkOverlay",
+        "kind": "image",
+        "label": "Artwork overlay"
       }
     ],
     "semanticBindings": {
@@ -1038,6 +1043,34 @@
         }
       },
       {
+        "id": "artwork",
+        "kind": "artwork",
+        "label": "Artwork",
+        "group": "Artwork and frames",
+        "field": "artwork",
+        "region": {
+          "x": 100,
+          "y": 219,
+          "width": 613,
+          "height": 613
+        }
+      },
+      {
+        "id": "pendulumArtwork",
+        "kind": "artwork",
+        "label": "Pendulum artwork",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "field": "artwork",
+        "fit": "width",
+        "region": {
+          "x": 55,
+          "y": 212,
+          "width": 703,
+          "height": 903
+        }
+      },
+      {
         "id": "frameTexture",
         "kind": "raster",
         "label": "Frame texture",
@@ -1160,39 +1193,24 @@
         }
       },
       {
-        "id": "artwork",
-        "kind": "artwork",
-        "label": "Artwork",
-        "group": "Artwork and frames",
-        "field": "artwork",
-        "region": {
-          "x": 100,
-          "y": 219,
-          "width": 613,
-          "height": 613
-        }
-      },
-      {
-        "id": "pendulumArtwork",
-        "kind": "artwork",
-        "label": "Pendulum artwork",
-        "group": "Artwork and frames",
-        "defaultVisible": false,
-        "field": "artwork",
-        "fit": "width",
-        "region": {
-          "x": 55,
-          "y": 212,
-          "width": 703,
-          "height": 903
-        }
-      },
-      {
         "id": "artworkBox",
         "kind": "image",
         "label": "Artwork box",
         "group": "Artwork and frames",
         "assetId": "card.series-10.artwork-box",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "artworkOverlay",
+        "kind": "artwork",
+        "label": "Artwork overlay",
+        "group": "Artwork and frames",
+        "field": "artworkOverlay",
         "region": {
           "x": 0,
           "y": 0,
@@ -1402,7 +1420,7 @@
         "defaultVisible": false,
         "region": {
           "x": 680,
-          "y": 145,
+          "y": 146,
           "width": 49,
           "height": 49
         }
@@ -1421,7 +1439,7 @@
         "defaultVisible": false,
         "region": {
           "x": 89.6,
-          "y": 145,
+          "y": 146,
           "width": 49,
           "height": 49
         }

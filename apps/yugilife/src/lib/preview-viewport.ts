@@ -17,8 +17,12 @@ export const PREVIEW_MIN_ZOOM = 0.25
 export const PREVIEW_MAX_ZOOM = 4
 export const PREVIEW_ZOOM_STEP = 1.2
 
+export function clampZoom(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
 export function clampPreviewZoom(value: number) {
-  return Math.min(PREVIEW_MAX_ZOOM, Math.max(PREVIEW_MIN_ZOOM, value))
+  return clampZoom(value, PREVIEW_MIN_ZOOM, PREVIEW_MAX_ZOOM)
 }
 
 export function previewPinchGesture(
@@ -51,10 +55,11 @@ export function offsetForPreviewZoom(
   focalPoint: PreviewPoint,
   currentZoom: number,
   nextZoom: number,
+  origin: PreviewPoint = { x: 0, y: 0 },
 ): PreviewPoint {
   const ratio = nextZoom / currentZoom
   return {
-    x: focalPoint.x - (focalPoint.x - offset.x) * ratio,
-    y: focalPoint.y - (focalPoint.y - offset.y) * ratio,
+    x: focalPoint.x - origin.x - (focalPoint.x - origin.x - offset.x) * ratio,
+    y: focalPoint.y - origin.y - (focalPoint.y - origin.y - offset.y) * ratio,
   }
 }

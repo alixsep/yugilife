@@ -14,17 +14,18 @@ import {
 } from "yugilife-core"
 import { DEFAULT_TEMPLATE_ID, getOfficialTemplate, TEMPLATE_CATALOG } from "yugilife-templates"
 
+import { migrateInventoryCardDocument } from "../../inventory/model/inventory-card-migration"
+import { upgradePersistedInventoryCardToCurrentTemplate } from "../../inventory/model/inventory-card-upgrade"
 import {
-  migrateInventoryCardDocument,
-  migrateInventoryCardToCurrentTemplate,
-} from "../../inventory/model/inventory-card-migration"
+  inventoryPreviewExportOptions,
+  inventoryPreviewFingerprint,
+} from "../../inventory/model/inventory-preview"
 import { writeActiveInventoryCardId } from "../../inventory/persistence/inventory-settings"
 import {
   createInventoryCard,
   getInventoryStorageMode,
   listInventoryCards,
   readInventoryCard,
-  saveInventoryCard,
   saveInventoryCardSnapshot,
 } from "../../inventory/persistence/inventory-storage"
 import {
@@ -311,9 +312,8 @@ export function useBuildController(cardId: string) {
           if (cancelled) return
           if (!saved) throw new Error("This inventory card does not exist.")
 
-          const loaded = await migrateInventoryCardToCurrentTemplate(saved)
+          const loaded = await upgradePersistedInventoryCardToCurrentTemplate(saved)
           const document = loaded.document
-          if (loaded !== saved) await saveInventoryCard(loaded)
           if (cancelled) return
           inventoryCard.current = loaded
           writeActiveInventoryCardId(loaded.id)
@@ -1010,11 +1010,10 @@ export function useBuildController(cardId: string) {
       const image = await exportCardToImage(
         projectCardForEditorMode(document.card, document.mode, activeEditorTemplate),
         {
-          format: "png",
+          ...inventoryPreviewExportOptions,
           layers: document.layers,
           presentationOverrides: document.presentationOverrides,
           presetOverrides: document.presetOverrides,
-          size: { width: 240 },
           templateBundle,
         },
       )
@@ -1022,7 +1021,10 @@ export function useBuildController(cardId: string) {
         cardId: next.id,
         cardRevision: next.revision,
         image,
-        renderFingerprint: `${document.templateId}@${document.templateVersion}:preview-v1`,
+        renderFingerprint: inventoryPreviewFingerprint(
+          document.templateId,
+          document.templateVersion,
+        ),
       })
       inventoryCard.current = next
       setSavedDocument(document)

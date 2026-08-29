@@ -59,12 +59,75 @@ const suggestedField: CardFieldDefinition = {
   ],
 }
 
+const passcodeField: CardFieldDefinition = {
+  kind: "text",
+  label: "Passcode",
+  name: "serialNumber",
+}
+
+const artworkField: CardFieldDefinition = {
+  kind: "image",
+  label: "Artwork",
+  name: "artwork",
+}
+
 afterEach(() => {
   reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = false
   document.body.replaceChildren()
+  vi.unstubAllGlobals()
 })
 
 describe("CardFieldInput", () => {
+  it("keeps passcodes as text so leading zeros survive editing", () => {
+    reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
+    const onChange = vi.fn()
+    const container = document.createElement("div")
+    document.body.append(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(<CardFieldInput field={passcodeField} onChange={onChange} value="01111111" />)
+    })
+
+    const input = container.querySelector("input") as HTMLInputElement
+    expect(input.type).toBe("text")
+    expect(input.value).toBe("01111111")
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(
+        input,
+        "00123456",
+      )
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    expect(onChange).toHaveBeenLastCalledWith("serialNumber", "00123456")
+
+    act(() => root.unmount())
+  })
+
+  it("shows hydrated Blob artwork from inventory", () => {
+    reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
+    const createObjectURL = vi.fn(() => "blob:stored-artwork")
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal(
+      "URL",
+      Object.assign(class extends globalThis.URL {}, { createObjectURL, revokeObjectURL }),
+    )
+    const container = document.createElement("div")
+    document.body.append(container)
+    const root = createRoot(container)
+    const artwork = new Blob(["artwork"], { type: "image/png" })
+
+    act(() => {
+      root.render(<CardFieldInput field={artworkField} onChange={vi.fn()} value={artwork} />)
+    })
+
+    expect(createObjectURL).toHaveBeenCalledWith(artwork)
+    expect(container.textContent).toContain("Stored image")
+
+    act(() => root.unmount())
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:stored-artwork")
+  })
+
   it("offers canonical text suggestions while keeping the input editable", () => {
     reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
     const onChange = vi.fn()

@@ -1,3 +1,5 @@
+import { inventoryPreviewMatchesCard } from "../model/inventory-preview"
+
 import type { EditorDocumentState } from "../../build/editor/model/editor-document"
 import type {
   InventoryCard,
@@ -502,11 +504,14 @@ export async function duplicateInventoryCard(id: string) {
     updatedAt: now,
   }
   const preview = await readInventoryPreview(source.id)
-  const expectedFingerprint = `${source.document.templateId}@${source.document.templateVersion}:preview-v1`
   if (
     preview &&
-    preview.cardRevision === source.revision &&
-    preview.renderFingerprint === expectedFingerprint
+    inventoryPreviewMatchesCard(preview, {
+      id: source.id,
+      revision: source.revision,
+      templateId: source.document.templateId,
+      templateVersion: source.document.templateVersion,
+    })
   ) {
     await saveInventoryCardSnapshot(duplicate, {
       ...preview,

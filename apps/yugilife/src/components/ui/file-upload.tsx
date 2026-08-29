@@ -17,7 +17,7 @@ interface ImageDropzoneProps extends Omit<
 > {
   accept?: string
   alt?: string
-  defaultValue?: File | null
+  defaultValue?: Blob | null
   disabled?: boolean
   error?: ReactNode
   maxSize?: number
@@ -29,7 +29,11 @@ interface ImageDropzoneProps extends Omit<
   removeButtonSize?: "icon" | "icon-compact"
   removeLabel?: string
   showAcceptHint?: boolean
-  value?: File | null
+  value?: Blob | null
+}
+
+function blobName(blob: Blob) {
+  return blob instanceof File && blob.name ? blob.name : "Stored image"
 }
 
 function matchesAccept(file: File, accept: string) {
@@ -77,7 +81,7 @@ const ImageDropzone = forwardRef<HTMLDivElement, ImageDropzoneProps>(
   ) => {
     const inputId = useId()
     const inputRef = useRef<HTMLInputElement>(null)
-    const [internalValue, setInternalValue] = useState<File | null>(defaultValue)
+    const [internalValue, setInternalValue] = useState<Blob | null>(defaultValue)
     const [objectUrl, setObjectUrl] = useState<string | null>(null)
     const [dragging, setDragging] = useState(false)
     const [localError, setLocalError] = useState<string | null>(null)
@@ -211,13 +215,13 @@ const ImageDropzone = forwardRef<HTMLDivElement, ImageDropzoneProps>(
         <div className="flex items-center justify-between gap-2">
           {currentValue && (
             <span className="text-muted-foreground min-w-0 truncate text-xs">
-              {currentValue.name} · {formatBytes(currentValue.size)}
+              {blobName(currentValue)} · {formatBytes(currentValue.size)}
             </span>
           )}
           {currentValue && (
             <ConfirmDialog
               confirmLabel={removeLabel}
-              description={`“${currentValue.name}” will be removed from this field.`}
+              description={`“${blobName(currentValue)}” will be removed from this field.`}
               title={`${removeLabel}?`}
               onConfirm={handleRemove}
               trigger={

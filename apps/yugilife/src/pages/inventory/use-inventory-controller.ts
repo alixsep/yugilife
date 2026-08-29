@@ -4,7 +4,8 @@ import { useNavigate } from "react-router"
 
 import { createInitialEditorDocument } from "../build/editor/model/editor-store"
 
-import { migrateInventoryCardToCurrentTemplate } from "./model/inventory-card-migration"
+import { upgradePersistedInventoryCardToCurrentTemplate } from "./model/inventory-card-upgrade"
+import { inventoryPreviewMatchesCard } from "./model/inventory-preview"
 import {
   createInventoryCard,
   deleteInventoryCard,
@@ -12,7 +13,6 @@ import {
   getInventoryStorageMode,
   readInventoryCard,
   readInventoryPreview,
-  saveInventoryCard,
 } from "./persistence/inventory-storage"
 import { initializeInventory } from "./inventory-initialization"
 
@@ -36,8 +36,7 @@ export function useInventoryController() {
           const card = await readInventoryCard(summary.id)
           if (!card) return summary
           try {
-            const next = await migrateInventoryCardToCurrentTemplate(card)
-            if (next !== card) await saveInventoryCard(next)
+            const next = await upgradePersistedInventoryCardToCurrentTemplate(card)
             return {
               createdAt: next.createdAt,
               id: next.id,
@@ -65,9 +64,7 @@ export function useInventoryController() {
       const previews = await Promise.all(
         sorted.map(async (card) => {
           const preview = await readInventoryPreview(card.id)
-          if (!preview || preview.cardRevision !== card.revision) return undefined
-          const expectedFingerprint = `${card.templateId}@${card.templateVersion}:preview-v1`
-          if (preview.renderFingerprint !== expectedFingerprint) return undefined
+          if (!preview || !inventoryPreviewMatchesCard(preview, card)) return undefined
           return [card.id, URL.createObjectURL(preview.image)] as const
         }),
       )

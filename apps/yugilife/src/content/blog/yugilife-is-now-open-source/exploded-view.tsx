@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react"
 
 import { Slider } from "@/components/ui/slider"
+import { previewPinchGesture } from "@/lib/preview-viewport"
 
 import attributeDark from "./assets/exploded-view/attribute-dark.webp"
 import border from "./assets/exploded-view/border.webp"
@@ -31,6 +32,7 @@ import pendulumScaleRight from "./assets/exploded-view/pendulum-scale-right.webp
 import pendulumSpellTexture from "./assets/exploded-view/pendulum-spell-texture.webp"
 import starRank from "./assets/exploded-view/star-rank.webp"
 import xyzTexture from "./assets/exploded-view/xyz-texture.webp"
+import { clampExplodedViewZoom, explodedViewPinchTransform } from "./exploded-view-gesture"
 
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react"
 
@@ -58,7 +60,7 @@ const STAT_GLYPH_LAYERS = [
   ["copyright", glyphCopyright],
 ] as const
 
-const LAYER_COUNT = 31
+const LAYER_COUNT = 32
 const LAYER_CENTER = (LAYER_COUNT - 1) / 2
 const DEPTH_SPREAD = 18
 
@@ -69,9 +71,11 @@ type Gesture =
   | (Rotation & { mode: "rotate"; pointerId: number; pointerX: number; pointerY: number })
   | (Point & {
       mode: "pan"
+      pinchDistance?: number
       pointerIds: readonly number[]
       pointerX: number
       pointerY: number
+      zoom: number
     })
 
 function layerStyle(index: number, explosion: number, zoom: number): CSSProperties {
@@ -95,6 +99,7 @@ function GlyphLayer({ id, src, style }: { id: string; src: string; style: CSSPro
 export function ExplodedView() {
   const [explosion, setExplosion] = useState(28)
   const [zoom, setZoom] = useState(1)
+  const zoomRef = useRef(1)
   const stageRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<HTMLDivElement>(null)
   const rotationRef = useRef<Rotation>({ x: -5, y: 14 })
@@ -110,9 +115,9 @@ export function ExplodedView() {
 
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault()
-      setZoom((current) =>
-        Math.max(0.55, Math.min(1.8, current * Math.exp(-event.deltaY * 0.0012))),
-      )
+      const next = clampExplodedViewZoom(zoomRef.current * Math.exp(-event.deltaY * 0.0012))
+      zoomRef.current = next
+      setZoom(next)
     }
 
     stage.addEventListener("wheel", handleWheel, { passive: false })
@@ -145,11 +150,15 @@ export function ExplodedView() {
       if (!firstTouch || !secondTouch) return
       const [firstId, first] = firstTouch
       const [secondId, second] = secondTouch
+      const pinch = previewPinchGesture([first, second])
+      if (!pinch) return
       gestureRef.current = {
         mode: "pan",
+        pinchDistance: pinch.distance,
         pointerIds: [firstId, secondId],
-        pointerX: (first.x + second.x) / 2,
-        pointerY: (first.y + second.y) / 2,
+        pointerX: pinch.midpoint.x,
+        pointerY: pinch.midpoint.y,
+        zoom: zoomRef.current,
         ...panRef.current,
       }
       return
@@ -194,6 +203,7 @@ export function ExplodedView() {
             pointerIds: [event.pointerId],
             pointerX: event.clientX,
             pointerY: event.clientY,
+            zoom: zoomRef.current,
             ...panRef.current,
           }
         : {
@@ -227,19 +237,31 @@ export function ExplodedView() {
     }
 
     if (!gesture.pointerIds.includes(event.pointerId)) return
-    let pointerX = event.clientX
-    let pointerY = event.clientY
     if (gesture.pointerIds.length >= 2) {
       const first = pointersRef.current.get(gesture.pointerIds[0]!)
       const second = pointersRef.current.get(gesture.pointerIds[1]!)
       if (!first || !second) return
-      pointerX = (first.x + second.x) / 2
-      pointerY = (first.y + second.y) / 2
+      const pinch = previewPinchGesture([first, second])
+      if (!pinch || !gesture.pinchDistance || gesture.pinchDistance <= 0) return
+      const bounds = event.currentTarget.getBoundingClientRect()
+      const next = explodedViewPinchTransform({
+        center: { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 },
+        distance: pinch.distance,
+        initialDistance: gesture.pinchDistance,
+        initialMidpoint: { x: gesture.pointerX, y: gesture.pointerY },
+        initialPan: { x: gesture.x, y: gesture.y },
+        initialZoom: gesture.zoom,
+        midpoint: pinch.midpoint,
+      })
+      zoomRef.current = next.zoom
+      setZoom(next.zoom)
+      updatePan(next.pan)
+      return
     }
 
     updatePan({
-      x: gesture.x + pointerX - gesture.pointerX,
-      y: gesture.y + pointerY - gesture.pointerY,
+      x: gesture.x + event.clientX - gesture.pointerX,
+      y: gesture.y + event.clientY - gesture.pointerY,
     })
   }
 
@@ -267,7 +289,7 @@ export function ExplodedView() {
       <div
         ref={stageRef}
         className="exploded-view__stage"
-        aria-label="Drag to rotate the card layers, right-drag or use two fingers to move, and scroll to zoom"
+        aria-label="Drag to rotate the card layers, right-drag to move, pinch or scroll to zoom"
         onContextMenu={(event) => event.preventDefault()}
         onPointerCancel={endDrag}
         onPointerDown={handlePointerDown}
@@ -289,6 +311,40 @@ export function ExplodedView() {
 
           <div className="exploded-view__layer" data-layer="border" style={nextLayerStyle()}>
             <img alt="" draggable={false} src={border} />
+          </div>
+
+          <div
+            className="exploded-view__layer"
+            data-layer="pendulumArtwork"
+            style={nextLayerStyle()}
+          >
+            <svg aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 813 1185">
+              <defs>
+                <clipPath id={svgId("pendulum-artwork-region")}>
+                  <rect height="903" width="703" x="55" y="212" />
+                </clipPath>
+                <mask
+                  id={svgId("pendulum-artwork-mask")}
+                  height="1185"
+                  maskUnits="userSpaceOnUse"
+                  width="813"
+                  x="0"
+                  y="0"
+                >
+                  <image height="1185" href={pendulumArtworkMask} width="813" x="0" y="0" />
+                </mask>
+              </defs>
+              <image
+                clipPath={`url(#${svgId("pendulum-artwork-region")})`}
+                height="899.56"
+                href={artwork}
+                mask={`url(#${svgId("pendulum-artwork-mask")})`}
+                preserveAspectRatio="none"
+                width="703"
+                x="55"
+                y="212"
+              />
+            </svg>
           </div>
 
           <div
@@ -405,38 +461,11 @@ export function ExplodedView() {
           </div>
 
           <div
+            aria-label="Optional artwork overlay"
             className="exploded-view__layer"
-            data-layer="pendulumArtwork"
+            data-layer="artworkOverlay"
             style={nextLayerStyle()}
-          >
-            <svg aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 813 1185">
-              <defs>
-                <clipPath id={svgId("pendulum-artwork-region")}>
-                  <rect height="903" width="703" x="55" y="212" />
-                </clipPath>
-                <mask
-                  id={svgId("pendulum-artwork-mask")}
-                  height="1185"
-                  maskUnits="userSpaceOnUse"
-                  width="813"
-                  x="0"
-                  y="0"
-                >
-                  <image height="1185" href={pendulumArtworkMask} width="813" x="0" y="0" />
-                </mask>
-              </defs>
-              <image
-                clipPath={`url(#${svgId("pendulum-artwork-region")})`}
-                height="899.56"
-                href={artwork}
-                mask={`url(#${svgId("pendulum-artwork-mask")})`}
-                preserveAspectRatio="none"
-                width="703"
-                x="55"
-                y="212"
-              />
-            </svg>
-          </div>
+          />
 
           <div
             className="exploded-view__layer"
@@ -519,7 +548,7 @@ export function ExplodedView() {
           <div className="exploded-view__layer" data-layer="rankStar" style={nextLayerStyle()}>
             <svg aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 813 1185">
               {[89.6, 143.2, 196.8, 250.4, 304, 357.6, 411.2].map((x) => (
-                <image key={x} height="49" href={starRank} width="49" x={x} y="145" />
+                <image key={x} height="49" href={starRank} width="49" x={x} y="146" />
               ))}
             </svg>
           </div>
@@ -561,7 +590,7 @@ export function ExplodedView() {
           onChange={setExplosion}
         />
         <p className="exploded-view__hint">
-          Drag to rotate · right-drag or use two fingers to move · scroll to zoom
+          Drag to rotate · right-drag to move · pinch or scroll to zoom
         </p>
       </div>
     </section>

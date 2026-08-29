@@ -278,7 +278,7 @@ export const CardFieldInput = memo(function CardFieldInput({
         <ImageDropzone
           accept="image/*"
           removeButtonSize="icon"
-          value={value instanceof File ? value : null}
+          value={value instanceof Blob ? value : null}
           onValueChange={(file) => onChange(field.name, file ?? undefined)}
         />
       </Field>

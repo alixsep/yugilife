@@ -16,7 +16,7 @@ describe("starter inventory", () => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url
       return Promise.resolve(
         new Response(url, {
-          headers: { "content-type": url.endsWith(".png") ? "image/png" : "image/webp" },
+          headers: { "content-type": "image/webp" },
         }),
       )
     })
@@ -43,9 +43,9 @@ describe("starter inventory", () => {
       expect(() => validateEditorDocumentState(card.document)).not.toThrow()
       expect(card.document.card.artwork).toBeInstanceOf(Blob)
       expect(preview).toMatchObject({ cardId: card.id, cardRevision: card.revision })
-      expect(preview.image.type).toBe("image/png")
+      expect(preview.image.type).toBe("image/webp")
       expect(preview.renderFingerprint).toBe(
-        `${card.document.templateId}@${card.document.templateVersion}:preview-v1`,
+        `${card.document.templateId}@${card.document.templateVersion}:preview-v2`,
       )
     })
   })

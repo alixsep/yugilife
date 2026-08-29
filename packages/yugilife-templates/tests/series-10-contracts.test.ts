@@ -16,7 +16,7 @@ describe("Series 10 published contract", () => {
       id: "card/series-10",
       kind: "card",
       name: "Series 10",
-      version: "2026.08.15",
+      version: "2026.08.23",
     })
     expect(DEFAULT_TEMPLATE.manifest).not.toHaveProperty("references")
     expect(DEFAULT_TEMPLATE.manifest).not.toHaveProperty("status")
@@ -43,6 +43,8 @@ describe("Series 10 published contract", () => {
       expect.arrayContaining([
         expect.objectContaining({ kind: "text", name: "attack" }),
         expect.objectContaining({ kind: "text", name: "defense" }),
+        expect.objectContaining({ kind: "text", name: "serialNumber" }),
+        expect.objectContaining({ kind: "image", name: "artworkOverlay" }),
       ]),
     )
     expect(template.cardFields.find(({ name }) => name === "cardVariant")).toMatchObject({
@@ -77,8 +79,26 @@ describe("Series 10 published contract", () => {
           kind: "artwork",
           region: { height: 613, width: 613, x: 100, y: 219 },
         }),
+        expect.objectContaining({
+          field: "artworkOverlay",
+          id: "artworkOverlay",
+          kind: "artwork",
+          region: { height: 1185, width: 813, x: 0, y: 0 },
+        }),
       ]),
     )
+    const layerIds = template.layers.map(({ id }) => id)
+    expect(layerIds.indexOf("artwork")).toBe(layerIds.indexOf("border") + 1)
+    expect(layerIds.indexOf("pendulumArtwork")).toBe(layerIds.indexOf("artwork") + 1)
+    expect(layerIds.indexOf("frameTexture")).toBeGreaterThan(layerIds.indexOf("pendulumArtwork"))
+    expect(layerIds.indexOf("artworkOverlay")).toBeGreaterThan(layerIds.indexOf("artworkBox"))
+    expect(layerIds.indexOf("artworkOverlay")).toBeLessThan(layerIds.indexOf("effectBoxTexture"))
+    expect(template.layers.find(({ id }) => id === "levelStar")).toMatchObject({
+      region: { y: 146 },
+    })
+    expect(template.layers.find(({ id }) => id === "rankStar")).toMatchObject({
+      region: { y: 146 },
+    })
     const editorLayerIds = collectLayerGroups(template).flatMap((group) =>
       group.layers.map(({ id }) => id),
     )

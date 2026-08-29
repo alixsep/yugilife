@@ -1,22 +1,23 @@
 import { validateEditorDocumentState } from "../../build/editor/model/editor-document-validation"
 import { createInitialEditorDocument } from "../../build/editor/model/editor-store"
+import { inventoryPreviewFingerprint } from "../model/inventory-preview"
 
 import calledArtworkUrl from "./assets/called-by-the-grave-artwork.webp"
-import calledPreviewUrl from "./assets/called-by-the-grave-preview.png"
+import calledPreviewUrl from "./assets/called-by-the-grave-preview.webp"
 import dingirsuArtworkUrl from "./assets/dingirsu-the-orcust-of-the-evening-star-artwork.webp"
-import dingirsuPreviewUrl from "./assets/dingirsu-the-orcust-of-the-evening-star-preview.png"
+import dingirsuPreviewUrl from "./assets/dingirsu-the-orcust-of-the-evening-star-preview.webp"
 import dinowrestlerArtworkUrl from "./assets/dinowrestler-pankratops-artwork.webp"
-import dinowrestlerPreviewUrl from "./assets/dinowrestler-pankratops-preview.png"
+import dinowrestlerPreviewUrl from "./assets/dinowrestler-pankratops-preview.webp"
 import firewallArtworkUrl from "./assets/firewall-dragon-artwork.webp"
-import firewallPreviewUrl from "./assets/firewall-dragon-preview.png"
+import firewallPreviewUrl from "./assets/firewall-dragon-preview.webp"
 import impermanenceArtworkUrl from "./assets/infinite-impermanence-artwork.webp"
-import impermanencePreviewUrl from "./assets/infinite-impermanence-preview.png"
+import impermanencePreviewUrl from "./assets/infinite-impermanence-preview.webp"
 import oddEyesArtworkUrl from "./assets/odd-eyes-arc-pendulum-dragon-artwork.webp"
-import oddEyesPreviewUrl from "./assets/odd-eyes-arc-pendulum-dragon-preview.png"
+import oddEyesPreviewUrl from "./assets/odd-eyes-arc-pendulum-dragon-preview.webp"
 import salamangreatArtworkUrl from "./assets/salamangreat-violet-chimera-artwork.webp"
-import salamangreatPreviewUrl from "./assets/salamangreat-violet-chimera-preview.png"
+import salamangreatPreviewUrl from "./assets/salamangreat-violet-chimera-preview.webp"
 import whiteAuraArtworkUrl from "./assets/white-aura-monoceros-artwork.webp"
-import whiteAuraPreviewUrl from "./assets/white-aura-monoceros-preview.png"
+import whiteAuraPreviewUrl from "./assets/white-aura-monoceros-preview.webp"
 
 import type { InventorySeedSnapshot } from "../persistence/inventory-storage"
 import type { CardData } from "yugilife-core"
@@ -243,7 +244,10 @@ export async function createInventorySeed(): Promise<readonly InventorySeedSnaps
           cardId: definition.id,
           cardRevision: 1,
           image: previewImage,
-          renderFingerprint: `${document.templateId}@${document.templateVersion}:preview-v1`,
+          renderFingerprint: inventoryPreviewFingerprint(
+            document.templateId,
+            document.templateVersion,
+          ),
         },
       }
     }),

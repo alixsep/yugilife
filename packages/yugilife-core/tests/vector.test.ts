@@ -5,6 +5,21 @@ import { createTextElement } from "../src/rendering/vector"
 import { serializeSvgElement } from "../src/svg-export"
 
 describe("vector text fitting", () => {
+  it("preserves a leading zero in text fields", () => {
+    const element = createTextElement(
+      { name: "Card", serialNumber: "01111111" },
+      {
+        field: "serialNumber",
+        id: "serialNumber",
+        kind: "text",
+        position: { x: 10, y: 20 },
+        typography: { fill: "#000", fontFamily: "Test", fontSize: 20 },
+      },
+    )
+
+    expect(element.text).toBe("01111111")
+  })
+
   it("omits an empty type-list instead of serializing it as brackets", () => {
     const element = createTextElement(
       { name: "", types: [] },
