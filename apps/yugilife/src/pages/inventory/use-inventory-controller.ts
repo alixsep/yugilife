@@ -6,6 +6,7 @@ import { createInitialEditorDocument } from "../build/editor/model/editor-store"
 
 import { upgradePersistedInventoryCardToCurrentTemplate } from "./model/inventory-card-upgrade"
 import { inventoryPreviewMatchesCard } from "./model/inventory-preview"
+import { recoverInventoryPreview } from "./model/inventory-preview-recovery"
 import {
   createInventoryCard,
   deleteInventoryCard,
@@ -34,40 +35,68 @@ export function useInventoryController() {
       const migrated = await Promise.all(
         summaries.map(async (summary) => {
           const card = await readInventoryCard(summary.id)
-          if (!card) return summary
+          if (!card) return { card: undefined, summary }
           try {
             const next = await upgradePersistedInventoryCardToCurrentTemplate(card)
             return {
-              createdAt: next.createdAt,
-              id: next.id,
-              revision: next.revision,
-              templateId: next.document.templateId,
-              templateVersion: next.document.templateVersion,
-              title: next.title,
-              updatedAt: next.updatedAt,
+              card: next,
+              summary: {
+                createdAt: next.createdAt,
+                id: next.id,
+                revision: next.revision,
+                templateId: next.document.templateId,
+                templateVersion: next.document.templateVersion,
+                title: next.title,
+                updatedAt: next.updatedAt,
+              },
             }
           } catch {
             // The record remains visible and recoverable. Opening it reports the actionable
             // migration or missing-template error rather than substituting another template.
-            return summary
+            return { card, summary }
           }
         }),
       )
       const sorted = migrated.sort(
-        (left, right) => right.createdAt - left.createdAt || right.id.localeCompare(left.id),
+        (left, right) =>
+          right.summary.createdAt - left.summary.createdAt ||
+          right.summary.id.localeCompare(left.summary.id),
       )
-      setCards(sorted)
+      const sortedSummaries = sorted.map(({ summary }) => summary)
+      setCards(sortedSummaries)
       setSelectedCardId((current) =>
-        current && sorted.some(({ id }) => id === current) ? current : sorted[0]?.id,
+        current && sortedSummaries.some(({ id }) => id === current)
+          ? current
+          : sortedSummaries[0]?.id,
       )
 
-      const previews = await Promise.all(
-        sorted.map(async (card) => {
-          const preview = await readInventoryPreview(card.id)
-          if (!preview || !inventoryPreviewMatchesCard(preview, card)) return undefined
-          return [card.id, URL.createObjectURL(preview.image)] as const
-        }),
-      )
+      const previews: Array<readonly [string, string] | undefined> = []
+      // Recovery renders are intentionally sequential: one missing preview must not turn opening
+      // Inventory into a burst of simultaneous full-card renders.
+      for (const { card, summary } of sorted) {
+        let preview = await readInventoryPreview(summary.id)
+        if (card && (!preview || !inventoryPreviewMatchesCard(preview, summary))) {
+          try {
+            preview = await recoverInventoryPreview(preview, card)
+          } catch (recoveryError) {
+            if (import.meta.env.DEV) {
+              console.warn(`Could not recover preview for inventory card "${summary.id}".`, {
+                cardRevision: summary.revision,
+                previewRevision: preview?.cardRevision,
+                previewFingerprint: preview?.renderFingerprint,
+                recoveryError,
+                templateId: summary.templateId,
+                templateVersion: summary.templateVersion,
+              })
+            }
+          }
+        }
+        previews.push(
+          preview && inventoryPreviewMatchesCard(preview, summary)
+            ? ([summary.id, URL.createObjectURL(preview.image)] as const)
+            : undefined,
+        )
+      }
       setPreviewUrls(Object.fromEntries(previews.filter((entry) => entry !== undefined)))
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : String(caught))

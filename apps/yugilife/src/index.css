@@ -429,6 +429,13 @@ html[data-size="compact"] {
   a:focus-visible {
     border-radius: 2px;
   }
+
+  /* Double-clicking preview text focuses its editor control from a pointer gesture. Browsers that
+     ignore FocusOptions.focusVisible do not match :focus-visible on button-backed controls such as
+     Select, so retain the component's one-pixel accent ring for that focus session. */
+  [data-yugilife-forced-focus]:focus {
+    box-shadow: 0 0 0 1px var(--focus-ring, #6b97ff);
+  }
 }
 
 /* ============================================================================

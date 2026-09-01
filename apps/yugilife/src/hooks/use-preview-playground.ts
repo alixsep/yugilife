@@ -15,11 +15,12 @@ import {
 } from "@/lib/preview-viewport"
 import { spring } from "@/lib/springs"
 
-import type { KeyboardEvent, PointerEvent } from "react"
+import type { KeyboardEvent, MouseEvent, PointerEvent } from "react"
 
 interface UsePreviewPlaygroundOptions {
   contentHeight: number
   contentWidth: number
+  onDoubleClick?: ((event: MouseEvent<HTMLDivElement>) => boolean) | undefined
   padding?: number
 }
 
@@ -40,6 +41,7 @@ function createPreviewMotionValues() {
 export function usePreviewPlayground({
   contentHeight,
   contentWidth,
+  onDoubleClick: handleDoubleClick,
   padding = 32,
 }: UsePreviewPlaygroundOptions) {
   const playgroundRef = useRef<HTMLDivElement>(null)
@@ -314,6 +316,11 @@ export function usePreviewPlayground({
     animate(top, nextTop, spring.fast)
   }
 
+  const onDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (handleDoubleClick?.(event)) return
+    resetView()
+  }
+
   return {
     canZoomIn: zoomLimits.canZoomIn,
     canZoomOut: zoomLimits.canZoomOut,
@@ -328,7 +335,7 @@ export function usePreviewPlayground({
     },
     dragging,
     playgroundProps: {
-      onDoubleClick: resetView,
+      onDoubleClick,
       onKeyDown,
       onPointerCancel: stopDragging,
       onPointerDown,

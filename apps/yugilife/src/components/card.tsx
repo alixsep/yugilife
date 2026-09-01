@@ -2,14 +2,38 @@ import { createElement, useCallback, useEffect, useMemo, useRef, useState } from
 
 import { parseRichText, plainTextFromRichText, renderCard } from "yugilife-core"
 
+import { createTextLayerFieldResolver } from "@/lib/card-text-fields"
+
 import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react"
-import type { CardData, RenderOptions, RenderSegment, SvgElementDefinition } from "yugilife-core"
+import type {
+  CardData,
+  LayerDefinition,
+  LayerVisibility,
+  RenderManifest,
+  RenderOptions,
+  RenderSegment,
+  SvgElementDefinition,
+  TextLayer,
+} from "yugilife-core"
+
+export interface CardRenderMetadata {
+  createRenderManifest(): Promise<RenderManifest>
+  textFields(): readonly CardRenderedTextField[]
+}
+
+export interface CardRenderedTextField {
+  readonly controlIndex?: number | undefined
+  readonly elementIndex: number
+  readonly field: string
+  readonly segmentIndex: number
+}
 
 export type CardProps = Omit<ComponentPropsWithoutRef<"div">, "children" | "onError"> &
   RenderOptions & {
     card: CardData
     debugLogging?: boolean
     onError?: (error: Error) => void
+    onRenderMetadata?: (metadata: CardRenderMetadata | undefined) => void
     onReady?: () => void
     /**
      * Explicit invalidation for mutable external inputs. Immutable card, template, asset, renderer,
@@ -98,6 +122,22 @@ function svgNode(element: SvgElementDefinition, key: string): ReactNode {
   return createElement(element.tag, { ...attributes, key }, ...children)
 }
 
+function visibleTextLayers(
+  layers: readonly LayerDefinition[],
+  visibility: LayerVisibility,
+): TextLayer[] {
+  const result: TextLayer[] = []
+  for (const layer of layers) {
+    if (!(visibility[layer.id] ?? layer.defaultVisible ?? true)) continue
+    if (layer.kind === "group" && "layers" in layer && Array.isArray(layer.layers)) {
+      result.push(...visibleTextLayers(layer.layers as readonly LayerDefinition[], visibility))
+    } else if (layer.kind === "text") {
+      result.push(layer as TextLayer)
+    }
+  }
+  return result
+}
+
 function RasterSegment({
   canvas,
   height,
@@ -142,6 +182,7 @@ export function Card({
   layers,
   onError,
   onReady,
+  onRenderMetadata,
   presetOverrides,
   presentationOverrides,
   renderRevision,
@@ -157,7 +198,7 @@ export function Card({
   const template = templateBundle.template
   const [error, setError] = useState<string>()
   const [renderSegments, setRenderSegments] = useState<readonly RenderSegment[]>([])
-  const callbacks = useLatest({ onError, onReady })
+  const callbacks = useLatest({ onError, onReady, onRenderMetadata })
 
   const { width, height } = template.dimensions
   const viewBox = useMemo(() => `0 0 ${width} ${height}`, [width, height])
@@ -181,6 +222,7 @@ export function Card({
     const renderAttempt = ++renderAttemptCount.current
     const startedAt = typeof performance === "undefined" ? 0 : performance.now()
     const controller = new AbortController()
+    callbacks.current.onRenderMetadata?.(undefined)
     const suppliedSignalForRender = suppliedSignal
     const abortFromSuppliedSignal = () => controller.abort(suppliedSignalForRender?.reason)
     if (suppliedSignalForRender?.aborted) {
@@ -262,6 +304,43 @@ export function Card({
         if (!active || controller.signal.aborted) return
         setError(undefined)
         setRenderSegments(previewSegments)
+        let textFields: readonly CardRenderedTextField[] | undefined
+        callbacks.current.onRenderMetadata?.({
+          createRenderManifest: () => rendered.createRenderManifest(),
+          textFields: () => {
+            if (textFields) return textFields
+            const fieldsForLayer = createTextLayerFieldResolver(
+              templateBundle.template,
+              rendered.presentation,
+            )
+            const visibleFields = visibleTextLayers(templateBundle.template.layers, {
+              ...rendered.presentation.layerVisibility,
+              ...(layers ?? {}),
+            }).map((layer) => ({
+              controlIndex: layer.format === "pair" ? layer.pairIndex : undefined,
+              field: fieldsForLayer(layer)[0],
+            }))
+            const result: CardRenderedTextField[] = []
+            let textIndex = 0
+            rendered.renderSegments.forEach((segment, segmentIndex) => {
+              if (segment.kind !== "vector") return
+              segment.elements.forEach((element, elementIndex) => {
+                if (element.tag !== "text") return
+                const target = visibleFields[textIndex++]
+                if (target?.field) {
+                  result.push({
+                    controlIndex: target.controlIndex,
+                    elementIndex,
+                    field: target.field,
+                    segmentIndex,
+                  })
+                }
+              })
+            })
+            textFields = Object.freeze(result)
+            return textFields
+          },
+        })
         callbacks.current.onReady?.()
       })
       .catch((reason: unknown) => {

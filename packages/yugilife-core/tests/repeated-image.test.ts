@@ -10,10 +10,12 @@ afterEach(() => {
 
 describe("repeated-image rendering", () => {
   it("draws one image per field value using the declared offset", async () => {
-    const drawImage = vi.fn()
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
-      drawImage,
-    } as unknown as CanvasRenderingContext2D)
+    const drawImages: ReturnType<typeof vi.fn>[] = []
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() => {
+      const drawImage = vi.fn()
+      drawImages.push(drawImage)
+      return { drawImage } as unknown as CanvasRenderingContext2D
+    })
 
     await renderCard(
       { level: 13, name: "Thirteen stars" },
@@ -42,8 +44,10 @@ describe("repeated-image rendering", () => {
       },
     )
 
-    expect(drawImage).toHaveBeenCalledTimes(13)
-    expect(drawImage.mock.calls[0]?.slice(1)).toEqual([680, 145, 49, 49])
-    expect(drawImage.mock.calls[12]?.[1]).toBeCloseTo(36.8)
+    const composited = drawImages[0]
+    expect(composited).toHaveBeenCalledTimes(13)
+    expect(drawImages).toHaveLength(1)
+    expect(composited?.mock.calls[0]?.slice(1)).toEqual([680, 145, 49, 49])
+    expect(composited?.mock.calls[12]?.[1]).toBeCloseTo(36.8)
   })
 })

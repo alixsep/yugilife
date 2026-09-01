@@ -328,7 +328,7 @@ export function InventoryCarousel({
             key={card.id}
             onSelect={() => settleTo(index)}
             previewUrl={previewUrls[card.id]}
-            previewUnavailableLabel="Preview unavailable"
+            previewUnavailableLabel={busy ? "Restoring preview…" : "Preview unavailable"}
             progress={progress}
             selected={settledIndex === index}
             suppressClick={() => dragged.current}

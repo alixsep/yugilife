@@ -16,7 +16,7 @@ describe("Series 10 published contract", () => {
       id: "card/series-10",
       kind: "card",
       name: "Series 10",
-      version: "2026.08.23",
+      version: "2026.08.30",
     })
     expect(DEFAULT_TEMPLATE.manifest).not.toHaveProperty("references")
     expect(DEFAULT_TEMPLATE.manifest).not.toHaveProperty("status")
@@ -51,6 +51,10 @@ describe("Series 10 published contract", () => {
       defaultValue: "effect",
       required: true,
     })
+    expect(template.cardFields.find(({ name }) => name === "sticker")).toMatchObject({
+      defaultValue: "none",
+    })
+    expect(template.cardFields.find(({ name }) => name === "sticker")?.required).not.toBe(true)
     expect(template.cardFields.find(({ name }) => name === "edition")?.suggestions).toContainEqual({
       label: "Limited Edition",
       value: "LIMITED EDITION",

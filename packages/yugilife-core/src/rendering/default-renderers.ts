@@ -146,7 +146,15 @@ function drawBevel(context: CanvasRenderingContext2D, layer: BevelLayer) {
 }
 
 async function renderColorTexture(renderContext: RenderLayerContext, layer: RasterLayer) {
-  const { assets, assetSelections, colorPresets, context, presetOverrides, signal } = renderContext
+  const {
+    assets,
+    assetSelections,
+    colorPresets,
+    context,
+    coverageContext,
+    presetOverrides,
+    signal,
+  } = renderContext
   const assetId = assetSelections[layer.id] ?? layer.assetId
   if (!assetId) {
     throw new Error(`Color-texture layer "${layer.id}" requires assetId.`)
@@ -174,16 +182,18 @@ async function renderColorTexture(renderContext: RenderLayerContext, layer: Rast
   if (!processed) throw new Error(`Layer "${layer.id}" could not prepare its texture.`)
   const { x, y, width, height } = layer.region
   context.drawImage(processed, x, y, width, height)
+  coverageContext?.drawImage(processed, x, y, width, height)
 }
 
 export function createDefaultLayerRenderers(): LayerRendererMap {
   const image: LayerRenderer<ImageLayer> = {
     output: "raster",
-    async render({ assets, assetSelections, context, signal }, layer) {
+    async render({ assets, assetSelections, context, coverageContext, signal }, layer) {
       const assetId = assetSelections[layer.id] ?? layer.assetId
       const drawable = await loadDrawable(assets.resolve(assetId), signal)
       const { x, y, width, height } = layer.region
       context.drawImage(drawable, x, y, width, height)
+      coverageContext?.drawImage(drawable, x, y, width, height)
       return true
     },
   }
@@ -191,7 +201,10 @@ export function createDefaultLayerRenderers(): LayerRendererMap {
     image,
     "repeated-image": {
       output: "raster",
-      async render({ assets, assetSelections, card, context, signal }, definition) {
+      async render(
+        { assets, assetSelections, card, context, coverageContext, signal },
+        definition,
+      ) {
         const layer = definition as RepeatedImageLayer
         const value = card[layer.field]
         if (value === undefined || value === "") return false
@@ -212,13 +225,20 @@ export function createDefaultLayerRenderers(): LayerRendererMap {
             width,
             height,
           )
+          coverageContext?.drawImage(
+            drawable,
+            x + layer.offset.x * index,
+            y + layer.offset.y * index,
+            width,
+            height,
+          )
         }
         return true
       },
     },
     artwork: {
       output: "raster",
-      async render({ card, context, signal }, layer) {
+      async render({ card, context, coverageContext, signal }, layer) {
         const artworkLayer = layer as ArtworkLayer
         const source = card[artworkLayer.field]
         if (source === undefined || source === "") return false
@@ -236,9 +256,16 @@ export function createDefaultLayerRenderers(): LayerRendererMap {
           context.rect(x, y, width, height)
           context.clip()
           context.drawImage(drawable, x, y, width, naturalHeight)
+          coverageContext?.save()
+          coverageContext?.beginPath()
+          coverageContext?.rect(x, y, width, height)
+          coverageContext?.clip()
+          coverageContext?.drawImage(drawable, x, y, width, naturalHeight)
+          coverageContext?.restore()
           context.restore()
         } else {
           context.drawImage(drawable, x, y, width, height)
+          coverageContext?.drawImage(drawable, x, y, width, height)
         }
         return true
       },
@@ -259,13 +286,15 @@ export function createDefaultLayerRenderers(): LayerRendererMap {
         const layer = definition as RasterLayer
         await renderColorTexture(renderContext, layer)
         drawBevel(renderContext.context, layer)
+        if (renderContext.coverageContext) drawBevel(renderContext.coverageContext, layer)
         return true
       },
     },
     bevel: {
       output: "raster",
-      render({ context }, layer) {
+      render({ context, coverageContext }, layer) {
         drawBevel(context, layer as CanvasLayer)
+        if (coverageContext) drawBevel(coverageContext, layer as CanvasLayer)
         return true
       },
     },

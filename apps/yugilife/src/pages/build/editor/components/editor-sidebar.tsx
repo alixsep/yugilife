@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 
-import { Eye, EyeOff, RotateCcw, TriangleAlert, X } from "lucide-react"
+import { Download, Eye, EyeOff, RotateCcw, TriangleAlert, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { CheckboxGroup, CheckboxItem } from "@/components/ui/checkbox-group"
@@ -23,7 +23,15 @@ import type { useBuildController } from "../../page/use-build-controller"
 import type { ReactNode } from "react"
 
 interface EditorSidebarProps {
+  alphaExportBusy: boolean
+  alphaExportReady: boolean
   controller: ReturnType<typeof useBuildController>
+  exactBoundsBusy: boolean
+  onDownloadAlphaChannels: () => void
+  onShowExactBoundsChange: (visible: boolean) => void
+  onShowTextInteractionBoundsChange: (visible: boolean) => void
+  showExactBounds: boolean
+  showTextInteractionBounds: boolean
 }
 
 const fieldPriority = new Map([
@@ -52,7 +60,17 @@ function EditorSection({
   )
 }
 
-export function EditorSidebar({ controller }: EditorSidebarProps) {
+export function EditorSidebar({
+  alphaExportBusy,
+  alphaExportReady,
+  controller,
+  exactBoundsBusy,
+  onDownloadAlphaChannels,
+  onShowExactBoundsChange,
+  onShowTextInteractionBoundsChange,
+  showExactBounds,
+  showTextInteractionBounds,
+}: EditorSidebarProps) {
   const {
     activeDefaultLayerVisibility,
     activeLayerGroups,
@@ -108,7 +126,11 @@ export function EditorSidebar({ controller }: EditorSidebarProps) {
       field.kind === "multiline" ||
       field.kind === "text-list"
     return (
-      <div className={wide ? "min-w-0 sm:col-span-2" : "min-w-0"} key={field.name}>
+      <div
+        className={wide ? "min-w-0 sm:col-span-2" : "min-w-0"}
+        data-card-field={field.name}
+        key={field.name}
+      >
         <CardFieldInput field={field} value={card[field.name]} onChange={setField} />
         {field.automaticFitLayer && (
           <div className="mt-2 grid gap-2">
@@ -237,6 +259,35 @@ export function EditorSidebar({ controller }: EditorSidebarProps) {
 
         {mode === "advanced" ? (
           <>
+            <div className="border-border grid gap-3 border-t pt-4">
+              <h3 className="text-subtitle font-medium">Render inspection</h3>
+              <Switch
+                checked={showTextInteractionBounds}
+                label="Show text interaction boxes"
+                onToggle={() => onShowTextInteractionBoundsChange(!showTextInteractionBounds)}
+              />
+              <Switch
+                checked={showExactBounds}
+                label="Show exact bounding boxes"
+                onToggle={() => onShowExactBoundsChange(!showExactBounds)}
+              />
+              {exactBoundsBusy && (
+                <p className="text-caption text-muted-foreground" role="status">
+                  Preparing exact bounds…
+                </p>
+              )}
+              <Button
+                className="w-full"
+                disabled={!alphaExportReady}
+                leadingIcon={Download}
+                loading={alphaExportBusy}
+                variant="tertiary"
+                onClick={onDownloadAlphaChannels}
+              >
+                Download alpha channels
+              </Button>
+            </div>
+
             {orderedAdvancedFields.length > 0 && (
               <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2">
                 {orderedAdvancedFields.map(renderField)}

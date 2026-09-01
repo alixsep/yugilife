@@ -591,6 +591,28 @@
         "name": "artworkOverlay",
         "kind": "image",
         "label": "Artwork overlay"
+      },
+      {
+        "name": "sticker",
+        "kind": "text",
+        "label": "Sticker",
+        "defaultValue": "none",
+        "options": [
+          "none",
+          "sticker-1",
+          "sticker-2",
+          "sticker-3",
+          "sticker-4",
+          "sticker-5",
+          "sticker-6",
+          "sticker-7",
+          "sticker-8",
+          "sticker-9",
+          "sticker-10",
+          "sticker-11",
+          "sticker-12",
+          "sticker-13"
+        ]
       }
     ],
     "semanticBindings": {
@@ -1007,6 +1029,12 @@
           "when": {
             "path": "monster.frame",
             "equals": "link"
+          }
+        },
+        {
+          "path": "sticker",
+          "source": {
+            "field": "sticker"
           }
         }
       ]
@@ -3361,9 +3389,192 @@
             }
           }
         ]
+      },
+      {
+        "id": "sticker",
+        "kind": "image",
+        "label": "Sticker",
+        "group": "Stickers",
+        "assetId": "card.series-10.sticker.00",
+        "defaultVisible": false,
+        "region": {
+          "x": 743,
+          "y": 1114,
+          "width": 42,
+          "height": 42
+        }
       }
     ],
     "presentationRules": [
+      {
+        "id": "sticker-00",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-1"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.00"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-01",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-2"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.01"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-02",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-3"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.02"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-03",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-4"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.03"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-04",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-5"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.04"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-05",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-6"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.05"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-06",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-7"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.06"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-07",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-8"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.07"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-08",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-9"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.08"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-09",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-10"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.09"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-10",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-11"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.10"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-11",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-12"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.11"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
+      {
+        "id": "sticker-12",
+        "when": {
+          "path": "sticker",
+          "equals": "sticker-13"
+        },
+        "assetSelections": {
+          "sticker": "card.series-10.sticker.12"
+        },
+        "layerVisibility": {
+          "sticker": true
+        }
+      },
       {
         "id": "spell-card",
         "when": {

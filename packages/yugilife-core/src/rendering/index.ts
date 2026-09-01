@@ -12,8 +12,12 @@ import {
 import { loadPresentationFonts, throwIfAborted } from "./assets.js"
 import { applyCanvasMask } from "./canvas-masks.js"
 import { createDefaultLayerRenderers } from "./default-renderers.js"
+import { createLayerSourceFieldResolver } from "./layer-source-fields.js"
 import { assertLayerTree, findRenderer, isLayerVisible, rendererKey } from "./layers.js"
+import { createRenderManifest as buildRenderManifest } from "./render-manifest.js"
 import { outlineSvgText } from "./text-outlines.js"
+
+import type { CapturedRenderedElement } from "./render-manifest.js"
 
 export { resolveRasterOutputDimensions } from "../raster-export.js"
 export { createDefaultLayerRenderers } from "./default-renderers.js"
@@ -32,6 +36,14 @@ import type {
 } from "../contracts/index.js"
 
 export async function renderCard(card: CardData, options: RenderOptions): Promise<RenderedCard> {
+  return await renderCardWithManifestCapture(card, options, false)
+}
+
+async function renderCardWithManifestCapture(
+  card: CardData,
+  options: RenderOptions,
+  captureManifest: boolean,
+): Promise<RenderedCard> {
   if (typeof document === "undefined") {
     throw new Error("renderCard requires a browser-compatible document and canvas implementation.")
   }
@@ -67,8 +79,13 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
   const renderSegments: RenderSegment[] = []
   const vectorLayers: SvgElementDefinition[] = []
   const richTextWarnings: RenderLayerContext["richTextWarnings"] = []
+  const capturedElements: CapturedRenderedElement[] = []
+  let captureOrder = 0
   const visibility = { ...presentation.layerVisibility, ...(options.layers ?? {}) }
   const presetOverrides = { ...presentation.presets, ...(options.presetOverrides ?? {}) }
+  const sourceFieldsForLayer = captureManifest
+    ? createLayerSourceFieldResolver(template, presentation)
+    : undefined
 
   function applyPresentationLayerOptions(layer: LayerDefinition): LayerDefinition {
     const patch = presentation.layerOptions[layer.id]
@@ -128,8 +145,13 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
       )
     }
     const vectorStart = vectorLayers.length
+    const captureStart = capturedElements.length
     let isolatedRaster: ReturnType<typeof createRasterCanvas> | undefined
     let destinationContext: CanvasRenderingContext2D | undefined
+    const previousCoverageContext = renderContext.coverageContext
+    const layerCoverage =
+      captureManifest && renderer.output === "raster" ? createRasterCanvas() : undefined
+    renderContext.coverageContext = layerCoverage?.context
     if (mask) {
       destinationContext = renderContext.context
       isolatedRaster = createRasterCanvas()
@@ -143,6 +165,7 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
       throw error
     } finally {
       if (destinationContext) renderContext.context = destinationContext
+      renderContext.coverageContext = previousCoverageContext
     }
     const emittedVectors = vectorLayers.slice(vectorStart)
     if (renderer.output === "raster") {
@@ -152,7 +175,10 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
         )
       }
       if (rendered !== false) {
-        if (mask && isolatedRaster) {
+        if (mask) {
+          if (!isolatedRaster || !destinationContext) {
+            throw new Error(`Masked layer "${layer.id}" lost its isolated render canvas.`)
+          }
           await applyCanvasMask(
             isolatedRaster.canvas,
             assets,
@@ -160,17 +186,30 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
             template.dimensions,
             options.signal,
           )
-          // The isolated surface is only needed while multiplying this layer's alpha. Merge it
-          // back into the active raster run now so preview and export do not retain and later
-          // recompose one full-card canvas per masked layer.
-          if (!destinationContext) {
-            throw new Error(`Masked layer "${layer.id}" lost its destination canvas.`)
+          if (layerCoverage) {
+            await applyCanvasMask(
+              layerCoverage.canvas,
+              assets,
+              mask,
+              template.dimensions,
+              options.signal,
+            )
           }
           destinationContext.drawImage(isolatedRaster.canvas, 0, 0)
-          rasterDirty = true
-        } else {
-          rasterDirty = true
         }
+        if (captureManifest) {
+          if (!layerCoverage) {
+            throw new Error(`Raster layer "${layer.id}" lost its alpha coverage canvas.`)
+          }
+          capturedElements.push({
+            canvas: layerCoverage.canvas,
+            kind: "image",
+            layerId: layer.id,
+            order: captureOrder++,
+            sourceFields: sourceFieldsForLayer?.(layer) ?? [],
+          })
+        }
+        rasterDirty = true
       }
     } else if (renderer.output === "container") {
       if (mask && emittedVectors.length > 0) {
@@ -190,11 +229,33 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
           throw new Error(`Masked group "${layer.id}" lost its destination canvas.`)
         }
         destinationContext.drawImage(isolatedRaster.canvas, 0, 0)
+        for (const captured of captureManifest ? capturedElements.slice(captureStart) : []) {
+          if (captured.canvas) {
+            await applyCanvasMask(
+              captured.canvas,
+              assets,
+              mask,
+              template.dimensions,
+              options.signal,
+            )
+          }
+        }
         rasterDirty = true
       }
     } else if (renderer.output === "vector") {
-      if (emittedVectors.length > 0) flushRasterSegment()
-      appendVectorSegment(emittedVectors)
+      if (emittedVectors.length > 0) {
+        flushRasterSegment()
+        appendVectorSegment(emittedVectors)
+        if (captureManifest) {
+          capturedElements.push({
+            elements: Object.freeze([...emittedVectors]),
+            kind: "svg",
+            layerId: layer.id,
+            order: captureOrder++,
+            sourceFields: sourceFieldsForLayer?.(layer) ?? [],
+          })
+        }
+      }
     }
     throwIfAborted(options.signal)
   }
@@ -204,6 +265,7 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
     card,
     colorPresets,
     context: raster.context,
+    coverageContext: undefined,
     layerVisibility: visibility,
     presetOverrides,
     presentation,
@@ -224,6 +286,7 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
   const completedSegments = Object.freeze([...renderSegments])
   const completedVectorLayers = Object.freeze([...vectorLayers])
   const completedWarnings = Object.freeze([...richTextWarnings])
+  let completedCaptures: readonly CapturedRenderedElement[] = Object.freeze([...capturedElements])
 
   const toOutlinedSegments: RenderedCard["toOutlinedSegments"] = async () => {
     const exportSegments: RenderSegment[] = []
@@ -268,7 +331,38 @@ export async function renderCard(card: CardData, options: RenderOptions): Promis
     return await rasterizeCardSvgToImage(svg, template.dimensions, exportOptions, options.signal)
   }
 
+  let renderManifestPromise: ReturnType<typeof buildRenderManifest> | undefined
+  const createRenderManifest: RenderedCard["createRenderManifest"] = () => {
+    renderManifestPromise ??= captureManifest
+      ? buildRenderManifest(
+          completedCaptures,
+          template,
+          async (elements) =>
+            await outlineSvgText(
+              elements,
+              template.dimensions,
+              presentation,
+              assets,
+              options.signal,
+            ),
+          options.signal,
+        )
+      : renderCardWithManifestCapture(card, options, true).then(
+          async (capturedRender) => await capturedRender.createRenderManifest(),
+        )
+    void renderManifestPromise.then(
+      () => {
+        // The completed manifest retains compact alpha arrays and vector definitions; full-card
+        // recording canvases are no longer needed after preparation.
+        completedCaptures = Object.freeze([])
+      },
+      () => {},
+    )
+    return renderManifestPromise
+  }
+
   return {
+    createRenderManifest,
     presentation,
     renderSegments: completedSegments,
     warnings: completedWarnings,

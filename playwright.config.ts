@@ -1,3 +1,5 @@
+import { availableParallelism } from "node:os"
+
 import { defineConfig, devices } from "@playwright/test"
 import { defineBddConfig } from "playwright-bdd"
 
@@ -14,7 +16,10 @@ export default defineConfig({
 
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  ...(isCI ? { workers: 1 } : {}),
+  // Card rendering is CPU- and memory-heavy (font outlining, canvas encoding, and WebGL).
+  // Playwright's CPU-based default can start too many concurrent browser workers on developer
+  // machines, causing otherwise healthy pages to miss the test timeout or lose their session.
+  workers: isCI ? 1 : Math.min(4, availableParallelism()),
 
   reporter: [["list"], ["html", { open: "never" }]],
 

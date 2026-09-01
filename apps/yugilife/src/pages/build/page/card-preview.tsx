@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useRef, useState } from "react"
+
 import { AnimatePresence, motion } from "framer-motion"
 import { Plus, RefreshCw, Save } from "lucide-react"
 
@@ -10,13 +12,34 @@ import { useShape } from "@/lib/shape-context"
 import { spring } from "@/lib/springs"
 import { cn } from "@/lib/utils"
 
+import { renderedTextBounds, renderedTextFieldAt } from "./card-preview-hit-test"
+
 import type { useBuildController } from "./use-build-controller"
+import type { CardRenderMetadata } from "@/components/card"
+import type { MouseEvent } from "react"
+import type { RenderManifest } from "yugilife-core"
 
 interface CardPreviewProps {
   controller: ReturnType<typeof useBuildController>
+  manifest?: RenderManifest | undefined
+  onFocusField: (fieldName: string, controlIndex?: number) => void
+  onRenderMetadata: (metadata: CardRenderMetadata | undefined) => void
+  showExactBounds: boolean
+  showTextInteractionBounds: boolean
 }
 
-export function CardPreview({ controller }: CardPreviewProps) {
+export function CardPreview({
+  controller,
+  manifest,
+  onFocusField,
+  onRenderMetadata,
+  showExactBounds,
+  showTextInteractionBounds,
+}: CardPreviewProps) {
+  const cardElement = useRef<HTMLDivElement>(null)
+  const renderMetadata = useRef<CardRenderMetadata | undefined>(undefined)
+  const [textRenderRevision, setTextRenderRevision] = useState(0)
+  const [textBounds, setTextBounds] = useState<ReturnType<typeof renderedTextBounds>>([])
   const shape = useShape()
   const {
     activeEditorTemplate,
@@ -53,6 +76,50 @@ export function CardPreview({ controller }: CardPreviewProps) {
     templateLoadProgress?.total && templateLoadProgress.total > 0
       ? Math.min(100, Math.round((templateLoadProgress.loaded / templateLoadProgress.total) * 100))
       : undefined
+
+  const acceptRenderMetadata = useCallback(
+    (metadata: CardRenderMetadata | undefined) => {
+      renderMetadata.current = metadata
+      onRenderMetadata(metadata)
+      if (showTextInteractionBounds) {
+        if (!metadata) setTextBounds([])
+        setTextRenderRevision((revision) => revision + 1)
+      }
+    },
+    [onRenderMetadata, showTextInteractionBounds],
+  )
+
+  useEffect(() => {
+    if (!showTextInteractionBounds || !renderMetadata.current) return
+    let idle: number | undefined
+    let fallback: ReturnType<typeof setTimeout> | undefined
+    const measure = () => {
+      const element = cardElement.current
+      const metadata = renderMetadata.current
+      if (element && metadata) {
+        setTextBounds(renderedTextBounds(element, metadata.textFields(), cardWidth, cardHeight))
+      }
+    }
+    const timer = setTimeout(() => {
+      if (typeof requestIdleCallback === "function") idle = requestIdleCallback(measure)
+      else fallback = setTimeout(measure, 0)
+    }, 500)
+    return () => {
+      clearTimeout(timer)
+      if (idle !== undefined) cancelIdleCallback(idle)
+      if (fallback !== undefined) clearTimeout(fallback)
+    }
+  }, [cardHeight, cardWidth, showTextInteractionBounds, textRenderRevision])
+
+  function focusRenderedElement(event: MouseEvent<HTMLDivElement>) {
+    const element = cardElement.current
+    const metadata = renderMetadata.current
+    if (!element || !metadata) return false
+    const target = renderedTextFieldAt(element, metadata.textFields(), event.clientX, event.clientY)
+    if (!target) return false
+    onFocusField(target.field, target.controlIndex)
+    return true
+  }
 
   return (
     <Elevated
@@ -97,6 +164,7 @@ export function CardPreview({ controller }: CardPreviewProps) {
         contentHeight={cardHeight}
         contentWidth={sideBySide ? comparisonWidth : cardWidth}
         label="Card preview. Drag to pan, scroll to zoom, or use the zoom controls."
+        onContentDoubleClick={focusRenderedElement}
       >
         <div className="flex size-full items-center justify-center">
           <motion.figure
@@ -108,7 +176,7 @@ export function CardPreview({ controller }: CardPreviewProps) {
             initial={false}
             transition={spring.moderate}
           >
-            <div className="shadow-surface-7 relative size-full overflow-hidden">
+            <div className="shadow-surface-7 relative size-full overflow-hidden" ref={cardElement}>
               {templateBundle ? (
                 <Card
                   card={renderCardData}
@@ -118,6 +186,7 @@ export function CardPreview({ controller }: CardPreviewProps) {
                   presetOverrides={presetOverrides}
                   presentationOverrides={presentationOverrides}
                   templateBundle={templateBundle}
+                  onRenderMetadata={acceptRenderMetadata}
                 />
               ) : (
                 <div className="border-border bg-card text-muted-foreground text-body grid size-full place-items-center border p-8 text-center">
@@ -172,6 +241,53 @@ export function CardPreview({ controller }: CardPreviewProps) {
                     )}
                   </div>
                 </div>
+              )}
+              {mode === "advanced" && showExactBounds && manifest && (
+                <svg
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 z-20 size-full"
+                  preserveAspectRatio="none"
+                  viewBox={`0 0 ${cardWidth} ${cardHeight}`}
+                >
+                  {manifest.elements.map(({ bounds, layerId, order }) =>
+                    bounds ? (
+                      <rect
+                        fill="none"
+                        key={`${order}:${layerId}`}
+                        height={bounds.height}
+                        stroke="rgba(255, 32, 96, 0.9)"
+                        strokeWidth={1}
+                        vectorEffect="non-scaling-stroke"
+                        width={bounds.width}
+                        x={bounds.x}
+                        y={bounds.y}
+                      />
+                    ) : null,
+                  )}
+                </svg>
+              )}
+              {mode === "advanced" && showTextInteractionBounds && (
+                <svg
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 z-20 size-full"
+                  preserveAspectRatio="none"
+                  viewBox={`0 0 ${cardWidth} ${cardHeight}`}
+                >
+                  {textBounds.map(({ field, region }, index) => (
+                    <rect
+                      fill="none"
+                      key={`${field ?? "text"}:${index}`}
+                      height={region.height}
+                      stroke="rgba(0, 196, 255, 0.95)"
+                      strokeDasharray="4 3"
+                      strokeWidth={1}
+                      vectorEffect="non-scaling-stroke"
+                      width={region.width}
+                      x={region.x}
+                      y={region.y}
+                    />
+                  ))}
+                </svg>
               )}
               {reference && comparisonMode === "overlay" && (
                 <img

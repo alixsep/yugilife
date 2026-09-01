@@ -1,6 +1,6 @@
 import type { RichTextWarning } from "../rich-text.js"
 import type { AssetResolver, AssetSourceMap } from "./assets.js"
-import type { CardData } from "./card.js"
+import type { CardData, CardFieldName } from "./card.js"
 import type { ColorPresetCollection } from "./color.js"
 import type {
   CardTemplate,
@@ -9,7 +9,7 @@ import type {
   SvgElementDefinition,
 } from "./layers.js"
 import type { PresentationOverrides, ResolvedCardPresentation } from "./presentation.js"
-import type { SemanticAssetId, TemplateManifest } from "./template.js"
+import type { Region, SemanticAssetId, TemplateManifest } from "./template.js"
 
 export interface RenderLayerContext {
   assets: AssetResolver
@@ -18,6 +18,8 @@ export interface RenderLayerContext {
   card: CardData
   colorPresets: ColorPresetCollection
   context: CanvasRenderingContext2D
+  /** Alpha-only recording target for the current raster layer; it never affects compositing. */
+  coverageContext?: CanvasRenderingContext2D | undefined
   layerVisibility: LayerVisibility
   presetOverrides: Readonly<Record<string, string>>
   presentation: ResolvedCardPresentation
@@ -87,12 +89,47 @@ export interface VectorRenderSegment {
 
 export type RenderSegment = RasterRenderSegment | VectorRenderSegment
 
+export type RenderedElementAlphaKind = "image" | "svg"
+
+/** Sampleable/exportable alpha coverage for one logical drawable layer. */
+export interface RenderedElementAlphaChannel {
+  /** Samples alpha coverage in native card coordinates, from 0 through 255. */
+  alphaAt(x: number, y: number): number
+  /** PNG for raster layers and SVG for vector layers. */
+  toBlob(): Promise<Blob>
+  readonly kind: RenderedElementAlphaKind
+  readonly mimeType: "image/png" | "image/svg+xml"
+}
+
+export interface RenderedElementManifestEntry {
+  /** This layer's resolved alpha after its own masks and clips, before higher-layer occlusion. */
+  readonly absoluteAlpha: RenderedElementAlphaChannel
+  /** Tight bounds of `absoluteAlpha`, independent of higher layers. */
+  readonly absoluteBounds?: Region | undefined
+  /** Final-visible alpha after every higher layer has been composited over this layer. */
+  readonly alpha: RenderedElementAlphaChannel
+  /** Tight native-card bounds containing every pixel with non-zero final alpha. */
+  readonly bounds?: Region | undefined
+  readonly layerId: string
+  /** Original template order. Larger values are visually higher. */
+  readonly order: number
+  /** Card fields which an editor may focus for this rendered element. */
+  readonly sourceFields: readonly CardFieldName[]
+}
+
+export interface RenderManifest {
+  /** Drawable layers in original template order, including fully occluded layers. */
+  readonly elements: readonly RenderedElementManifestEntry[]
+}
+
 export interface RenderedCard {
   /**
    * Contiguous compositing planes in exact template layer order. SVG export may flatten adjacent
    * raster planes into one PNG without changing this preview structure.
    */
   renderSegments: readonly RenderSegment[]
+  /** Lazily replays coverage capture once and caches exact absolute and final-visible alpha. */
+  createRenderManifest(): Promise<RenderManifest>
   /** Non-fatal rich-text diagnostics found while producing this card. */
   warnings: readonly RichTextRenderWarning[]
   presentation: ResolvedCardPresentation

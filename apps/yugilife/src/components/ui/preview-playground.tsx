@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "./button"
 import { Tooltip, TooltipProvider } from "./tooltip"
 
-import type { ReactNode } from "react"
+import type { MouseEvent, ReactNode } from "react"
 
 interface PreviewPlaygroundProps {
   actions?: ReactNode
@@ -20,6 +20,7 @@ interface PreviewPlaygroundProps {
   contentHeight: number
   contentWidth: number
   label?: string
+  onContentDoubleClick?: ((event: MouseEvent<HTMLDivElement>) => boolean) | undefined
 }
 
 export function PreviewPlayground({
@@ -29,6 +30,7 @@ export function PreviewPlayground({
   contentHeight,
   contentWidth,
   label = "Preview playground",
+  onContentDoubleClick,
 }: PreviewPlaygroundProps) {
   const shape = useShape()
   const FitIcon = useIcon("scaling")
@@ -44,7 +46,11 @@ export function PreviewPlayground({
     resetView,
     zoomIn,
     zoomOut,
-  } = usePreviewPlayground({ contentHeight, contentWidth })
+  } = usePreviewPlayground({
+    contentHeight,
+    contentWidth,
+    onDoubleClick: onContentDoubleClick,
+  })
 
   return (
     <div

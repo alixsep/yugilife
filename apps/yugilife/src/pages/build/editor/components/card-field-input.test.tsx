@@ -3,6 +3,8 @@ import { act, useState } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { focusPrimaryCardFieldControl } from "../../page/card-field-focus"
+
 import { CardFieldInput } from "./card-field-input"
 
 import type { CardFieldDefinition } from "yugilife-core"
@@ -71,6 +73,14 @@ const artworkField: CardFieldDefinition = {
   name: "artwork",
 }
 
+const scalesField: CardFieldDefinition = {
+  kind: "number-pair",
+  label: "Pendulum scales",
+  max: 13,
+  min: 0,
+  name: "scales",
+}
+
 afterEach(() => {
   reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = false
   document.body.replaceChildren()
@@ -78,6 +88,26 @@ afterEach(() => {
 })
 
 describe("CardFieldInput", () => {
+  it("focuses the requested input of a real number-pair control", () => {
+    reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
+    const container = document.createElement("div")
+    document.body.append(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(<CardFieldInput field={scalesField} onChange={vi.fn()} value={[1, 8]} />)
+    })
+
+    const inputs = container.querySelectorAll<HTMLInputElement>(
+      'input:not([aria-hidden="true"]):not([tabindex="-1"])',
+    )
+    expect(inputs).toHaveLength(2)
+    expect(focusPrimaryCardFieldControl(container, 1)).toBe(true)
+    expect(document.activeElement).toBe(inputs[1])
+
+    act(() => root.unmount())
+  })
+
   it("keeps passcodes as text so leading zeros survive editing", () => {
     reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
     const onChange = vi.fn()
