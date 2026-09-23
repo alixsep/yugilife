@@ -3,7 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { usePageTransitionInProgress } from "@/components/page-transition-ready"
 import { LOADING_COMPLETE_EVENT } from "@/lib/loading-screen-event"
 
-import { loadCardCatalog, restoreCardCatalog, retryCardCatalogLoad } from "./card-catalog-loader"
+import {
+  loadCardCatalog,
+  restoreCardCatalog,
+  retryCardCatalogLoad,
+  updateRestoredCardCatalog,
+} from "./card-catalog-loader"
 
 import type {
   CardCatalogLoadProgress,
@@ -51,19 +56,33 @@ export function useCardCatalog(): CardCatalogManager {
     let idle: number | undefined
     let fallback: ReturnType<typeof setTimeout> | undefined
     const requestId = ++request.current
+    const publish = (
+      catalog: LoadedCardCatalog | undefined,
+      current = request.current === requestId,
+    ) => {
+      if (!mounted.current || !current) return false
+      setState(
+        catalog
+          ? {
+              search: catalog.search,
+              source: catalog.source,
+              status: "ready",
+              ...(catalog.warning ? { warning: catalog.warning } : {}),
+            }
+          : { status: "idle" },
+      )
+      return true
+    }
     const restore = () => {
       void restoreCardCatalog().then((restored) => {
-        if (!mounted.current || request.current !== requestId) return
-        setState(
-          restored
-            ? {
-                search: restored.search,
-                source: restored.source,
-                status: "ready",
-                ...(restored.warning ? { warning: restored.warning } : {}),
-              }
-            : { status: "idle" },
-        )
+        if (!publish(restored) || !restored) return
+        // A saved copy is usable at once, but it must not outlive a newer published catalog.
+        void updateRestoredCardCatalog().then((updated) => {
+          // The loader already discards an update that an explicit load superseded, and it has
+          // closed the worker this state still holds, so the replacement is published even if
+          // this effect has since restarted for a route transition.
+          if (updated) publish(updated, true)
+        })
       })
     }
     const scheduleRestore = () => {

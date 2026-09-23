@@ -105,6 +105,23 @@ function subtypeFor(card, anomalies) {
   return match
 }
 
+// YGOPRODeck wraps Normal Monster flavor text in a pair of apostrophes that the printed card does
+// not have. Only a complete, unambiguous wrapper is removed, so quotation marks and apostrophes that
+// belong to the flavor text itself survive.
+function flavorText(value, card, anomalies) {
+  const trimmed = value.trim()
+  if (!trimmed.startsWith("''") || !trimmed.endsWith("''") || trimmed.length < 4) return value
+  const inner = trimmed.slice(2, -2)
+  if (inner.includes("''")) return value
+  anomalies.push({
+    id: card.id,
+    kind: "unwrapped-flavor-text",
+    message: "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+    name: card.name,
+  })
+  return inner.trim()
+}
+
 function linkMask(card) {
   if (!Array.isArray(card.linkmarkers) || card.linkmarkers.length === 0) {
     fail(`${card.name}: Link card has no linkmarkers`)
@@ -348,10 +365,14 @@ function transformSource(sourceBytes, artworkIndexBytes) {
         minimum: -1,
         nullable: true,
       })
-      const monsterDescription =
+      const sourceMonsterDescription =
         pendulum && card.monster_desc != null
           ? text(card.monster_desc, "monster_desc", card)
           : description
+      const monsterDescription =
+        baseFrame === "normal"
+          ? flavorText(sourceMonsterDescription, card, anomalies)
+          : sourceMonsterDescription
       const common = [card.id, card.name, attributeId, cardTypeIds, monsterDescription, attack]
 
       if (baseFrame === "link") {

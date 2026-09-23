@@ -24,8 +24,8 @@
     "84080938",
     "84257639"
   ],
-  "catalogSha256": "7cbac3a240ed5aa5660fabcd461545a7e9c67ed34e4be40b0b5b6e9c3ef568d1",
-  "artifactSha256": "4bc4c264a7b27270bf322cdec536ef7260640a774863f9c8a811f9a79ee492d9",
+  "catalogSha256": "fc070ec5c5d52b33c66df975f039a8e65de084e0e249de016b6d09cf2569f6d5",
+  "artifactSha256": "e95e6f921c4e5b455de37a88c44a24eb1ee8eee77f6ae5c05a59118c5a8976a4",
   "acceptedCount": 14398,
   "rejected": [
     {
@@ -775,16 +775,448 @@
   ],
   "anomalies": [
     {
+      "id": 11714098,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "30,000-Year White Turtle"
+    },
+    {
+      "id": 27553701,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Absolute King - Megaplunder"
+    },
+    {
+      "id": 40387124,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Abyss Flower"
+    },
+    {
+      "id": 77568553,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Acid Crawler"
+    },
+    {
+      "id": 8353769,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Air Eater"
+    },
+    {
+      "id": 38035986,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Akakieisu"
+    },
+    {
+      "id": 36904469,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Akihiron"
+    },
+    {
+      "id": 99785935,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Alpha The Magnet Warrior"
+    },
+    {
+      "id": 81492226,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ancient Jar"
+    },
+    {
+      "id": 36821538,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ancient Sorcerer"
+    },
+    {
+      "id": 86421986,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ancient Tree of Enlightenment"
+    },
+    {
+      "id": 47484352,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Anotherverse Dragon"
+    },
+    {
+      "id": 86893702,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Anotherverse Gluttonia"
+    },
+    {
+      "id": 63028558,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Anotherverse Solaria"
+    },
+    {
+      "id": 10949074,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Anotherverse Stratios"
+    },
+    {
+      "id": 12436646,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Aqua Snake"
+    },
+    {
+      "id": 15150371,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Archfiend Mirror"
+    },
+    {
+      "id": 14708569,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Arlownay"
+    },
+    {
+      "id": 36151751,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Arma Knight"
+    },
+    {
+      "id": 16246527,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Armored Rat"
+    },
+    {
+      "id": 89832901,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "B. Dragon Jungle King"
+    },
+    {
+      "id": 67841515,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Barrel Lily"
+    },
+    {
+      "id": 10476868,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Barrel Rock"
+    },
+    {
+      "id": 72076281,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Bat"
+    },
+    {
+      "id": 6103114,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Beaked Snake"
+    },
+    {
+      "id": 29616941,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Beautiful Beast Trainer"
+    },
+    {
+      "id": 39256679,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Beta The Magnet Warrior"
+    },
+    {
+      "id": 8058240,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Binding Chain"
+    },
+    {
+      "id": 7670542,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Bio Plant"
+    },
+    {
+      "id": 12146024,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Bolt Escargot"
+    },
+    {
+      "id": 21239280,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Bone Mouse"
+    },
+    {
+      "id": 68963107,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Boo Koo"
+    },
+    {
+      "id": 9540040,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Boulder Tortoise"
+    },
+    {
+      "id": 80222045,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Breeze the Electrovore of Rkunas"
+    },
+    {
+      "id": 70026064,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Bujin Hiruko"
+    },
+    {
       "id": 24056179,
       "kind": "inferred-subtype",
       "message": "Used Normal from humanReadableCardType because race was missing.",
       "name": "Capsule Monster Chess"
     },
     {
+      "id": 98234196,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Clavkiys, the Magikey Skyblaster"
+    },
+    {
+      "id": 77699839,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Crocodile"
+    },
+    {
+      "id": 77998771,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Crow Goblin"
+    },
+    {
+      "id": 6400512,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Cyber Commander"
+    },
+    {
+      "id": 44865098,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Cyber Soldier"
+    },
+    {
+      "id": 32344688,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dark Chimera"
+    },
+    {
+      "id": 46986414,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dark Magician"
+    },
+    {
+      "id": 13193642,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dark Plant"
+    },
+    {
+      "id": 40196604,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dark Shade"
+    },
+    {
+      "id": 20240828,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Decoy"
+    },
+    {
+      "id": 69893315,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dice Armadillo"
+    },
+    {
+      "id": 46533533,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dipity"
+    },
+    {
+      "id": 97843505,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Djinn the Watcher of the Wind"
+    },
+    {
+      "id": 25882881,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dokuroizo the Grim Reaper"
+    },
+    {
+      "id": 18106132,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Doll Monster Bear-Bear"
+    },
+    {
+      "id": 72717433,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Doll Monster Miss Mädchen"
+    },
+    {
+      "id": 84916669,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Doriado"
+    },
+    {
+      "id": 756652,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Doron"
+    },
+    {
+      "id": 24194033,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dorover"
+    },
+    {
+      "id": 21970285,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dragon Horn Hunter"
+    },
+    {
+      "id": 9197735,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dragon Statue"
+    },
+    {
+      "id": 83980492,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dragong"
+    },
+    {
       "id": 83980492,
       "kind": "missing-pendulum-split",
       "message": "Used desc as monster text and an empty missing Pendulum effect.",
       "name": "Dragong"
+    },
+    {
+      "id": 51531505,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dragonpit Magician"
+    },
+    {
+      "id": 15146890,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dragonpulse Magician"
+    },
+    {
+      "id": 73779005,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Dragoons of Draconia"
+    },
+    {
+      "id": 11212437,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Draluvice the Diabolic Dragon Fortress"
+    },
+    {
+      "id": 6367785,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Eldeen"
+    },
+    {
+      "id": 89943723,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Elemental HERO Neos"
+    },
+    {
+      "id": 20721928,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Elemental HERO Sparkman"
+    },
+    {
+      "id": 64154377,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Embryonic Beast"
+    },
+    {
+      "id": 11250655,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Emperor of the Land and Sea"
+    },
+    {
+      "id": 64511793,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Eyearmor"
+    },
+    {
+      "id": 81563416,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Fairy of the Fountain"
+    },
+    {
+      "id": 22855882,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Fiend Sword"
+    },
+    {
+      "id": 52800428,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Fiend's Hand"
+    },
+    {
+      "id": 88435542,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Fire Eye"
+    },
+    {
+      "id": 28363749,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Fire Opal Head"
     },
     {
       "id": 28363749,
@@ -794,15 +1226,207 @@
     },
     {
       "id": 17390179,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Flash Knight"
+    },
+    {
+      "id": 17390179,
       "kind": "missing-pendulum-split",
       "message": "Used desc as monster text and an empty missing Pendulum effect.",
       "name": "Flash Knight"
+    },
+    {
+      "id": 43785278,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Foucault's Cannon"
+    },
+    {
+      "id": 53830602,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Fungi of the Musk"
+    },
+    {
+      "id": 6368038,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Gaia The Fierce Knight"
+    },
+    {
+      "id": 32872239,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Gallugallud the Endless Enigma"
     },
     {
       "id": 32872239,
       "kind": "missing-pendulum-split",
       "message": "Used desc as monster text and an empty missing Pendulum effect.",
       "name": "Gallugallud the Endless Enigma"
+    },
+    {
+      "id": 34536276,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ganigumo"
+    },
+    {
+      "id": 69780745,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Garvas"
+    },
+    {
+      "id": 49258578,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Gate Deeg"
+    },
+    {
+      "id": 49370026,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Genin"
+    },
+    {
+      "id": 84046493,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ghost Beef"
+    },
+    {
+      "id": 95265975,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ghoul with an Appetite"
+    },
+    {
+      "id": 41403766,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Giant Scorpion of the Tundra"
+    },
+    {
+      "id": 11793047,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Gorgon Egg"
+    },
+    {
+      "id": 27094595,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Graveyard and the Hand of Invitation"
+    },
+    {
+      "id": 11012154,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Guardragon Justicia"
+    },
+    {
+      "id": 24639891,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Gunkan Suship Shari"
+    },
+    {
+      "id": 77994337,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Hallohallo"
+    },
+    {
+      "id": 46718686,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Hitodenchak"
+    },
+    {
+      "id": 10859908,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Holograh"
+    },
+    {
+      "id": 69669405,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Horn Imp"
+    },
+    {
+      "id": 15042735,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Hurricail"
+    },
+    {
+      "id": 38982356,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Hyo"
+    },
+    {
+      "id": 20848593,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ice Water"
+    },
+    {
+      "id": 67273917,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Cavalier"
+    },
+    {
+      "id": 61639289,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Crusader"
+    },
+    {
+      "id": 96802306,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Gallant"
+    },
+    {
+      "id": 50407691,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Margrave"
+    },
+    {
+      "id": 24019092,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Paladin"
+    },
+    {
+      "id": 24131534,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Squire"
+    },
+    {
+      "id": 97024987,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Templar"
+    },
+    {
+      "id": 93662626,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Igknight Veteran"
+    },
+    {
+      "id": 28103028,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ignihorse Dragonith"
     },
     {
       "id": 19438484,
@@ -823,10 +1447,160 @@
       "name": "Ilios the Black Sun Dragon"
     },
     {
+      "id": 81686058,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Ill Witch"
+    },
+    {
+      "id": 55337339,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Job-Change Mirror"
+    },
+    {
+      "id": 47894537,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Jongleur-Ghoul Illusionist"
+    },
+    {
+      "id": 68928540,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Kamakiriman"
+    },
+    {
+      "id": 84103702,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Kanikabuto"
+    },
+    {
+      "id": 48109103,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Kappa Avenger"
+    },
+    {
+      "id": 81179446,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Kattapillar"
+    },
+    {
+      "id": 32569498,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Korogashi"
+    },
+    {
+      "id": 76512652,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Krokodilus"
+    },
+    {
+      "id": 9430387,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "LaLa Li-oon"
+    },
+    {
+      "id": 75850803,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "LaMoon"
+    },
+    {
+      "id": 48940337,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Lancephorhynchus"
+    },
+    {
+      "id": 42591472,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Laughing Flower"
+    },
+    {
+      "id": 55343172,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Legendary Dueling Field"
+    },
+    {
+      "id": 4392470,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Leo Wizard"
+    },
+    {
+      "id": 21251800,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Light Bringer Lucifer"
+    },
+    {
+      "id": 55210709,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Lisark"
+    },
+    {
+      "id": 34320307,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Living Vase"
+    },
+    {
+      "id": 81618817,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Lord of Zemia"
+    },
+    {
+      "id": 62210247,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Lunar Queen Elzaim"
+    },
+    {
+      "id": 47643326,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Lunar Rabbit Omajinai"
+    },
+    {
+      "id": 98795934,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mabarrel"
+    },
+    {
+      "id": 38116136,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Machine Attacker"
+    },
+    {
+      "id": 43905751,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Madjinn Gunn"
+    },
+    {
       "id": 23220863,
       "kind": "missing-pendulum-split",
       "message": "Used desc as monster text and an empty missing Pendulum effect.",
       "name": "Magical Cavalry of Cxulub"
+    },
+    {
+      "id": 43857222,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Magicalibra"
     },
     {
       "id": 5506791,
@@ -871,10 +1645,172 @@
       "name": "Majespecter Unicorn - Kirin"
     },
     {
+      "id": 49127943,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Man-Eating Plant"
+    },
+    {
+      "id": 19474136,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mandragon"
+    },
+    {
       "id": 19474136,
       "kind": "missing-pendulum-split",
       "message": "Used desc as monster text and an empty missing Pendulum effect.",
       "name": "Mandragon"
+    },
+    {
+      "id": 77581312,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Masked Clown"
+    },
+    {
+      "id": 75195825,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Master Pendulum, the Dracoslayer"
+    },
+    {
+      "id": 50176820,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mech Bass"
+    },
+    {
+      "id": 63545455,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mech Mole Zombie"
+    },
+    {
+      "id": 94412545,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mechaleon"
+    },
+    {
+      "id": 23032273,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Megirus Light"
+    },
+    {
+      "id": 20129614,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Melffy Rabby"
+    },
+    {
+      "id": 33256280,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Metalfoes Goldriver"
+    },
+    {
+      "id": 7868571,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Metalfoes Silverd"
+    },
+    {
+      "id": 60473572,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Metalfoes Steelen"
+    },
+    {
+      "id": 69351984,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Metalfoes Volflame"
+    },
+    {
+      "id": 83678433,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Midnight Fiend"
+    },
+    {
+      "id": 47558785,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mild Turkey"
+    },
+    {
+      "id": 46864967,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Minomushi Warrior"
+    },
+    {
+      "id": 7225792,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mon Larvas"
+    },
+    {
+      "id": 35712107,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Monstrous Bird"
+    },
+    {
+      "id": 15820147,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Monsturtle"
+    },
+    {
+      "id": 69992868,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Muse-A"
+    },
+    {
+      "id": 62793020,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mystery Hand"
+    },
+    {
+      "id": 63515678,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Mystical Capture Chain"
+    },
+    {
+      "id": 78402798,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Night Lizard"
+    },
+    {
+      "id": 88643173,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Nightmare Scorpion"
+    },
+    {
+      "id": 14105623,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Odd-Eyes Arc Pendulum Dragon"
+    },
+    {
+      "id": 3606209,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "One Who Hunts Souls"
+    },
+    {
+      "id": 2971090,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Orion the Battle King"
     },
     {
       "id": 42002073,
@@ -883,16 +1819,412 @@
       "name": "Performapal Trump Girl"
     },
     {
+      "id": 66429798,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Pesanta the Titan of Troubadours"
+    },
+    {
+      "id": 77603950,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Phantom Dewan"
+    },
+    {
+      "id": 61201220,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Phantom Ghost"
+    },
+    {
+      "id": 55567161,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Pot the Trick"
+    },
+    {
+      "id": 54112932,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Potato & Chips"
+    },
+    {
+      "id": 68075840,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Power Pro Knight Sisters"
+    },
+    {
+      "id": 49858495,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Power Pro Lady Sisters"
+    },
+    {
+      "id": 57448410,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Prima Materiactor"
+    },
+    {
+      "id": 51194046,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Qliphort Monolith"
+    },
+    {
+      "id": 65518099,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Qliphort Scout"
+    },
+    {
+      "id": 29402771,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Rainbow Marine Mermaid"
+    },
+    {
+      "id": 74677422,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Red-Eyes Black Dragon"
+    },
+    {
+      "id": 45103815,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Risebell the Summoner"
+    },
+    {
+      "id": 82818645,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Rock Spirit"
+    },
+    {
+      "id": 39239728,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Royal Guard"
+    },
+    {
       "id": 93124273,
       "kind": "missing-pendulum-split",
       "message": "Used desc as monster text and an empty missing Pendulum effect.",
       "name": "Samurai Cavalry of Reptier"
     },
     {
+      "id": 82114013,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Sea Dragoons of Draconia"
+    },
+    {
+      "id": 23659124,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Sea King Dragon"
+    },
+    {
+      "id": 82742611,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Serpent Marauder"
+    },
+    {
+      "id": 4148264,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Shiny Black \"C\" Squadder"
+    },
+    {
+      "id": 68182934,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Sky Dragoons of Draconia"
+    },
+    {
+      "id": 84794011,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Solitude"
+    },
+    {
+      "id": 98075147,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Spiked Snail"
+    },
+    {
+      "id": 34690519,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Spirit of the Mountain"
+    },
+    {
+      "id": 54615781,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Spirit of the Winds"
+    },
+    {
+      "id": 64413994,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Stealth Angecradle"
+    },
+    {
+      "id": 98588427,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Steam Knight - BULLauncher"
+    },
+    {
+      "id": 23923758,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Steam Knight - Hamburk"
+    },
+    {
       "id": 2396042,
       "kind": "missing-pendulum-split",
       "message": "Used desc as monster text and an empty missing Pendulum effect.",
       "name": "Steel Cavalry of Dinon"
+    },
+    {
+      "id": 57649113,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Stinger the Electric Expeller"
+    },
+    {
+      "id": 72269672,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Stone Ghost"
+    },
+    {
+      "id": 27520594,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Sunseed Genius Loci"
+    },
+    {
+      "id": 41422426,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Supporter in the Shadows"
+    },
+    {
+      "id": 92176681,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Suppression Collider"
+    },
+    {
+      "id": 75646173,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Synchar"
+    },
+    {
+      "id": 46247516,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Tao the Chanter"
+    },
+    {
+      "id": 47922711,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Tatsunootoshigo"
+    },
+    {
+      "id": 86304179,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Tempura of Fortune - EBI"
+    },
+    {
+      "id": 57935140,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Tenderness"
+    },
+    {
+      "id": 60715406,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Tentacle Plant"
+    },
+    {
+      "id": 24348204,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "The Bewitching Phantom Thief"
+    },
+    {
+      "id": 8944575,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "The Drdek"
+    },
+    {
+      "id": 42026772,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "The Magical King of Dimension Zeta"
+    },
+    {
+      "id": 98898173,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "The Melting Red Shadow"
+    },
+    {
+      "id": 18180762,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "The Thing That Hides in the Mud"
+    },
+    {
+      "id": 93788854,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "The Wandering Doomed"
+    },
+    {
+      "id": 62671448,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Toad Master"
+    },
+    {
+      "id": 33878931,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Togex"
+    },
+    {
+      "id": 80813021,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Torike"
+    },
+    {
+      "id": 17441953,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Turtle Raccoon"
+    },
+    {
+      "id": 69512157,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Vector Pendulum, the Dracoverlord"
+    },
+    {
+      "id": 78556320,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Vishwar Randi"
+    },
+    {
+      "id": 3732747,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Water Element"
+    },
+    {
+      "id": 55014050,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Water Girl"
+    },
+    {
+      "id": 66836598,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Waterdragon Fairy"
+    },
+    {
+      "id": 37243151,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Weather Control"
+    },
+    {
+      "id": 92409659,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "White Dolphin"
+    },
+    {
+      "id": 2957055,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Wicked Dragon with the Ersatz Head"
+    },
+    {
+      "id": 47319141,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Wing Eagle"
+    },
+    {
+      "id": 98582704,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Wing Egg Elf"
+    },
+    {
+      "id": 42418084,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Winged Egg of New Life"
+    },
+    {
+      "id": 17511156,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Wood Clown"
+    },
+    {
+      "id": 17733394,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Wood Remains"
+    },
+    {
+      "id": 76704943,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Yamatano Dragon Scroll"
+    },
+    {
+      "id": 41061625,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Yashinoki"
+    },
+    {
+      "id": 17115745,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Yormungarde"
+    },
+    {
+      "id": 30090452,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Zanki"
+    },
+    {
+      "id": 10598400,
+      "kind": "unwrapped-flavor-text",
+      "message": "Removed the source's apostrophe wrapper from Normal Monster flavor text.",
+      "name": "Zarigun"
     }
   ]
 }

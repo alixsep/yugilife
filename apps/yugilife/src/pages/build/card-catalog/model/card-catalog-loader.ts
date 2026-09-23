@@ -410,6 +410,11 @@ let loaded: LoadedCardCatalog | undefined
 let loadGeneration = 0
 
 let activeRestore: Promise<LoadedCardCatalog | undefined> | undefined
+let activeUpdate: Promise<LoadedCardCatalog | undefined> | undefined
+/** The saved artifact a passively restored catalog was read from, so an update can compare it. */
+const restoredArtifacts = new WeakMap<LoadedCardCatalog, string>()
+/** The restored catalog most recently confirmed to match the published manifest. */
+let confirmedCurrent: LoadedCardCatalog | undefined
 
 export function restoreCardCatalog(): Promise<LoadedCardCatalog | undefined> {
   if (loaded) return Promise.resolve(loaded)
@@ -426,6 +431,7 @@ export function restoreCardCatalog(): Promise<LoadedCardCatalog | undefined> {
         return undefined
       }
       const restored = withStorageWarning({ ...decoded, source: "cache" })
+      restoredArtifacts.set(restored, cached.artifactSha256)
       loaded = restored
       return restored
     } catch {
@@ -435,6 +441,72 @@ export function restoreCardCatalog(): Promise<LoadedCardCatalog | undefined> {
     if (activeRestore === pending) activeRestore = undefined
   })
   activeRestore = pending
+  return pending
+}
+
+/**
+ * Brings a passively restored catalog up to the published version without any user action.
+ *
+ * Restoring reads only the saved copy, so on its own it would keep a browser on whatever catalog it
+ * first downloaded for as long as that copy stays valid, however many corrected releases follow.
+ * This checks the small revalidated manifest once the saved copy is searchable and, when a
+ * different catalog is published, downloads and verifies it in a fresh worker while the old one
+ * keeps answering searches. Only a verified and saved replacement is swapped in. Any failure keeps
+ * the verified saved copy and is retried on a later visit; it never surfaces as an editor error.
+ *
+ * Resolves to the replacement, or to `undefined` when the saved copy is already current, nothing
+ * restored is loaded, a failure occurred, or an explicit load superseded the update.
+ */
+export function updateRestoredCardCatalog(): Promise<LoadedCardCatalog | undefined> {
+  const current = loaded
+  const currentArtifact = current ? restoredArtifacts.get(current) : undefined
+  if (!current || currentArtifact === undefined || confirmedCurrent === current) {
+    return Promise.resolve(undefined)
+  }
+  if (activeUpdate) return activeUpdate
+  const generation = loadGeneration
+  const superseded = () => generation !== loadGeneration || loaded !== current
+  const pending = (async () => {
+    const baseUrl = catalogBaseUrl()
+    const manifest = await fetchManifest(new URL("manifest.json", baseUrl))
+    if (superseded()) return undefined
+    if (manifest.catalog.artifactSha256 === currentArtifact) {
+      confirmedCurrent = current
+      return undefined
+    }
+    const data = await fetchArtifact(
+      new URL(manifest.catalog.file, baseUrl),
+      manifest.catalog.compressedBytes,
+    )
+    if (superseded()) return undefined
+    const record = recordFromManifest(manifest, data)
+    const decoded = await verifiedCatalog(record)
+    if (superseded()) {
+      decoded.search.dispose()
+      return undefined
+    }
+    try {
+      await storeCardCatalog(record)
+    } catch (error) {
+      decoded.search.dispose()
+      throw error
+    }
+    if (superseded()) {
+      decoded.search.dispose()
+      return undefined
+    }
+    const replacement = withStorageWarning({ ...decoded, source: "network" })
+    loaded = replacement
+    // Searches still running on the old worker are discarded by their callers once the new client
+    // is published, so closing it here cannot leave a stale result on screen.
+    current.search.dispose()
+    return replacement
+  })()
+    .catch(() => undefined)
+    .finally(() => {
+      if (activeUpdate === pending) activeUpdate = undefined
+    })
+  activeUpdate = pending
   return pending
 }
 
@@ -462,6 +534,7 @@ export function retryCardCatalogLoad(onProgress?: ProgressCallback) {
   loaded = undefined
   activeLoad = undefined
   activeRestore = undefined
+  activeUpdate = undefined
   return loadCardCatalog(onProgress)
 }
 
@@ -471,4 +544,6 @@ export function resetCardCatalogLoaderForTests() {
   loaded = undefined
   activeLoad = undefined
   activeRestore = undefined
+  activeUpdate = undefined
+  confirmedCurrent = undefined
 }

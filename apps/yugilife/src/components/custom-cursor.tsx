@@ -111,7 +111,6 @@ export function CustomCursor({
     document.documentElement.dataset.customCursor = "true"
 
     const target = { x: 0, y: 0 }
-    const current = { x: 0, y: 0 }
     let cursorMode: CursorMode = "default"
     let pressed = false
     let selectingText = false
@@ -279,9 +278,6 @@ export function CustomCursor({
     }
 
     const render = () => {
-      current.x = lerp(current.x, target.x, 0.24)
-      current.y = lerp(current.y, target.y, 0.24)
-
       const activeMode = nativeDragging ? "drag" : selectingText ? "text" : cursorMode
       const textMode = activeMode === "text"
       const dragMode = activeMode === "drag"
@@ -306,7 +302,8 @@ export function CustomCursor({
         : dotRadiusTarget * 2
       const targetDotCornerRadius = textMode ? targetDotWidth / 2 : dotRadiusTarget
 
-      cursor.style.transform = `translate3d(${current.x - CURSOR_CENTER}px, ${current.y - CURSOR_CENTER}px, 0)`
+      // The position is never eased: any smoothing here is felt as the cursor trailing the hand.
+      cursor.style.transform = `translate3d(${target.x - CURSOR_CENTER}px, ${target.y - CURSOR_CENTER}px, 0)`
       cursorOpacity = lerp(cursorOpacity, visible ? 1 : 0, 0.18)
       cursor.style.opacity = String(cursorOpacity)
       ringRadius = lerp(ringRadius, radiusTarget, 0.16)
@@ -332,8 +329,6 @@ export function CustomCursor({
         filterActive = false
       }
 
-      const positionSettled =
-        Math.abs(target.x - current.x) < 0.1 && Math.abs(target.y - current.y) < 0.1
       const visualSettled =
         Math.abs(ringRadius - radiusTarget) < 0.1 &&
         Math.abs(ringOpacity - (dragMode || textMode ? 0 : 1)) < 0.01 &&
@@ -341,7 +336,7 @@ export function CustomCursor({
         Math.abs(dotHeight - targetDotHeight) < 0.1 &&
         distortion <= 0.001
 
-      return !(positionSettled && visualSettled && (!visible ? cursorOpacity <= 0.01 : true))
+      return !(visualSettled && (!visible ? cursorOpacity <= 0.01 : true))
     }
 
     const scheduleRender = () => {

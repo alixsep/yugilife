@@ -140,6 +140,60 @@ test("records bounded source repairs and known unsupported frames", () => {
   assert.deepEqual(JSON.parse(result.catalogText).g.effect_pendulum[0].slice(-2), [4, ""])
 })
 
+test("removes the source's apostrophe wrapper from Normal Monster flavor text only", () => {
+  const normal = {
+    ...effect,
+    frameType: "normal",
+    typeline: ["Dragon", "Normal"],
+  }
+  const result = transformSource(
+    source([
+      {
+        ...normal,
+        id: 300,
+        card_images: image(300),
+        name: "Wrapped",
+        desc: "''A dragon of \"legend\".''",
+      },
+      {
+        ...normal,
+        id: 301,
+        card_images: image(301),
+        name: "Wrapped Pendulum",
+        frameType: "normal_pendulum",
+        desc: "[ Pendulum Effect ]\nScale text\n\n[ Monster Effect ]\n''Flavor.''",
+        monster_desc: "''Flavor.''",
+        pend_desc: "Scale text",
+        scale: 4,
+      },
+      { ...normal, id: 302, card_images: image(302), name: "Speech", desc: "''One.'' ''Two.''" },
+      { ...normal, id: 303, card_images: image(303), name: "Quoted", desc: '"Check THIS out!"' },
+      { ...effect, id: 304, card_images: image(304), name: "Effect", desc: "''Not flavor text.''" },
+    ]),
+    artworkIndex(),
+  )
+  const catalog = JSON.parse(result.catalogText)
+  const descriptions = Object.fromEntries(
+    [...catalog.g.normal, ...catalog.g.normal_pendulum, ...catalog.g.effect].map((row) => [
+      row[1],
+      row[4],
+    ]),
+  )
+  assert.deepEqual(descriptions, {
+    Effect: "''Not flavor text.''",
+    Quoted: '"Check THIS out!"',
+    Speech: "''One.'' ''Two.''",
+    Wrapped: 'A dragon of "legend".',
+    "Wrapped Pendulum": "Flavor.",
+  })
+  assert.deepEqual(
+    JSON.parse(result.reportText)
+      .anomalies.filter(({ kind }) => kind === "unwrapped-flavor-text")
+      .map(({ name }) => name),
+    ["Wrapped", "Wrapped Pendulum"],
+  )
+})
+
 test("fails closed for new vocabulary and broken Link invariants", () => {
   assert.throws(
     () => transformSource(source([{ ...effect, frameType: "future-frame" }]), artworkIndex()),
