@@ -2,6 +2,7 @@ import { useCallback, useId, useLayoutEffect, useRef, useState } from "react"
 
 import { NavigationType, useLocation, useNavigationType } from "react-router"
 
+import { createPathInterpolator } from "@/lib/path-morph"
 import { cn } from "@/lib/utils"
 
 import { LogoMark } from "./logo-mark"
@@ -22,24 +23,6 @@ const paths = {
     unfilled: "M 0 0 V 0 Q .5 0 1 0 V 0 z",
   },
 } as const
-
-const pathNumberPattern = /-?\d*\.?\d+/g
-
-function createPathInterpolator(from: string, to: string) {
-  const fromNumbers = from.match(pathNumberPattern)?.map(Number) ?? []
-  const toNumbers = to.match(pathNumberPattern)?.map(Number) ?? []
-
-  return (progress: number) => {
-    let numberIndex = 0
-
-    return to.replace(pathNumberPattern, () => {
-      const fromValue = fromNumbers[numberIndex] ?? 0
-      const toValue = toNumbers[numberIndex] ?? fromValue
-      numberIndex += 1
-      return String(fromValue + (toValue - fromValue) * progress)
-    })
-  }
-}
 
 function easeInQuart(progress: number) {
   return progress ** 4
@@ -100,8 +83,9 @@ export function PageTransition({ children }: { children: (location: Location) =>
   const cancelRef = useRef<(() => void) | null>(null)
   const readyWaitCancelRef = useRef<(() => void) | null>(null)
   const routeReadyRef = useRef(true)
-  const coveredRef = useRef(false)
-  const transitionIdRef = useRef(0)
+  /** The newest place asked for. A sweep in flight reads this at its next decision point. */
+  const pendingRef = useRef<{ location: Location; navigationType: NavigationType } | null>(null)
+  const runningRef = useRef(false)
   const scrollPositionsRef = useRef(new Map<string, { left: number; top: number }>())
   const clipId = useId().replace(/:/g, "")
   const pathId = `${clipId}-path`
@@ -125,7 +109,10 @@ export function PageTransition({ children }: { children: (location: Location) =>
 
       const check = () => {
         if (cancelled) return
-        if (routeReadyRef.current) {
+        // A newer destination ends the wait as surely as readiness does: the route being waited on
+        // may be the one that asked for it, as a redirect that never reports ready, and it is
+        // about to be replaced either way.
+        if (routeReadyRef.current || pendingRef.current) {
           if (readyWaitCancelRef.current === cancel) readyWaitCancelRef.current = null
           resolve(true)
           return
@@ -152,6 +139,131 @@ export function PageTransition({ children }: { children: (location: Location) =>
     }
   }, [])
 
+  // The only thing that ever cancels a sweep is the component going away. Cancelling for a new
+  // navigation is what broke this: it tore the sweep down mid-curve and the run that replaced it
+  // began by snapping the path back to empty, which is the jump a double click produced.
+  useLayoutEffect(
+    () => () => {
+      cancelRef.current?.()
+      cancelRef.current = null
+      readyWaitCancelRef.current?.()
+      readyWaitCancelRef.current = null
+      pendingRef.current = null
+    },
+    [],
+  )
+
+  /**
+   * One sweep at a time, and never interrupted.
+   *
+   * A navigation does not start an animation — it names a destination. The loop below reads that
+   * destination at the two points where it can act on one: when the screen is covered, and once
+   * it is open again. So a second click on the same link changes nothing, a click on a different
+   * link mid-sweep simply changes where this sweep is going, and neither can leave the path
+   * half-drawn. Resuming an interrupted curve, and knowing which of the two shape families it
+   * belonged to, stops being a problem that has to be solved at all.
+   */
+  const sweep = useCallback(async () => {
+    const path = pathRef.current
+    if (!path || runningRef.current) return
+    runningRef.current = true
+    setIsAnimating(true)
+
+    // Whether the screen is currently fully covered. A destination that arrives while it is gets
+    // displayed straight away; only one that arrives while it is open has to be covered first.
+    let covered = false
+    try {
+      while (pendingRef.current) {
+        if (!covered) {
+          scrollPositionsRef.current.set(displayLocationRef.current.key, {
+            left: window.scrollX,
+            top: window.scrollY,
+          })
+
+          path.setAttribute("d", paths.enter.unfilled)
+          const entered = await transitionPath(
+            path,
+            paths.enter.unfilled,
+            paths.enter.curve,
+            620,
+            easeInQuart,
+            cancelRef,
+          )
+          if (!entered) return
+          const filled = await transitionPath(
+            path,
+            paths.enter.curve,
+            paths.enter.filled,
+            180,
+            easeOutQuart,
+            cancelRef,
+          )
+          if (!filled) return
+          covered = true
+        }
+
+        // Covered: whatever was asked for most recently is where we are going.
+        const { location: next, navigationType: type } = pendingRef.current
+        pendingRef.current = null
+        displayLocationRef.current = next
+        routeReadyRef.current = true
+        setDisplayLocation(next)
+
+        const ready = await waitForRouteReady()
+        if (!ready) return
+
+        // Asked somewhere else while the route was settling: stay covered and go round again,
+        // rather than opening onto a page we are about to leave.
+        if (pendingRef.current) continue
+
+        if (type === NavigationType.Pop) {
+          const savedPosition = scrollPositionsRef.current.get(next.key)
+          window.scrollTo(savedPosition?.left ?? 0, savedPosition?.top ?? 0)
+        } else if (next.hash) {
+          const encodedHash = next.hash.slice(1)
+          let hash = encodedHash
+          try {
+            hash = decodeURIComponent(encodedHash)
+          } catch {
+            // Keep the literal fragment when it contains malformed escape sequences.
+          }
+
+          const target = document.getElementById(hash)
+          if (target) target.scrollIntoView()
+          else window.scrollTo(0, 0)
+        } else {
+          window.scrollTo(0, 0)
+        }
+
+        covered = false
+        path.setAttribute("d", paths.exit.filled)
+        const opening = await transitionPath(
+          path,
+          paths.exit.filled,
+          paths.exit.curve,
+          180,
+          easeInQuart,
+          cancelRef,
+        )
+        if (!opening) return
+        const complete = await transitionPath(
+          path,
+          paths.exit.curve,
+          paths.exit.unfilled,
+          760,
+          easeOutQuart,
+          cancelRef,
+        )
+        if (!complete) return
+        // Anything asked for during the exit sweeps again from here, off a screen that is fully
+        // open — never off a half-drawn one.
+      }
+    } finally {
+      runningRef.current = false
+      setIsAnimating(false)
+    }
+  }, [waitForRouteReady])
+
   useLayoutEffect(() => {
     const displayed = displayLocationRef.current
     if (
@@ -162,113 +274,15 @@ export function PageTransition({ children }: { children: (location: Location) =>
       return
     }
 
-    const path = pathRef.current
-    if (!path) return
-
-    const transitionId = ++transitionIdRef.current
-    const nextLocation = location
-    const nextNavigationType = navigationType
-
-    scrollPositionsRef.current.set(displayed.key, {
-      left: window.scrollX,
-      top: window.scrollY,
-    })
-
-    const run = async () => {
-      const alreadyCovered = coveredRef.current
-      setIsAnimating(true)
-
-      if (!alreadyCovered) {
-        path.setAttribute("d", paths.enter.unfilled)
-
-        const covered = await transitionPath(
-          path,
-          paths.enter.unfilled,
-          paths.enter.curve,
-          620,
-          easeInQuart,
-          cancelRef,
-        )
-        if (!covered || transitionId !== transitionIdRef.current) return
-
-        const filled = await transitionPath(
-          path,
-          paths.enter.curve,
-          paths.enter.filled,
-          180,
-          easeOutQuart,
-          cancelRef,
-        )
-        if (!filled || transitionId !== transitionIdRef.current) return
-        coveredRef.current = true
-      }
-
-      displayLocationRef.current = nextLocation
-      routeReadyRef.current = true
-      setDisplayLocation(nextLocation)
-
-      const ready = await waitForRouteReady()
-      if (!ready || transitionId !== transitionIdRef.current) return
-
-      if (nextNavigationType === NavigationType.Pop) {
-        const savedPosition = scrollPositionsRef.current.get(nextLocation.key)
-        window.scrollTo(savedPosition?.left ?? 0, savedPosition?.top ?? 0)
-      } else if (nextLocation.hash) {
-        const encodedHash = nextLocation.hash.slice(1)
-        let hash = encodedHash
-        try {
-          hash = decodeURIComponent(encodedHash)
-        } catch {
-          // Keep the literal fragment when it contains malformed escape sequences.
-        }
-
-        const target = document.getElementById(hash)
-        if (target) target.scrollIntoView()
-        else window.scrollTo(0, 0)
-      } else {
-        window.scrollTo(0, 0)
-      }
-
-      path.setAttribute("d", paths.exit.filled)
-
-      const opening = await transitionPath(
-        path,
-        paths.exit.filled,
-        paths.exit.curve,
-        180,
-        easeInQuart,
-        cancelRef,
-      )
-      if (!opening || transitionId !== transitionIdRef.current) return
-
-      const complete = await transitionPath(
-        path,
-        paths.exit.curve,
-        paths.exit.unfilled,
-        760,
-        easeOutQuart,
-        cancelRef,
-      )
-      if (complete && transitionId === transitionIdRef.current) {
-        coveredRef.current = false
-        setIsAnimating(false)
-      }
-    }
-
-    void run()
-
-    return () => {
-      transitionIdRef.current += 1
-      cancelRef.current?.()
-      cancelRef.current = null
-      readyWaitCancelRef.current?.()
-      readyWaitCancelRef.current = null
-    }
-  }, [location, navigationType, waitForRouteReady])
+    pendingRef.current = { location, navigationType }
+    void sweep()
+  }, [location, navigationType, sweep])
 
   return (
     <>
-      <PageTransitionReadyContext.Provider value={{ setReady: setRouteReady }}>
+      <PageTransitionReadyContext.Provider
+        value={{ setReady: setRouteReady, transitioning: isAnimating }}
+      >
         {children(displayLocation)}
       </PageTransitionReadyContext.Provider>
       <svg
@@ -306,7 +320,7 @@ export function PageTransition({ children }: { children: (location: Location) =>
           <use href={`#${pathId}`} fill="var(--focus-ring)" />
         </svg>
 
-        <div className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center text-white">
+        <div className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center text-(--user-accent-foreground)">
           <LogoMark className="h-[min(14vw,96px)] w-[min(14vw,96px)]" />
         </div>
       </div>

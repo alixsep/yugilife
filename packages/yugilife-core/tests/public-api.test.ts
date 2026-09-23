@@ -23,6 +23,7 @@ describe("public entry points", () => {
       "graphemeCount",
       "hasLeadingAuthoredLineFitSplit",
       "isLayerVisible",
+      "matchesPresentationGate",
       "matchesSemanticCondition",
       "parseRichText",
       "parseRichTextLength",
@@ -44,6 +45,13 @@ describe("public entry points", () => {
 
   it("exposes only deliberately supported specialized APIs", () => {
     expect(Object.keys(advanced)).toEqual([])
-    expect(Object.keys(colorGrading).sort()).toEqual(["TextureCache", "applyColorPreset"])
+    expect(Object.keys(colorGrading).sort()).toEqual([
+      "TextureCache",
+      "applyColorPreset",
+      "collectTexturePreparations",
+      "decodePreparedTextures",
+      "prepareTemplateTextures",
+      "preparedTextureKey",
+    ])
   })
 })

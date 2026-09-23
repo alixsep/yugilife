@@ -1,23 +1,77 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
-import { animate, motion, useMotionValue, useTransform } from "framer-motion"
-import { ChevronLeft, ChevronRight, ImageOff, Plus } from "lucide-react"
+import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion"
+import {
+  ChevronLeft,
+  ChevronRight,
+  GalleryVerticalEnd,
+  ImageOff,
+  Pencil,
+  Trash2,
+} from "lucide-react"
+import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useShape } from "@/lib/shape-context"
-import { spring } from "@/lib/springs"
+import { fade, spring } from "@/lib/springs"
 import { cn } from "@/lib/utils"
+
+import { cardRenderingLoopMs, CardRenderingSkeleton } from "./card-rendering-skeleton"
 
 import type { InventoryCardSummary } from "./model/inventory-card"
 import type { MotionValue, PanInfo } from "framer-motion"
 
+/** The face fades out first and the sweep follows it in; on the way out the sweep clears first. */
+const stageDelay = 0.1
+
+function updatedOn(timestamp: number) {
+  return new Date(timestamp).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+}
+
+/**
+ * Holds a flag true long enough for the sweep to finish a full pass.
+ *
+ * A card can finish rendering in a couple of hundred milliseconds, which would tear the animation
+ * down mid-wave. The work is never delayed by this — only the card's own face waits, so a bulk
+ * refresh keeps running underneath and several cards can be mid-sweep at once.
+ */
+function useHeldFlag(active: boolean, minimumMs: number) {
+  const [held, setHeld] = useState(false)
+  const startedAt = useRef(0)
+
+  // Both transitions are raised from a callback rather than synchronously in the effect body, so
+  // neither cascades a render — the same shape the tooltip uses for its deferred unmount.
+  useEffect(() => {
+    if (!active) return
+    startedAt.current = Date.now()
+    const frame = requestAnimationFrame(() => setHeld(true))
+    return () => cancelAnimationFrame(frame)
+  }, [active])
+
+  useEffect(() => {
+    if (active) return
+    const remaining = Math.max(0, startedAt.current + minimumMs - Date.now())
+    const timeout = window.setTimeout(() => setHeld(false), remaining)
+    return () => window.clearTimeout(timeout)
+  }, [active, minimumMs])
+
+  return active || held
+}
+
 interface InventoryCarouselProps {
   busy: boolean
   cards: readonly InventoryCardSummary[]
-  onCreate: () => void
-  onCreateFocusChange: (focused: boolean) => void
+  onDelete: (cardId: string) => void
+  onDuplicate: (cardId: string) => void
   onSelect: (cardId: string) => void
   previewUrls: Readonly<Record<string, string>>
+  /** The card whose preview is being re-rendered, shown as a skeleton until it lands. */
+  renderingCardId?: string | undefined
   selectedCardId?: string | undefined
 }
 
@@ -62,29 +116,38 @@ function useCarouselPosition(
 }
 
 function PositionedCard({
+  busy,
   card,
   curveDivisor,
   index,
   itemCount,
+  onDelete,
+  onDuplicate,
   onSelect,
   previewUrl,
   previewUnavailableLabel,
   progress,
+  rendering,
   selected,
   suppressClick,
 }: {
+  busy: boolean
   card: InventoryCardSummary
   curveDivisor: number
   index: number
   itemCount: number
+  onDelete: () => void
+  onDuplicate: () => void
   onSelect: () => void
   previewUrl?: string | undefined
   previewUnavailableLabel: string
   progress: MotionValue<number>
+  rendering: boolean
   selected: boolean
   suppressClick: () => boolean
 }) {
   const shape = useShape()
+  const redrawing = useHeldFlag(rendering, cardRenderingLoopMs)
   const position = useCarouselPosition(index, progress, curveDivisor, itemCount)
   const { overlay, ...motionStyle } = position
   return (
@@ -101,34 +164,152 @@ function PositionedCard({
         >
           {String(index + 1).padStart(2, "0")}
         </span>
+        {/* The card's own actions ride with it, opposite its number. Only the settled card offers
+            them: every other card is turned away and partly behind its neighbour, so a control
+            there would be aimed at a target the reader cannot fully see. */}
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              animate={{ opacity: 1 }}
+              className={cn(
+                "bg-surface-3 pointer-events-auto absolute right-0 bottom-full mb-2 flex items-center gap-0.5 p-0.5",
+                shape.item,
+              )}
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key="actions"
+              transition={fade}
+              // A drag that happens to start on a control still ends in a click on it. The card face
+              // already ignores that; these do too, or a flick of the gallery opens the editor.
+              onClickCapture={(event) => {
+                if (!suppressClick()) return
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+            >
+              <Button asChild leadingIcon={Pencil} size="compact" variant="ghost">
+                <Link to={`/build/${encodeURIComponent(card.id)}`}>Edit</Link>
+              </Button>
+              <ConfirmDialog
+                confirmLabel="Duplicate card"
+                description={`A copy of “${card.title}” will be added to your inventory.`}
+                disabled={busy}
+                onConfirm={onDuplicate}
+                title="Duplicate this card?"
+                trigger={
+                  <Button leadingIcon={GalleryVerticalEnd} size="compact" variant="ghost">
+                    Duplicate
+                  </Button>
+                }
+              />
+              <ConfirmDialog
+                confirmLabel="Delete card"
+                description={`“${card.title}” will be permanently removed from this browser.`}
+                disabled={busy}
+                onConfirm={onDelete}
+                title="Delete this card?"
+                trigger={
+                  <Button
+                    aria-label="Delete card"
+                    className="text-destructive hover:text-destructive"
+                    size="icon-compact"
+                    variant="ghost"
+                  >
+                    <Trash2 />
+                  </Button>
+                }
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="absolute inset-x-0 top-full mt-2 flex justify-center"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key="detail"
+              transition={fade}
+            >
+              <span
+                className={cn(
+                  "text-caption text-muted-foreground bg-surface-3 max-w-full truncate px-1.5 py-1",
+                  shape.item,
+                )}
+              >
+                {card.templateId} · Updated {updatedOn(card.updatedAt)}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <button
           aria-label={`${card.title}${selected ? ", selected" : ""}`}
           aria-pressed={selected}
           className={cn(
-            "bg-surface-2 pointer-events-auto relative size-full cursor-grab overflow-hidden rounded-none border outline-none select-none active:cursor-grabbing",
-            !previewUrl && shape.container,
-            selected
-              ? "shadow-surface-7 border-[color-mix(in_oklab,var(--focus-ring)_48%,var(--border))]"
-              : "border-border shadow-surface-4",
+            "pointer-events-auto relative size-full cursor-grab overflow-hidden rounded-none transition-[box-shadow] duration-300 outline-none select-none active:cursor-grabbing",
+            redrawing ? "shadow-none" : selected ? "shadow-surface-7" : "shadow-surface-4",
           )}
           onClick={() => {
             if (!suppressClick()) onSelect()
           }}
           type="button"
         >
-          {previewUrl ? (
-            <img
-              alt=""
-              className="pointer-events-none size-full object-cover"
-              draggable={false}
-              src={previewUrl}
-            />
-          ) : (
-            <span className="text-muted-foreground flex size-full flex-col items-center justify-center gap-2 px-5 text-center">
-              <ImageOff aria-hidden="true" className="size-5" strokeWidth={1.5} />
-              <span className="text-caption">{previewUnavailableLabel}</span>
-            </span>
-          )}
+          {/* The card's surface travels with its face: both clear out of the sweep's way together,
+              so the tiles never sit inside a leftover bordered box. */}
+          <motion.span
+            animate={{ opacity: redrawing ? 0 : 1 }}
+            aria-hidden="true"
+            className={cn(
+              "bg-surface-2 absolute inset-0",
+              !previewUrl && cn("border-border border", shape.container),
+            )}
+            initial={false}
+            transition={redrawing ? fade : { ...fade, delay: stageDelay }}
+          />
+          {/* The face stays mounted and only fades while a render is running, so the sweep is an
+              overlay on this card rather than a third thing swapping in and out of its place. */}
+          <AnimatePresence initial={false}>
+            {previewUrl ? (
+              <motion.img
+                alt=""
+                animate={{ opacity: redrawing ? 0 : 1 }}
+                className="pointer-events-none absolute inset-0 size-full object-cover"
+                draggable={false}
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key={previewUrl}
+                src={previewUrl}
+                transition={redrawing ? fade : { ...fade, delay: stageDelay }}
+              />
+            ) : (
+              <motion.span
+                animate={{ opacity: redrawing ? 0 : 1 }}
+                className="text-muted-foreground absolute inset-0 flex flex-col items-center justify-center gap-2 px-5 text-center"
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key="unavailable"
+                transition={redrawing ? fade : { ...fade, delay: stageDelay }}
+              >
+                <ImageOff aria-hidden="true" className="size-5" strokeWidth={1.5} />
+                <span className="text-caption">{previewUnavailableLabel}</span>
+              </motion.span>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {redrawing && (
+              <motion.span
+                animate={{ opacity: 1, transition: { ...fade, delay: stageDelay } }}
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                exit={{ opacity: 0, transition: fade }}
+                initial={{ opacity: 0 }}
+                key="rendering"
+              >
+                <CardRenderingSkeleton />
+              </motion.span>
+            )}
+          </AnimatePresence>
           <motion.span
             aria-hidden="true"
             className="pointer-events-none absolute inset-0"
@@ -140,63 +321,14 @@ function PositionedCard({
   )
 }
 
-function PositionedCreateCard({
-  busy,
-  curveDivisor,
-  index,
-  itemCount,
-  onCreate,
-  progress,
-  suppressClick,
-}: {
-  busy: boolean
-  curveDivisor: number
-  index: number
-  itemCount: number
-  onCreate: () => void
-  progress: MotionValue<number>
-  suppressClick: () => boolean
-}) {
-  const shape = useShape()
-  const position = useCarouselPosition(index, progress, curveDivisor, itemCount)
-  const { overlay, ...motionStyle } = position
-  return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <motion.button
-        aria-label="Create a new card"
-        className={cn(
-          "text-muted-foreground hover:text-foreground pointer-events-auto relative aspect-[813/1185] max-h-full w-[min(58vw,37dvh,19.875rem)] cursor-grab border-2 border-dashed bg-transparent transition-colors outline-none select-none active:cursor-grabbing",
-          shape.container,
-        )}
-        disabled={busy}
-        onClick={() => {
-          if (!suppressClick()) onCreate()
-        }}
-        style={{ ...motionStyle, scale: 0.86, transformOrigin: "0% 100%" }}
-        type="button"
-      >
-        <motion.span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{ background: overlay }}
-        />
-        <Plus
-          aria-hidden="true"
-          className="absolute top-1/2 left-1/2 size-9 -translate-1/2"
-          strokeWidth={1.25}
-        />
-      </motion.button>
-    </div>
-  )
-}
-
 export function InventoryCarousel({
   busy,
   cards,
-  onCreate,
-  onCreateFocusChange,
+  onDelete,
+  onDuplicate,
   onSelect,
   previewUrls,
+  renderingCardId,
   selectedCardId,
 }: InventoryCarouselProps) {
   const stageRef = useRef<HTMLElement>(null)
@@ -208,8 +340,7 @@ export function InventoryCarousel({
     0,
     cards.findIndex(({ id }) => id === selectedCardId),
   )
-  const itemCount = cards.length + 1
-  const createIndex = cards.length
+  const itemCount = cards.length
   const progress = useMotionValue(selectedIndex)
   const [settledIndex, setSettledIndex] = useState(selectedIndex)
   const [renderIndex, setRenderIndex] = useState(selectedIndex)
@@ -251,17 +382,31 @@ export function InventoryCarousel({
         if (sequence !== animationSequence.current) return
         setSettledIndex(target)
         const card = cards[target]
-        onCreateFocusChange(target === createIndex)
         if (card) onSelect(card.id)
       })
     },
-    [cards, createIndex, itemCount, onCreateFocusChange, onSelect, progress],
+    [cards, itemCount, onSelect, progress],
   )
 
   const move = useCallback(
     (direction: -1 | 1) => settleTo(Math.round(progress.get()) + direction),
     [progress, settleTo],
   )
+
+  /**
+   * Follows a selection made outside the carousel — a duplicate, a delete, the first card after a
+   * reload. When the selection changed because this carousel just settled there, it is a no-op.
+   *
+   * This is why the carousel is not keyed on the selected card upstream: remounting to re-seed the
+   * scroll position would also tear down every card's own state, restarting in-flight animations
+   * the moment a drag settles.
+   */
+  useEffect(() => {
+    if (selectedIndex === settledIndex) return
+    // Deferred a frame because settling updates state; running it inline would cascade a render.
+    const frame = requestAnimationFrame(() => settleTo(selectedIndex))
+    return () => cancelAnimationFrame(frame)
+  }, [selectedIndex, settledIndex, settleTo])
 
   const handlePan = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (Math.abs(info.offset.x) > 3) dragged.current = true
@@ -321,35 +466,27 @@ export function InventoryCarousel({
       <div className="relative size-full" aria-live="polite">
         {visibleCards.map(({ card, index }) => (
           <PositionedCard
+            busy={busy}
             card={card}
             curveDivisor={geometry.curveDivisor}
             index={index}
             itemCount={itemCount}
             key={card.id}
+            onDelete={() => onDelete(card.id)}
+            onDuplicate={() => onDuplicate(card.id)}
             onSelect={() => settleTo(index)}
             previewUrl={previewUrls[card.id]}
             previewUnavailableLabel={busy ? "Restoring preview…" : "Preview unavailable"}
             progress={progress}
+            rendering={renderingCardId === card.id}
             selected={settledIndex === index}
             suppressClick={() => dragged.current}
           />
         ))}
-
-        {Math.abs(createIndex - renderIndex) <= 6 && (
-          <PositionedCreateCard
-            busy={busy}
-            curveDivisor={geometry.curveDivisor}
-            index={createIndex}
-            itemCount={itemCount}
-            onCreate={onCreate}
-            progress={progress}
-            suppressClick={() => dragged.current}
-          />
-        )}
       </div>
 
       {itemCount > 1 && (
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 z-30 flex -translate-y-1/2 justify-between">
+        <div className="pointer-events-none absolute inset-x-3 top-1/2 z-30 flex -translate-y-1/2 justify-between sm:inset-x-5">
           <Button
             aria-label="Previous card"
             className="pointer-events-auto"

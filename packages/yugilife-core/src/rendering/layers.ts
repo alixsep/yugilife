@@ -41,8 +41,10 @@ export function assertLayerTree(
   masks: readonly CanvasMask[] = [],
 ) {
   const layersById = new Map<string, LayerDefinition>()
+  const layerOrder = new Map<string, number>()
   walkLayers(layers, ({ layer }) => {
     layersById.set(layer.id, layer)
+    layerOrder.set(layer.id, layerOrder.size)
     const key = rendererKey(layer)
     const renderer = findRenderer(renderers, key)
     if (!renderer) {
@@ -109,11 +111,31 @@ export function assertLayerTree(
       throw new Error(`Canvas mask "${mask.id}" references unknown layer "${layerId}".`)
     }
     const renderer = findRenderer(renderers, rendererKey(layer))
-    if (renderer?.output === "raster") return
-    if (layer.kind === "group" && isRasterOnly(layer)) return
-    if (layer.kind === "group") {
+    const validTarget =
+      renderer?.output === "raster" || (layer.kind === "group" && isRasterOnly(layer))
+    if (!validTarget && layer.kind === "group") {
       throw new Error(`Canvas mask "${mask.id}" can only target a raster-only group "${layerId}".`)
     }
-    throw new Error(`Canvas mask "${mask.id}" can only target raster-output layer "${layerId}".`)
+    if (!validTarget) {
+      throw new Error(`Canvas mask "${mask.id}" can only target raster-output layer "${layerId}".`)
+    }
+    if (!mask.coverageLayerId) return
+    const coverageLayer = layersById.get(mask.coverageLayerId)
+    if (!coverageLayer) {
+      throw new Error(
+        `Canvas mask "${mask.id}" references unknown coverage layer "${mask.coverageLayerId}".`,
+      )
+    }
+    const coverageRenderer = findRenderer(renderers, rendererKey(coverageLayer))
+    if (coverageRenderer?.output !== "raster") {
+      throw new Error(
+        `Canvas mask "${mask.id}" coverage layer "${mask.coverageLayerId}" must use raster output.`,
+      )
+    }
+    if ((layerOrder.get(mask.coverageLayerId) ?? Infinity) >= (layerOrder.get(layerId) ?? -1)) {
+      throw new Error(
+        `Canvas mask "${mask.id}" coverage layer "${mask.coverageLayerId}" must render before target layer "${layerId}".`,
+      )
+    }
   })
 }

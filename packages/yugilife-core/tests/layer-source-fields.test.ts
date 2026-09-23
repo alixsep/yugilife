@@ -7,10 +7,10 @@ import { NAME_FIELD, testTemplate } from "./fixtures"
 
 describe("rendered layer source fields", () => {
   it("finds direct fields and transitive semantic presentation dependencies", () => {
-    const attributeLayer = {
-      assetId: "attribute.dark",
+    const statusLayer = {
+      assetId: "status.pending",
       defaultVisible: false,
-      id: "attributeDark",
+      id: "pendingStatus",
       kind: "image" as const,
       region: { height: 10, width: 10, x: 0, y: 0 },
     }
@@ -19,34 +19,34 @@ describe("rendered layer source fields", () => {
         NAME_FIELD,
         {
           kind: "text",
-          label: "Attribute",
-          name: "attribute",
-          options: ["dark", "light"],
+          label: "Status",
+          name: "status",
+          options: ["pending", "complete"],
         },
       ],
-      layers: [attributeLayer],
+      layers: [statusLayer],
       presentationRules: [
         {
-          id: "dark-attribute",
-          layerVisibility: { attributeDark: true },
-          when: { equals: "dark", path: "display.attribute" },
+          id: "pending-status",
+          layerVisibility: { pendingStatus: true },
+          when: { equals: "pending", path: "display.status" },
         },
       ],
       semanticBindings: {
         bindings: [
-          { path: "attribute", source: { field: "attribute" } },
+          { path: "status", source: { field: "status" } },
           {
-            path: "display.attribute",
-            source: { value: "dark" },
-            when: { equals: "dark", path: "attribute" },
+            path: "display.status",
+            source: { value: "pending" },
+            when: { equals: "pending", path: "status" },
           },
         ],
       },
     })
-    const card = { attribute: "dark", name: "Test" }
+    const card = { name: "Test", status: "pending" }
     const semantics = deriveCardSemantics(card, template)
     const presentation = resolveCardPresentation(template, semantics)
 
-    expect(layerSourceFields(template, attributeLayer, presentation)).toEqual(["attribute"])
+    expect(layerSourceFields(template, statusLayer, presentation)).toEqual(["status"])
   })
 })

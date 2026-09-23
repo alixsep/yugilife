@@ -63,21 +63,21 @@ describe("vector text fitting", () => {
 
   it("renders a template-declared semantic value with its prefix", () => {
     const element = createTextElement(
-      { name: "Link card" },
+      { name: "Referenced document" },
       {
-        field: "link",
-        id: "link",
+        field: "reference",
+        id: "reference",
         kind: "text",
         position: { x: 10, y: 20 },
-        prefix: "LINK-",
-        semanticPath: "monster.link.rating",
+        prefix: "REF-",
+        semanticPath: "document.reference.count",
         typography: { fill: "#000", fontFamily: "Test", fontSize: 20 },
       },
       undefined,
       { semanticValue: 2 },
     )
 
-    expect(element.text).toBe("LINK-2")
+    expect(element.text).toBe("REF-2")
   })
 
   it("preserves repeated spaces in rendered text", () => {
@@ -235,11 +235,11 @@ describe("vector text fitting", () => {
     expect(ruby?.children?.[1]?.attributes).toMatchObject({ dx: -30 })
   })
 
-  it("keeps a subtype icon slot inside a rich Spell/Trap label source", () => {
+  it("keeps an exact-width icon slot inside a rich semantic label", () => {
     const element = createTextElement(
-      { name: '[Spell Card<space width="44px"/>]' },
+      { name: '[Document<space width="44px"/>]' },
       {
-        id: "spellTrapLabelSpell",
+        id: "documentLabel",
         kind: "text",
         field: "name",
         position: { x: 715, y: 177 },

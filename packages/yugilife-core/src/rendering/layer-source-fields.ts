@@ -1,4 +1,4 @@
-import { matchesSemanticCondition } from "../semantics.js"
+import { matchesPresentationGate } from "../presentation.js"
 
 import type {
   CardFieldName,
@@ -63,26 +63,28 @@ export function createLayerSourceFieldResolver(
       dependencies.get(path)?.forEach((field) => fields.add(field))
 
     if ("field" in layer && typeof layer.field === "string") fields.add(layer.field)
+    if ("maskField" in layer && typeof layer.maskField === "string") fields.add(layer.maskField)
     if ("fallbackField" in layer && typeof layer.fallbackField === "string") {
       fields.add(layer.fallbackField)
     }
     if ("semanticPath" in layer && typeof layer.semanticPath === "string") {
       addPath(layer.semanticPath)
     }
+    // A transform-mode gate carries no authored card fields, but it still decides whether a style or
+    // rule is active, so activity is tested through the shared matcher and only the semantic clause
+    // contributes source fields.
+    const isActive = (gate: Parameters<typeof matchesPresentationGate>[2]) =>
+      matchesPresentationGate(presentation.semantics, presentation.artworkTransforms, gate)
     if (layer.kind === "text") {
       const textLayer = layer as TextLayer
       textLayer.semanticStyles
-        ?.filter(({ when }) => matchesSemanticCondition(presentation.semantics, when))
-        .flatMap(({ when }) => conditionPaths(when))
+        ?.filter((style) => isActive(style))
+        .flatMap(({ when }) => (when ? conditionPaths(when) : []))
         .forEach(addPath)
     }
     template.presentationRules
-      ?.filter(
-        (rule) =>
-          ruleAffectsLayer(rule, layer) &&
-          matchesSemanticCondition(presentation.semantics, rule.when),
-      )
-      .flatMap(({ when }) => conditionPaths(when))
+      ?.filter((rule) => ruleAffectsLayer(rule, layer) && isActive(rule))
+      .flatMap(({ when }) => (when ? conditionPaths(when) : []))
       .forEach(addPath)
     return Object.freeze([...fields])
   }

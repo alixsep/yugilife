@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 
 import { mergeIds, useFieldContext } from "./field-context"
 
+import type { IconName } from "@/lib/icon-context"
 import type { SizeVariant } from "@/lib/size-context"
 import type { ComponentPropsWithoutRef, HTMLAttributes } from "react"
 
@@ -24,11 +25,16 @@ const selectionAckMs = 300
 interface ComboboxOption<T> {
   value: T
   label: string
+  meta?: string
   disabled?: boolean
   keywords?: string[]
 }
 
 interface ComboboxInputChangeDetails {
+  reason: string
+}
+
+interface ComboboxOpenChangeDetails {
   reason: string
 }
 
@@ -39,6 +45,7 @@ interface ComboboxProps<T> extends Omit<
   defaultValue?: T | null
   disabled?: boolean
   emptyMessage?: string
+  filter?: (item: ComboboxOption<T>, query: string) => boolean
   freeform?: boolean
   inputProps?: ComponentPropsWithoutRef<typeof ComboboxPrimitive.Input>
   inputValue?: string
@@ -47,11 +54,12 @@ interface ComboboxProps<T> extends Omit<
   items: readonly ComboboxOption<T>[]
   defaultOpen?: boolean
   onValueChange?: (value: T | null) => void
-  onOpenChange?: (open: boolean) => void
+  onOpenChange?: (open: boolean, details: ComboboxOpenChangeDetails) => void
   onInputValueChange?: (value: string, details: ComboboxInputChangeDetails) => void
   open?: boolean
   placeholder?: string
   size?: SizeVariant
+  trailingIcon?: IconName
   value?: T | null
 }
 
@@ -71,7 +79,6 @@ function ComboboxOptionItem<T>({
   const itemRef = useRef<HTMLDivElement>(null)
   const shape = useShape()
   const sizeClasses = useSize()
-  const compact = sizeClasses.variant === "compact"
   const isActive = activeIndex === index
 
   useRegisterProximityItem(registerItem, index, itemRef)
@@ -86,7 +93,7 @@ function ComboboxOptionItem<T>({
           ref={itemRef}
           data-proximity-index={index}
           className={cn(
-            `relative z-10 flex ${sizeClasses.control} shrink-0 items-center ${sizeClasses.gap} ${shape.item} ${sizeClasses.itemPx} ${sizeClasses.text} cursor-pointer outline-none select-none`,
+            `relative z-10 flex ${sizeClasses.control} min-w-0 shrink-0 items-center justify-between ${sizeClasses.gap} ${shape.item} ${sizeClasses.itemPx} ${sizeClasses.text} cursor-pointer outline-none select-none`,
             "data-highlighted:text-foreground transition-[color] duration-80",
             isActive ? "text-foreground" : "text-muted-foreground",
             "data-selected:text-foreground",
@@ -98,7 +105,12 @@ function ComboboxOptionItem<T>({
       <span className="-my-1 min-w-0 flex-1 truncate py-1 [text-box:trim-both_cap_alphabetic]">
         {item.label}
       </span>
-      <span aria-hidden className={cn("shrink-0", compact ? "size-3.5" : "size-4")}>
+      {item.meta && (
+        <span className={cn("text-muted-foreground shrink-0 tabular-nums", sizeClasses.caption)}>
+          {item.meta}
+        </span>
+      )}
+      <span aria-hidden className="shrink-0">
         <ComboboxPrimitive.ItemIndicator>
           <motion.svg
             key="check"
@@ -141,6 +153,7 @@ function ComboboxInner<T>(
     defaultValue,
     disabled = false,
     emptyMessage = "No results found.",
+    filter,
     freeform = false,
     inputProps,
     inputValue,
@@ -153,6 +166,7 @@ function ComboboxInner<T>(
     onValueChange,
     placeholder = "Search…",
     size,
+    trailingIcon = "chevron-down",
     value,
     ...props
   }: ComboboxProps<T>,
@@ -161,7 +175,7 @@ function ComboboxInner<T>(
   const field = useFieldContext()
   const shape = useShape()
   const sizeClasses = useSize(size)
-  const ChevronDownIcon = useIcon("chevron-down")
+  const TrailingIcon = useIcon(trailingIcon)
   const isOpenControlled = openProp !== undefined
   const [internalOpen, setInternalOpen] = useState(defaultOpen)
   const open = isOpenControlled ? openProp : internalOpen
@@ -199,7 +213,7 @@ function ComboboxInner<T>(
         ackTimeoutRef.current = window.setTimeout(() => {
           ackTimeoutRef.current = null
           if (!isOpenControlled) setInternalOpen(false)
-          onOpenChange?.(false)
+          onOpenChange?.(false, { reason: eventDetails.reason })
         }, selectionAckMs)
         return
       }
@@ -207,7 +221,7 @@ function ComboboxInner<T>(
       cancelAckClose()
       setAcknowledgingSelection(false)
       if (!isOpenControlled) setInternalOpen(next)
-      onOpenChange?.(next)
+      onOpenChange?.(next, { reason: eventDetails.reason })
     },
     [cancelAckClose, isOpenControlled, onOpenChange],
   )
@@ -293,7 +307,18 @@ function ComboboxInner<T>(
 
   const content = (
     <>
-      <div ref={ref} className={cn("relative", className)} {...props}>
+      <div
+        ref={ref}
+        aria-invalid={resolvedInvalid || undefined}
+        className={cn(
+          "border-border text-foreground flex w-full max-w-full min-w-0 items-center overflow-hidden border bg-transparent ring-1 ring-transparent transition-[border-color,box-shadow] duration-80 outline-none focus-within:ring-(--focus-ring) data-disabled:pointer-events-none data-disabled:opacity-50",
+          sizeClasses.control,
+          shape.input,
+          className,
+        )}
+        data-disabled={resolvedDisabled ? "" : undefined}
+        {...props}
+      >
         <ComboboxPrimitive.Input
           {...inputProps}
           id={inputId}
@@ -302,16 +327,20 @@ function ComboboxInner<T>(
           aria-describedby={inputDescribedBy}
           aria-invalid={resolvedInvalid || undefined}
           className={cn(
-            "border-border text-foreground placeholder:text-muted-foreground hover:border-border w-full border bg-transparent pr-9 ring-1 ring-transparent transition-[border-color,box-shadow] duration-80 outline-none focus:outline-none focus-visible:ring-(--focus-ring) focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+            "text-foreground placeholder:text-muted-foreground w-0 min-w-0 flex-1 bg-transparent outline-none focus:outline-none focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
             sizeClasses.control,
-            sizeClasses.px,
+            sizeClasses.pxStart,
             sizeClasses.text,
-            shape.input,
             inputProps?.className,
           )}
         />
-        <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center">
-          {createElement(ChevronDownIcon, { size: sizeClasses.icon, strokeWidth: 1.5 })}
+        <span
+          className={cn(
+            "text-muted-foreground pointer-events-none flex aspect-square shrink-0 items-center justify-center",
+            sizeClasses.control,
+          )}
+        >
+          {createElement(TrailingIcon, { size: sizeClasses.icon, strokeWidth: 1.5 })}
         </span>
       </div>
 
@@ -368,7 +397,7 @@ function ComboboxInner<T>(
                 setActiveIndex(null)
               }}
               className={cn(
-                "relative flex max-h-[min(300px,var(--available-height))] min-w-(--anchor-width) flex-col overflow-y-auto overscroll-contain p-1 outline-none select-none",
+                "relative flex max-h-[min(300px,var(--available-height))] w-(--anchor-width) max-w-[calc(100vw-2rem)] min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain p-1 outline-none select-none",
                 shape.container,
               )}
             >
@@ -475,7 +504,7 @@ function ComboboxInner<T>(
       actionsRef={actionsRef}
       autoHighlight
       disabled={resolvedDisabled}
-      filter={filterItems}
+      filter={filter ?? filterItems}
       itemToStringValue={(item) => String(item.value)}
       items={items}
       modal={false}
@@ -492,7 +521,7 @@ function ComboboxInner<T>(
       actionsRef={actionsRef}
       autoHighlight
       disabled={resolvedDisabled}
-      filter={filterItems}
+      filter={filter ?? filterItems}
       inputValue={inputValue}
       items={items}
       itemToStringLabel={(item) => item.label}

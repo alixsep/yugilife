@@ -1,11 +1,19 @@
+import { readFile } from "node:fs/promises"
+
 import { describe, expect, it } from "vitest"
-import { createCardFromTemplate, deriveCardSemantics, resolveCardPresentation } from "yugilife-core"
+import {
+  createCardFromTemplate,
+  deriveCardSemantics,
+  flattenLayers,
+  resolveCardPresentation,
+} from "yugilife-core"
 
 import { DEFAULT_TEMPLATE } from "../src"
 
 import type { CardData } from "yugilife-core"
 
 const template = DEFAULT_TEMPLATE.template
+const layers = flattenLayers(template.layers)
 
 function card(overrides: Partial<CardData> = {}): CardData {
   return {
@@ -20,6 +28,44 @@ function presentation(overrides: Partial<CardData> = {}) {
 }
 
 describe("Series 10 Pendulum modifier", () => {
+  it("uses the calibrated Pendulum and full-art effect coverage", async () => {
+    const assets = new URL("../templates/card/series-10/assets/", import.meta.url)
+    const pendulumTextureMask = await readFile(
+      new URL("pendulum-texture-opacity.svg", assets),
+      "utf8",
+    )
+    const [fullArtMask, ...pendulumFullArtMasks] = await Promise.all(
+      [
+        "full-art-coverage.svg",
+        "full-art-coverage-pendulum-small.svg",
+        "full-art-coverage-pendulum-medium.svg",
+        "full-art-coverage-pendulum-large.svg",
+      ].map((name) => readFile(new URL(name, assets), "utf8")),
+    )
+    const frameTransitionMask = await readFile(
+      new URL("pendulum-frame-transition.svg", assets),
+      "utf8",
+    )
+
+    expect(pendulumTextureMask).not.toMatch(/inkscape|sodipodi|<\?xml/u)
+    expect(pendulumTextureMask).toContain('gradientUnits="userSpaceOnUse"')
+    expect(pendulumTextureMask).toContain('y1="312"')
+    expect(pendulumTextureMask).toContain('y2="1115"')
+    expect(pendulumTextureMask).toContain('offset="0.69727635" stop-color="#e6e6e6"')
+    expect(pendulumTextureMask).toContain('offset="1" stop-color="#ffffff"')
+    expect(pendulumTextureMask.match(/<stop\b/gu)).toHaveLength(2)
+    expect(fullArtMask).toContain('fill="#4d4d4d"')
+    for (const mask of [fullArtMask, ...pendulumFullArtMasks]) {
+      expect(mask).not.toMatch(/inkscape|sodipodi|<\?xml/u)
+    }
+    for (const mask of pendulumFullArtMasks) {
+      expect(mask).toContain('fill="#4d4d4d"')
+      expect(mask).toContain('y="1119" width="709" height="66" fill="#000000"')
+      expect(mask).not.toContain("<linearGradient")
+    }
+    expect(frameTransitionMask.match(/<stop\b/gu)).toHaveLength(2)
+  })
+
   it("keeps Pendulum independent from the base monster frame", () => {
     const semantics = deriveCardSemantics(
       card({ cardVariant: "effect", pendulum: true, pendulumSize: "medium" }),
@@ -42,7 +88,12 @@ describe("Series 10 Pendulum modifier", () => {
       frameTexture: false,
       effectBoxTexture: true,
       pendulumArtwork: true,
-      pendulumBorder: true,
+      pendulumUnifiedShadow: true,
+      pendulumArtworkBox: true,
+      pendulumEffectBoxTextures: true,
+      pendulumEffectBox: true,
+      effectBorderShadow: false,
+      effectBorder: false,
       pendulumEffectTexture: true,
       pendulumEffectTextureLarge: false,
       pendulumMonsterFrameTexture: true,
@@ -54,24 +105,27 @@ describe("Series 10 Pendulum modifier", () => {
       pendulumScaleRight: true,
     })
     expect(resolved.layerMasks).toMatchObject({
+      effectBoxTextures: {
+        coverageLayerId: "pendulumArtwork",
+        id: "pendulum-texture-opacity",
+      },
+      pendulumEffectBoxTextures: {
+        coverageLayerId: "pendulumArtwork",
+        id: "pendulum-texture-opacity",
+      },
       pendulumArtwork: {
         id: "pendulum-artwork-mask",
         invert: false,
       },
-      pendulumMonsterFrameTexture: {
-        assetId: "card.series-10.pendulum-artwork-mask",
-        id: "pendulum-artwork-cutout",
+      pendulumArtworkOverlay: { id: "full-art-coverage-pendulum-medium" },
+      pendulumFrameTextures: {
+        id: "pendulum-frame-clip",
         invert: true,
       },
       pendulumSpellFrameTexture: {
-        assetId: "card.series-10.pendulum-frame-mask.spell",
-        id: "pendulum-frame-spell",
+        assetId: "card.series-10.pendulum-frame-transition",
+        id: "pendulum-frame-transition",
         invert: false,
-      },
-      pendulumXyzFrameTexture: {
-        assetId: "card.series-10.pendulum-artwork-mask",
-        id: "pendulum-artwork-cutout",
-        invert: true,
       },
       pendulumEffectTexture: {
         assetId: "card.series-10.pendulum-effect-mask.medium",
@@ -79,6 +133,7 @@ describe("Series 10 Pendulum modifier", () => {
         invert: false,
       },
     })
+    expect(resolved.layerMasks.pendulumFrameTextures).not.toHaveProperty("coverageLayerId")
     expect(resolved.text.cardCode).toMatchObject({
       position: { x: 68, y: 1105.5 },
       typography: { fill: "#111111", textAnchor: "start" },
@@ -86,14 +141,14 @@ describe("Series 10 Pendulum modifier", () => {
     expect(resolved.text.serialNumber?.typography.fill).toBe("#111111")
     expect(resolved.text.edition?.typography.fill).toBe("#111111")
     expect(resolved.text.copyright?.typography.fill).toBe("#111111")
-    expect(resolved.assetSelections.pendulumBorder).toBe("card.series-10.pendulum-border.medium")
+    expect(resolved.assetSelections).toMatchObject({
+      pendulumUnifiedShadow: "card.series-10.pendulum.unified-shadow.medium",
+      pendulumArtworkBox: "card.series-10.pendulum.artwork-box.medium",
+      pendulumEffectBox: "card.series-10.pendulum.effect-box.medium",
+    })
 
-    const pendulumMonsterFrame = template.layers.find(
-      (layer) => layer.id === "pendulumMonsterFrameTexture",
-    )
-    const pendulumSpellFrame = template.layers.find(
-      (layer) => layer.id === "pendulumSpellFrameTexture",
-    )
+    const pendulumMonsterFrame = layers.find((layer) => layer.id === "pendulumMonsterFrameTexture")
+    const pendulumSpellFrame = layers.find((layer) => layer.id === "pendulumSpellFrameTexture")
     const ordinaryOuterBevel = template.layers.find((layer) => layer.id === "outerBevel")
 
     expect(pendulumMonsterFrame).toMatchObject({
@@ -108,8 +163,8 @@ describe("Series 10 Pendulum modifier", () => {
       throw new Error("The Series 10 Pendulum Spell and ordinary bevel layers are missing.")
     }
     expect(pendulumSpellFrame.options).toStrictEqual(ordinaryOuterBevel.options)
-    expect(template.layers.some((layer) => layer.id === "pendulumMonsterBevel")).toBe(false)
-    expect(template.layers.some((layer) => layer.id === "pendulumSpellBevel")).toBe(false)
+    expect(layers.some((layer) => layer.id === "pendulumMonsterBevel")).toBe(false)
+    expect(layers.some((layer) => layer.id === "pendulumSpellBevel")).toBe(false)
 
     const cardWithoutOptionalSize = card({ cardVariant: "effect", pendulum: true })
     delete cardWithoutOptionalSize.pendulumSize
@@ -122,8 +177,16 @@ describe("Series 10 Pendulum modifier", () => {
     const small = presentation({ cardVariant: "fusion", pendulum: true, pendulumSize: "small" })
     const large = presentation({ cardVariant: "fusion", pendulum: true, pendulumSize: "large" })
 
-    expect(small.assetSelections.pendulumBorder).toBe("card.series-10.pendulum-border.small")
-    expect(large.assetSelections.pendulumBorder).toBe("card.series-10.pendulum-border.large")
+    expect(small.assetSelections).toMatchObject({
+      pendulumUnifiedShadow: "card.series-10.pendulum.unified-shadow.small",
+      pendulumArtworkBox: "card.series-10.pendulum.artwork-box.small",
+      pendulumEffectBox: "card.series-10.pendulum.effect-box.small",
+    })
+    expect(large.assetSelections).toMatchObject({
+      pendulumUnifiedShadow: "card.series-10.pendulum.unified-shadow.large",
+      pendulumArtworkBox: "card.series-10.pendulum.artwork-box.large",
+      pendulumEffectBox: "card.series-10.pendulum.effect-box.large",
+    })
     expect(small.presets["effect-box"]).toBe("spell-effect-box-s10")
     expect(large.presets["effect-box"]).toBe("spell-effect-box-s10")
     expect(small.layerVisibility).toMatchObject({
@@ -138,6 +201,11 @@ describe("Series 10 Pendulum modifier", () => {
       pendulumScaleMarkerRight: { x: 704, y: 793, width: 51, height: 39 },
     })
     expect(small.layerMasks.pendulumEffectTexture?.id).toBe("pendulum-effect-box-small")
+    expect(small.layerMasks.pendulumArtworkOverlay?.id).toBe("full-art-coverage-pendulum-small")
+    expect(small.layerMasks.pendulumFrameTextures).toMatchObject({
+      id: "pendulum-frame-clip",
+      invert: true,
+    })
     expect(large.layerVisibility).toMatchObject({
       effectBoxTexture: true,
       pendulumEffectTexture: false,
@@ -151,6 +219,11 @@ describe("Series 10 Pendulum modifier", () => {
     })
     expect(large.layerMasks.effectBoxTexture?.id).toBe("pendulum-effect-box-large-lower")
     expect(large.layerMasks.pendulumEffectTextureLarge?.id).toBe("pendulum-effect-box-large")
+    expect(large.layerMasks.pendulumArtworkOverlay?.id).toBe("full-art-coverage-pendulum-large")
+    expect(large.layerMasks.pendulumFrameTextures).toMatchObject({
+      id: "pendulum-frame-clip",
+      invert: true,
+    })
     expect(small.text.pendulumEffect?.position).toStrictEqual({ x: 130, y: 788 })
     expect(large.text.pendulumEffect?.position).toStrictEqual({ x: 130, y: 748 })
     expect(large.text.pendulumEffect?.typography.maxWidth).toBe(556)
@@ -225,9 +298,8 @@ describe("Series 10 Pendulum modifier", () => {
     })
     expect(resolved.presets["effect-box"]).toBe("spell-effect-box-s10")
     expect(resolved.assetSelections).not.toHaveProperty("effectBoxTexture")
-    expect(resolved.layerMasks.pendulumXyzFrameTexture).toMatchObject({
-      assetId: "card.series-10.pendulum-artwork-mask",
-      id: "pendulum-artwork-cutout",
+    expect(resolved.layerMasks.pendulumFrameTextures).toMatchObject({
+      id: "pendulum-frame-clip",
       invert: true,
     })
     expect(resolved.layerOptions.titleBevel).toMatchObject({
@@ -243,7 +315,7 @@ describe("Series 10 Pendulum modifier", () => {
       "effect-box": "effect-box-s10",
     })
     expect(resolved.layerVisibility.frameTexture).toBe(true)
-    expect(resolved.layerVisibility.pendulumBorder).toBeUndefined()
+    expect(resolved.layerVisibility.pendulumEffectBox).toBeUndefined()
     expect(resolved.layerMasks.frameTexture?.id).toBe("artwork-mask")
   })
 
@@ -271,20 +343,18 @@ describe("Series 10 Pendulum modifier", () => {
       "effect-box": "token-effect-box-s10",
     })
     expect(resolved.layerVisibility.frameTexture).toBe(true)
-    expect(resolved.layerVisibility.pendulumBorder).toBeUndefined()
+    expect(resolved.layerVisibility.pendulumEffectBox).toBeUndefined()
   })
 
   it("declares full-width, aspect-preserving artwork and independent scale slots", () => {
-    const artwork = template.layers.find((layer) => layer.id === "pendulumArtwork")
-    const scaleLeft = template.layers.find((layer) => layer.id === "pendulumScaleLeft")
-    const scaleRight = template.layers.find((layer) => layer.id === "pendulumScaleRight")
-    const effectTexture = template.layers.find((layer) => layer.id === "pendulumEffectTexture")
-    const largeEffectTexture = template.layers.find(
-      (layer) => layer.id === "pendulumEffectTextureLarge",
-    )
-    const scaleMarkers = template.layers.filter((layer) =>
-      layer.id.startsWith("pendulumScaleMarker"),
-    )
+    const artwork = layers.find((layer) => layer.id === "pendulumArtwork")
+    const scaleLeft = layers.find((layer) => layer.id === "pendulumScaleLeft")
+    const scaleRight = layers.find((layer) => layer.id === "pendulumScaleRight")
+    const effectTexture = layers.find((layer) => layer.id === "pendulumEffectTexture")
+    const largeEffectTexture = layers.find((layer) => layer.id === "pendulumEffectTextureLarge")
+    const pendulumArtworkBox = layers.find((layer) => layer.id === "pendulumArtworkBox")
+    const pendulumEffectBox = layers.find((layer) => layer.id === "pendulumEffectBox")
+    const scaleMarkers = layers.filter((layer) => layer.id.startsWith("pendulumScaleMarker"))
 
     expect(artwork).toMatchObject({
       fit: "width",
@@ -317,18 +387,35 @@ describe("Series 10 Pendulum modifier", () => {
     expect(largeEffectTexture).toMatchObject({
       region: { x: 52, y: 676, width: 709, height: 237 },
     })
-    expect(template.layers.find((layer) => layer.id === "effectBoxTexture")).toMatchObject({
+    expect(pendulumArtworkBox).toMatchObject({
+      kind: "image",
+      assetId: "card.series-10.pendulum.artwork-box.medium",
+      region: { x: 0, y: 0, width: 813, height: 1185 },
+    })
+    expect(pendulumEffectBox).toMatchObject({
+      kind: "image",
+      assetId: "card.series-10.pendulum.effect-box.medium",
+      region: { x: 0, y: 0, width: 813, height: 1185 },
+    })
+    expect(layers.find((layer) => layer.id === "effectBoxTexture")).toMatchObject({
       region: { x: 52, y: 882, width: 709, height: 237 },
       sourceRegion: { x: 24, y: 854, width: 709, height: 237 },
       presetTarget: "effect-box",
     })
-    expect(
-      template.layers.findIndex((layer) => layer.id === "pendulumSpellFrameTexture"),
-    ).toBeGreaterThan(
-      template.layers.findIndex((layer) => layer.id === "pendulumMonsterFrameTexture"),
+    expect(layers.findIndex((layer) => layer.id === "pendulumSpellFrameTexture")).toBeGreaterThan(
+      layers.findIndex((layer) => layer.id === "pendulumMonsterFrameTexture"),
     )
-    expect(
-      template.layers.findIndex((layer) => layer.id === "pendulumSpellFrameTexture"),
-    ).toBeLessThan(template.layers.findIndex((layer) => layer.id === "pendulumEffectTexture"))
+    expect(layers.findIndex((layer) => layer.id === "pendulumEffectTexture")).toBeLessThan(
+      layers.findIndex((layer) => layer.id === "pendulumUnifiedShadow"),
+    )
+    expect(layers.findIndex((layer) => layer.id === "pendulumUnifiedShadow")).toBeLessThan(
+      layers.findIndex((layer) => layer.id === "pendulumArtworkBox"),
+    )
+    expect(layers.findIndex((layer) => layer.id === "pendulumArtworkBox")).toBeLessThan(
+      layers.findIndex((layer) => layer.id === "pendulumArtworkOverlay"),
+    )
+    expect(layers.findIndex((layer) => layer.id === "pendulumArtworkOverlay")).toBeLessThan(
+      layers.findIndex((layer) => layer.id === "pendulumEffectBox"),
+    )
   })
 })

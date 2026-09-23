@@ -13,6 +13,7 @@ import type {
   SvgElementDefinition,
   TextFitProfile,
   TextLayer,
+  TextStroke,
   TextTypography,
 } from "../contracts/index.js"
 import type {
@@ -22,6 +23,30 @@ import type {
   RichTextNode,
   RichTextWarning,
 } from "../rich-text.js"
+
+/**
+ * The single place a `TextStroke` becomes SVG paint. SVG has no outer-stroke primitive: a stroke
+ * straddles the outline, so half of it would eat into the glyph and letters would read thinner than
+ * authored. Outer alignment is therefore expressed as a double-width stroke painted *before* the
+ * fill, which then covers the inner half and leaves exactly the authored visible width outside.
+ *
+ * Both serializations consume these attributes — `<text>` mode directly, and outlined-path export
+ * through the browser's computed style — so the doubling and paint order cannot drift apart.
+ *
+ * Width follows the fitted font scale so an automatically shrunk line keeps its authored proportion.
+ * It never feeds back into measurement: stroke is painted, never measured.
+ */
+function strokeAttributes(stroke: TextStroke | undefined, fontScale: number) {
+  if (!stroke) return {}
+  const outer = (stroke.align ?? "outer") === "outer"
+  return {
+    "paint-order": outer ? "stroke fill" : "fill stroke",
+    stroke: stroke.color,
+    "stroke-linejoin": stroke.linejoin ?? "round",
+    ...(stroke.opacity !== undefined ? { "stroke-opacity": stroke.opacity } : {}),
+    "stroke-width": stableLayoutNumber(stroke.width * (outer ? 2 : 1) * fontScale),
+  } satisfies Readonly<Record<string, string | number>>
+}
 
 export type TextMeasurer = (text: string, typography: TextTypography) => number
 
@@ -1003,6 +1028,7 @@ function createRichTextElement(
     fill: typography.fill,
     "font-family": typography.fontFamily,
     "font-size": fittedFontSize,
+    ...strokeAttributes(typography.stroke, fontScale),
     "white-space": "pre",
     x: layer.position.x,
     y: layer.position.y,
@@ -1234,6 +1260,7 @@ function createPlainTextElement(
     fill: typography.fill,
     "font-family": typography.fontFamily,
     "font-size": fittedFontSize,
+    ...strokeAttributes(typography.stroke, fontScale),
     "white-space": "pre",
     "xml:space": "preserve",
     x: layer.position.x,

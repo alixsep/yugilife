@@ -78,13 +78,66 @@
   --warning: light-dark(#d0a52b, #f4d06f);
   --warning-light: light-dark(#fff8d8, color-mix(in oklab, #f5d76e 14%, var(--surface-3)));
 
-  /* ── Focus indicator ──
-     Every component focus ring reads var(--focus-ring, #65D48A), so this is
-     the single theming point. The literal fallback keeps registry components
-     self-contained when installed into projects without the variable. */
-  --focus-ring: #65d48a;
+  /* ── User accent ──
+     The provider updates this pair together. Surfaces painted with the user
+     accent use its computed black-or-white foreground; focus indicators alias
+     the color but do not otherwise participate in foreground semantics. */
+  --user-accent: #ff8a65;
+  --user-accent-foreground: #000000;
+  --focus-ring: var(--user-accent);
   --switch-checked: var(--focus-ring);
   --switch-checked-hover: color-mix(in oklab, var(--focus-ring), rgb(var(--overlay)) 10%);
+
+  /* ── Data visualization ──
+     Most charts here plot one series, so their marks wear the user's accent
+     colour: a chart is part of the app, and identity colour is wasted on a
+     single series whose magnitude the mark length already encodes.
+
+     `--chart-ramp-1..4` is an ordinal ramp derived from that accent, for
+     part-to-whole marks where the parts are ordered by size. One hue stepped
+     light to dark reads as one measurement split up; four unrelated hues read
+     as four unrelated things. Both modes step away from #171717 — in light
+     mode that is the ink, in dark mode it is the surface — so the ramp always
+     runs light to dark and never collapses into the page. The percentages
+     were fitted against a spread of candidate accents: lightness stays
+     monotone with at least 0.06 between steps in both modes, and the faintest
+     step holds roughly 2:1 against its surface. A user-chosen accent cannot be
+     validated ahead of time, which is why every chart also direct-labels its
+     segments and ships a table of values.
+
+     `--chart-1..8` is the fixed categorical order, kept for the day a chart
+     here plots genuinely distinct series. Its ordering is a colour-vision
+     safety mechanism, not decoration: adjacent pairs are validated separable
+     under protanopia and deuteranopia, which only holds while series are
+     assigned in sequence and never cycled. */
+  --chart-accent: var(--user-accent);
+  --chart-ramp-1: light-dark(
+    color-mix(in oklab, var(--user-accent) 90%, var(--foreground)),
+    var(--user-accent)
+  );
+  --chart-ramp-2: light-dark(
+    color-mix(in oklab, var(--user-accent) 64%, var(--foreground)),
+    color-mix(in oklab, var(--user-accent) 80%, var(--surface-1))
+  );
+  --chart-ramp-3: light-dark(
+    color-mix(in oklab, var(--user-accent) 38%, var(--foreground)),
+    color-mix(in oklab, var(--user-accent) 62%, var(--surface-1))
+  );
+  --chart-ramp-4: light-dark(
+    color-mix(in oklab, var(--user-accent) 16%, var(--foreground)),
+    color-mix(in oklab, var(--user-accent) 48%, var(--surface-1))
+  );
+  --chart-1: light-dark(#2a78d6, #3987e5);
+  --chart-2: light-dark(#eb6834, #d95926);
+  --chart-3: light-dark(#1baf7a, #199e70);
+  --chart-4: light-dark(#eda100, #c98500);
+  --chart-5: light-dark(#e87ba4, #d55181);
+  --chart-6: light-dark(#008300, #008300);
+  --chart-7: light-dark(#4a3aa7, #9085e9);
+  --chart-8: light-dark(#e34948, #e66767);
+  /* Recessive gridlines and the de-emphasis fill for unhighlighted marks. */
+  --chart-grid: color-mix(in oklab, var(--foreground) 9%, transparent);
+  --chart-muted: color-mix(in oklab, var(--foreground) 22%, transparent);
 
   /* ── Alpha checkerboard (color-picker swatches) ── */
   --checker-a: light-dark(#bbbbbb, #1f1f1f);
@@ -262,6 +315,23 @@
   --color-active: var(--active);
   --color-scrim: var(--scrim);
 
+  /* Data-visualization slots — text-chart-1..8, fill-chart-1..8, stroke-* */
+  --color-chart-accent: var(--chart-accent);
+  --color-chart-ramp-1: var(--chart-ramp-1);
+  --color-chart-ramp-2: var(--chart-ramp-2);
+  --color-chart-ramp-3: var(--chart-ramp-3);
+  --color-chart-ramp-4: var(--chart-ramp-4);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-muted: var(--chart-muted);
+
   /* Surface ladder — bg-surface-1..8 utilities */
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
@@ -304,7 +374,7 @@
 
 ::selection {
   background: var(--focus-ring);
-  color: var(--foreground);
+  color: var(--user-accent-foreground);
 }
 
 /* No explicit overflow here: scrollbar-gutter applies to the viewport when
@@ -413,11 +483,10 @@ html[data-size="compact"] {
    and elements with their own radius utility keep it. The radius rides
    --shape-input-radius (published by ShapeProvider) so the ring corners
    match the borderless select in both shape modes; 8px = the rounded-mode
-   default for pre-hydration paint. Enforced by the focus-ring lint rule in
-   eslint.config.mjs. */
+   default for pre-hydration paint. */
 @layer base {
   :focus-visible {
-    outline: 1px solid var(--focus-ring, #6b97ff);
+    outline: 1px solid var(--focus-ring, #ff8a65);
     outline-offset: 2px;
     border-radius: var(--shape-input-radius, 8px);
   }
@@ -434,7 +503,7 @@ html[data-size="compact"] {
      ignore FocusOptions.focusVisible do not match :focus-visible on button-backed controls such as
      Select, so retain the component's one-pixel accent ring for that focus session. */
   [data-yugilife-forced-focus]:focus {
-    box-shadow: 0 0 0 1px var(--focus-ring, #6b97ff);
+    box-shadow: 0 0 0 1px var(--focus-ring, #ff8a65);
   }
 }
 
@@ -537,6 +606,44 @@ html[data-size="compact"] {
   background-clip: text;
   -webkit-background-clip: text;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── card-tile-wave (inventory preview rendering) ── */
+
+/* A diagonal sweep across a card-shaped tile grid, read as "this card is being drawn". Tiles are
+   driven by one shared keyframe with a per-tile delay rather than one animation each, so the
+   whole skeleton costs one compositor pass. Colours are mixed from the theme's own foreground and
+   background so the sweep reads correctly in light and dark. */
+
+@keyframes card-tile-wave {
+  0%,
+  100% {
+    background-color: var(--card-tile-base);
+  }
+  45% {
+    background-color: var(--card-tile-peak);
+  }
+  60% {
+    background-color: var(--card-tile-trail);
+  }
+}
+
+.card-tile {
+  /* Mixed toward `transparent` rather than the background, so the tiles are translucent and the
+     dimmed card underneath reads through the sweep instead of being boxed out by it. */
+  --card-tile-base: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --card-tile-peak: color-mix(in oklab, var(--foreground) 72%, transparent);
+  --card-tile-trail: color-mix(in oklab, var(--foreground) 30%, transparent);
+
+  background-color: var(--card-tile-base);
+  animation: card-tile-wave var(--tile-cycle, 1.6s) ease-in-out infinite;
+  animation-delay: calc(var(--tile-delay, 0) * var(--tile-step, 90ms));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-tile {
+    animation: none;
+  }
 }
 
 /* ── Spinner keyframes ── */

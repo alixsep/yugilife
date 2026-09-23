@@ -615,8 +615,11 @@ function SaturationSquare({ h, s, v, onChange }: SaturationSquareProps) {
         if (e.currentTarget.matches(":focus-visible")) setFocused(true)
       }}
       onBlur={() => setFocused(false)}
-      onPointerEnter={() => {
+      onPointerEnter={(e) => {
         getRect()
+        // Place the ring before it becomes visible, so entering the square never shows it at the
+        // position it was last written with.
+        updateCursorPos(e.clientX, e.clientY)
         setHovered(true)
       }}
       onPointerLeave={() => {
@@ -663,21 +666,27 @@ function SaturationSquare({ h, s, v, onChange }: SaturationSquareProps) {
           backgroundColor: thumbColor,
         }}
       />
-      {hovered && !dragging && (
-        <div
-          ref={cursorRef}
-          className="pointer-events-none absolute rounded-full"
-          style={{
-            left: "0%",
-            top: "0%",
-            width: 18,
-            height: 18,
-            transform: "translate(-50%, -50%)",
-            border: "2px solid rgba(255, 255, 255, 0.55)",
-            boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.2)",
-          }}
-        />
-      )}
+      {/* The hover ring follows the pointer through an imperative style write rather than state,
+          because it moves at pointer rate and re-rendering the panel that often would be wasteful.
+          That makes it a mounted element with no React-owned position, so it must never be
+          unmounted: remounting would restore the `0%` written here and drop it in the top-left
+          corner. It is hidden with opacity instead — React only rewrites the style keys that
+          actually change, so the imperative position survives. */}
+      <div
+        aria-hidden="true"
+        ref={cursorRef}
+        className="pointer-events-none absolute rounded-full"
+        style={{
+          left: "0%",
+          top: "0%",
+          width: 18,
+          height: 18,
+          transform: "translate(-50%, -50%)",
+          border: "2px solid rgba(255, 255, 255, 0.55)",
+          boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.2)",
+          opacity: hovered && !dragging ? 1 : 0,
+        }}
+      />
     </div>
   )
 }
@@ -1806,6 +1815,7 @@ const ColorPicker = memo(
       const solidB = Math.round(solidHueRgb.b)
       const solidColorString = `rgb(${solidR}, ${solidG}, ${solidB})`
       const shape = useShape()
+      const sizeClasses = useSize(size)
       const substrate = useSurface()
       // The picker panel uses bg-card (surface-3) by default; when wrapped in
       // ColorPickerPopover the className override pushes it higher. Either way,
@@ -1830,7 +1840,7 @@ const ColorPicker = memo(
           >
             {title && (
               <div
-                className="text-foreground px-1 pb-1 text-sm"
+                className={cn("text-foreground px-1 pb-1", sizeClasses.subtitle)}
                 style={{ fontVariationSettings: fontWeights.medium }}
               >
                 {title}

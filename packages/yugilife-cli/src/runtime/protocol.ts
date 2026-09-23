@@ -6,6 +6,7 @@ export interface SerializedRenderRequest {
   readonly card: Readonly<Record<string, unknown>>
   readonly files: Readonly<Record<string, string>>
   readonly format: RenderFormat
+  readonly presentationOverrides?: Readonly<Record<string, unknown>>
   readonly rasterOptions?: {
     readonly backgroundColor?: string
     readonly quality?: number

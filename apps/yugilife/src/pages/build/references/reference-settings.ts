@@ -6,7 +6,7 @@ export interface ReferenceTransform {
   y: number
 }
 
-export type ComparisonMode = "overlay" | "side-by-side"
+export type ComparisonMode = "off" | "overlay" | "side-by-side"
 
 export const defaultReferenceTransform: ReferenceTransform = {
   rotation: 0,
@@ -97,7 +97,8 @@ export function writeReferenceTransform(id: string, transform?: ReferenceTransfo
 export function readComparisonMode(): ComparisonMode {
   const storage = localStorageOrUndefined()
   try {
-    return storage?.getItem(comparisonModeKey) === "side-by-side" ? "side-by-side" : "overlay"
+    const mode = storage?.getItem(comparisonModeKey)
+    return mode === "off" || mode === "overlay" || mode === "side-by-side" ? mode : "overlay"
   } catch {
     return "overlay"
   }
@@ -106,7 +107,7 @@ export function readComparisonMode(): ComparisonMode {
 export function writeComparisonMode(mode: ComparisonMode) {
   const storage = localStorageOrUndefined()
   if (!storage) return "Comparison settings cannot be saved because local storage is unavailable."
-  if (mode !== "overlay" && mode !== "side-by-side") {
+  if (mode !== "off" && mode !== "overlay" && mode !== "side-by-side") {
     return "Comparison settings contain an invalid mode."
   }
   try {

@@ -129,6 +129,11 @@ async function render(request: SerializedRenderRequest): Promise<BrowserRenderRe
       assets,
       signal: controller.signal,
       templateBundle: request.templateBundle as RenderOptions["templateBundle"],
+      ...(request.presentationOverrides === undefined
+        ? {}
+        : {
+            presentationOverrides: request.presentationOverrides,
+          }),
     }
     const rendered = await renderCard(card as CardData, renderOptions)
     const title = request.title === undefined ? {} : { title: request.title }

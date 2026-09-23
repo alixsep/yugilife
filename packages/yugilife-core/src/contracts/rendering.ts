@@ -1,7 +1,7 @@
 import type { RichTextWarning } from "../rich-text.js"
 import type { AssetResolver, AssetSourceMap } from "./assets.js"
 import type { CardData, CardFieldName } from "./card.js"
-import type { ColorPresetCollection } from "./color.js"
+import type { ColorPresetCollection, PreparedTextures } from "./color.js"
 import type {
   CardTemplate,
   LayerDefinition,
@@ -21,6 +21,8 @@ export interface RenderLayerContext {
   /** Alpha-only recording target for the current raster layer; it never affects compositing. */
   coverageContext?: CanvasRenderingContext2D | undefined
   layerVisibility: LayerVisibility
+  /** Textures already graded for this bundle; a miss grades live against the source asset. */
+  preparedTextures?: PreparedTextures | undefined
   presetOverrides: Readonly<Record<string, string>>
   presentation: ResolvedCardPresentation
   /** Rich-text diagnostics collected while text layers are parsed for this render. */
@@ -68,6 +70,11 @@ export interface RenderOptions {
   assets?: Partial<AssetSourceMap> | undefined
   layerRenderers?: LayerRendererMap | undefined
   layers?: Partial<LayerVisibility> | undefined
+  /**
+   * Textures already graded for this exact bundle, keyed by `preparedTextureKey`. Purely an
+   * acceleration: a key this render does not find is graded from the source asset as usual.
+   */
+  preparedTextures?: PreparedTextures | undefined
   presetOverrides?: Readonly<Record<string, string>> | undefined
   presentationOverrides?: PresentationOverrides | undefined
   /**

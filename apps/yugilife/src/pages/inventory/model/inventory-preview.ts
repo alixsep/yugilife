@@ -1,29 +1,23 @@
 import type { InventoryCardPreview, InventoryCardSummary } from "./inventory-card"
 
-export const inventoryPreviewFormatVersion = 2
 export const inventoryPreviewExportOptions = {
   format: "webp",
   quality: 0.8,
   size: { scale: 0.5 },
 } as const
 
-export function inventoryPreviewFingerprint(
-  templateId: string,
-  templateVersion: string,
-  formatVersion = inventoryPreviewFormatVersion,
-) {
-  return `${templateId}@${templateVersion}:preview-v${formatVersion}`
-}
-
-/** Legacy previews remain displayable until the card's next save replaces them with v2. */
+/**
+ * A preview is identified by the exact card revision it was rendered from, and nothing else.
+ *
+ * It carries no template fingerprint because it cannot disagree with its card: every write goes
+ * through `saveInventoryCardSnapshot`, which commits the document and its preview in one IndexedDB
+ * transaction. A document can only reach a new template version by being migrated, and migration
+ * commits a freshly rendered preview in that same transaction, so "which template rendered this"
+ * is already answered by "which revision rendered this".
+ */
 export function inventoryPreviewMatchesCard(
   preview: InventoryCardPreview,
-  card: Pick<InventoryCardSummary, "id" | "revision" | "templateId" | "templateVersion">,
+  card: Pick<InventoryCardSummary, "id" | "revision">,
 ) {
-  if (preview.cardId !== card.id || preview.cardRevision !== card.revision) return false
-  return [inventoryPreviewFormatVersion, 1].some(
-    (version) =>
-      preview.renderFingerprint ===
-      inventoryPreviewFingerprint(card.templateId, card.templateVersion, version),
-  )
+  return preview.cardId === card.id && preview.cardRevision === card.revision
 }

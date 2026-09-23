@@ -12,9 +12,19 @@ export default defineConfig({
   root: fixtureDirectory,
   plugins: [yugilifeLosslessWebp(), yugilifeWoff2()],
   resolve: {
-    alias: {
-      "yugilife-core": path.resolve(fixtureDirectory, "../../yugilife-core/src/index.ts"),
-    },
+    alias: [
+      {
+        find: /^yugilife-core\/color-grading$/,
+        replacement: path.resolve(
+          fixtureDirectory,
+          "../../yugilife-core/src/public/color-grading.ts",
+        ),
+      },
+      {
+        find: /^yugilife-core$/,
+        replacement: path.resolve(fixtureDirectory, "../../yugilife-core/src/index.ts"),
+      },
+    ],
   },
   server: {
     port: 4174,

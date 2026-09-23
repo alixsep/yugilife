@@ -1,4 +1,4 @@
-import { matchesSemanticCondition } from "yugilife-core"
+import { matchesPresentationGate } from "yugilife-core"
 
 import type {
   CardFieldName,
@@ -45,19 +45,23 @@ export function createTextLayerFieldResolver(
     if (layer.field) fields.add(layer.field)
     if (layer.fallbackField) fields.add(layer.fallbackField)
     if (layer.semanticPath) addPath(layer.semanticPath)
+    // Activity goes through core's shared gate so a transform-mode clause is honoured here exactly
+    // as it is during resolution; only the semantic clause contributes authored source fields.
+    const isActive = (gate: Parameters<typeof matchesPresentationGate>[2]) =>
+      matchesPresentationGate(presentation.semantics, presentation.artworkTransforms, gate)
     layer.semanticStyles
-      ?.filter(({ when }) => matchesSemanticCondition(presentation.semantics, when))
-      .flatMap(({ when }) => conditionPaths(when))
+      ?.filter((style) => isActive(style))
+      .flatMap(({ when }) => (when ? conditionPaths(when) : []))
       .forEach(addPath)
     template.presentationRules
       ?.filter(
         (rule) =>
-          matchesSemanticCondition(presentation.semantics, rule.when) &&
+          isActive(rule) &&
           (rule.layerVisibility?.[layer.id] !== undefined ||
             rule.textPositions?.[layer.id] !== undefined ||
             rule.textValues?.[layer.id] !== undefined),
       )
-      .flatMap(({ when }) => conditionPaths(when))
+      .flatMap(({ when }) => (when ? conditionPaths(when) : []))
       .forEach(addPath)
     return Object.freeze([...fields])
   }

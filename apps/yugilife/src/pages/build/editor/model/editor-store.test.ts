@@ -44,6 +44,43 @@ describe("editor presentation override actions", () => {
     expect(useEditorStore.getState().presentationOverrides).toEqual({})
   })
 
+  it("applies a catalog result as one sparse card update", () => {
+    const before = useEditorStore.getState()
+    before.setField("edition", "Custom edition")
+    before.applyCardPatch({
+      attack: "2500",
+      cardVariant: "effect",
+      name: "Catalog Dragon",
+    })
+
+    expect(useEditorStore.getState().card).toMatchObject({
+      attack: "2500",
+      cardVariant: "effect",
+      edition: "Custom edition",
+      name: "Catalog Dragon",
+    })
+  })
+
+  it("commits catalog artwork and its mask editing state together", () => {
+    const artwork = new Blob(["artwork"], { type: "image/png" })
+    const automaticMask = new Blob(["mask"], { type: "image/png" })
+
+    useEditorStore.getState().applyCardPatchWithArtworkMask(
+      { artwork, artworkOverlay: "" },
+      {
+        automaticMask,
+        mode: "automatic",
+        points: [{ id: 1, polarity: "keep", size: 18, x: 25, y: 75 }],
+      },
+    )
+
+    const state = useEditorStore.getState()
+    expect(state.card.artwork).toBe(artwork)
+    expect(state.card.artworkOverlay).toBe("")
+    expect(state.artworkMask.automaticMask).toBe(automaticMask)
+    expect(state.artworkMask.points).toEqual([{ id: 1, polarity: "keep", size: 18, x: 25, y: 75 }])
+  })
+
   it("persists and clears a sparse automatic-compression override", () => {
     const state = useEditorStore.getState()
     const base = resolveCardPresentation(
@@ -65,6 +102,36 @@ describe("editor presentation override actions", () => {
       maxAutoCompressionX: undefined,
     })
     expect(useEditorStore.getState().presentationOverrides).toEqual({})
+  })
+
+  it("removes an identity artwork transform so reset clears the active-settings warning", () => {
+    const state = useEditorStore.getState()
+    state.setArtworkTransform("artwork", { scale: 1.4, x: 0.1, y: -0.05 })
+    expect(useEditorStore.getState().presentationOverrides).toMatchObject({
+      artworkTransforms: { artwork: { scale: 1.4, x: 0.1, y: -0.05 } },
+    })
+
+    state.setArtworkTransform("artwork", { scale: 1, x: 0, y: 0 })
+    expect(useEditorStore.getState().presentationOverrides).toEqual({})
+  })
+
+  it("persists mask edge controls sparsely and removes them at their defaults", () => {
+    const state = useEditorStore.getState()
+    state.setArtworkMaskEffects("artworkOverlay", { antiAlias: true, glow: 12 })
+    expect(useEditorStore.getState().artworkMaskEffects).toMatchObject({
+      artworkOverlay: { antiAlias: true, glow: 12 },
+    })
+
+    state.setArtworkMaskEffects("artworkOverlay", { antiAlias: false, glow: 0 })
+    expect(useEditorStore.getState().artworkMaskEffects).toEqual({})
+  })
+
+  it("does not notify or recompute effects when a control submits the same normalized value", () => {
+    const state = useEditorStore.getState()
+    state.setArtworkMaskEffects("artworkOverlay", { glow: 128 })
+    const previous = useEditorStore.getState()
+    state.setArtworkMaskEffects("artworkOverlay", { glow: 160, antiAlias: false })
+    expect(useEditorStore.getState()).toBe(previous)
   })
 
   it("can disable and restore leading authored-line fitting without changing card text", () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   collectLayerGroups,
+  flattenLayers,
   resolveCardPresentation,
   validateCardData,
   validateCardTemplate,
@@ -16,7 +17,7 @@ describe("Series 10 published contract", () => {
       id: "card/series-10",
       kind: "card",
       name: "Series 10",
-      version: "2026.08.30",
+      version: "2026.09.23",
     })
     expect(DEFAULT_TEMPLATE.manifest).not.toHaveProperty("references")
     expect(DEFAULT_TEMPLATE.manifest).not.toHaveProperty("status")
@@ -84,19 +85,77 @@ describe("Series 10 published contract", () => {
           region: { height: 613, width: 613, x: 100, y: 219 },
         }),
         expect.objectContaining({
-          field: "artworkOverlay",
+          field: "artwork",
           id: "artworkOverlay",
           kind: "artwork",
+          maskField: "artworkOverlay",
+          placementRegion: { height: 613, width: 613, x: 100, y: 219 },
           region: { height: 1185, width: 813, x: 0, y: 0 },
+          transformId: "artwork",
+          transformMode: "full-art",
+        }),
+        expect.objectContaining({
+          field: "artwork",
+          fit: "width",
+          id: "pendulumArtworkOverlay",
+          kind: "artwork",
+          maskField: "artworkOverlay",
+          placementRegion: { height: 903, width: 703, x: 55, y: 212 },
+          region: { height: 1185, width: 813, x: 0, y: 0 },
+          transformId: "artwork",
+          transformMode: "full-art",
         }),
       ]),
     )
-    const layerIds = template.layers.map(({ id }) => id)
+    const layerIds = flattenLayers(template.layers).map(({ id }) => id)
     expect(layerIds.indexOf("artwork")).toBe(layerIds.indexOf("border") + 1)
     expect(layerIds.indexOf("pendulumArtwork")).toBe(layerIds.indexOf("artwork") + 1)
     expect(layerIds.indexOf("frameTexture")).toBeGreaterThan(layerIds.indexOf("pendulumArtwork"))
-    expect(layerIds.indexOf("artworkOverlay")).toBeGreaterThan(layerIds.indexOf("artworkBox"))
-    expect(layerIds.indexOf("artworkOverlay")).toBeLessThan(layerIds.indexOf("effectBoxTexture"))
+    expect(layerIds.indexOf("artworkBoxShadow")).toBeLessThan(layerIds.indexOf("artworkBox"))
+    expect(layerIds.indexOf("artworkBoxShadow")).toBeLessThan(layerIds.indexOf("artworkOverlay"))
+    expect(layerIds.indexOf("linkArrowShadowTopCenter")).toBeLessThan(
+      layerIds.indexOf("artworkOverlay"),
+    )
+    expect(layerIds.indexOf("inactiveLinkArrowTopCenter")).toBeLessThan(
+      layerIds.indexOf("artworkOverlay"),
+    )
+    expect(layerIds.indexOf("artworkBox")).toBeLessThan(
+      layerIds.indexOf("linkArrowShadowTopCenter"),
+    )
+    expect(layerIds.indexOf("artworkBox")).toBeLessThan(layerIds.indexOf("artworkOverlay"))
+    expect(layerIds.indexOf("artworkBox")).toBeLessThan(layerIds.indexOf("pendulumArtworkOverlay"))
+    expect(layerIds.indexOf("activeLinkArrowTopCenter")).toBeGreaterThan(
+      layerIds.indexOf("artworkOverlay"),
+    )
+    expect(layerIds.indexOf("artworkOverlay")).toBeGreaterThan(layerIds.indexOf("outerBevel"))
+    expect(layerIds.indexOf("artworkOverlay")).toBeGreaterThan(layerIds.indexOf("effectBoxTexture"))
+    expect(layerIds.indexOf("artworkOverlay")).toBeGreaterThan(layerIds.indexOf("titleBevel"))
+    expect(layerIds.indexOf("effectBorderShadow")).toBeLessThan(layerIds.indexOf("artworkOverlay"))
+    expect(layerIds.indexOf("artworkOverlay")).toBeLessThan(layerIds.indexOf("effectBorder"))
+    expect(layerIds.indexOf("pendulumArtworkOverlay")).toBeGreaterThan(
+      layerIds.indexOf("titleBevel"),
+    )
+    expect(layerIds.indexOf("pendulumArtworkOverlay")).toBeGreaterThan(
+      layerIds.indexOf("effectBoxTexture"),
+    )
+    expect(layerIds.indexOf("effectBoxTexture")).toBeLessThan(
+      layerIds.indexOf("pendulumEffectBoxTextures"),
+    )
+    expect(layerIds.indexOf("pendulumEffectBoxTextures")).toBeLessThan(
+      layerIds.indexOf("pendulumUnifiedShadow"),
+    )
+    expect(layerIds.indexOf("pendulumUnifiedShadow")).toBeLessThan(
+      layerIds.indexOf("pendulumArtworkBox"),
+    )
+    expect(layerIds.indexOf("pendulumArtworkBox")).toBeLessThan(
+      layerIds.indexOf("pendulumArtworkOverlay"),
+    )
+    expect(layerIds.indexOf("pendulumArtworkOverlay")).toBeLessThan(
+      layerIds.indexOf("pendulumEffectBox"),
+    )
+    expect(layerIds.indexOf("pendulumEffectBox")).toBeLessThan(
+      layerIds.indexOf("pendulumScaleMarkerLeft"),
+    )
     expect(template.layers.find(({ id }) => id === "levelStar")).toMatchObject({
       region: { y: 146 },
     })
@@ -107,25 +166,61 @@ describe("Series 10 published contract", () => {
       group.layers.map(({ id }) => id),
     )
     expect(editorLayerIds).not.toEqual(
-      expect.arrayContaining(["pendulumMonsterFrameTexture", "pendulumXyzFrameTexture"]),
+      expect.arrayContaining([
+        "artworkBoxShadow",
+        "effectBorderShadow",
+        "linkArrowShadowTopCenter",
+        "linkArrowShadowTopRight",
+        "linkArrowShadowRightCenter",
+        "linkArrowShadowBottomRight",
+        "linkArrowShadowBottomCenter",
+        "linkArrowShadowBottomLeft",
+        "linkArrowShadowLeftCenter",
+        "linkArrowShadowTopLeft",
+        "pendulumMonsterFrameTexture",
+        "pendulumXyzFrameTexture",
+        "pendulumUnifiedShadow",
+        "pendulumArtworkBox",
+        "pendulumEffectBox",
+      ]),
     )
     expect(template.masks).toEqual(
       expect.arrayContaining([
         { assetId: "card.series-10.artwork-mask", id: "artwork-mask", invert: true },
-        { assetId: "card.series-10.link-arrows-mask", id: "link-arrows" },
         { assetId: "card.series-10.pendulum-artwork-mask", id: "pendulum-artwork-mask" },
+        { assetId: "card.series-10.full-art-coverage", id: "full-art-coverage" },
+        {
+          assetId: "card.series-10.pendulum-frame-transition",
+          id: "pendulum-frame-transition",
+        },
         {
           assetId: "card.series-10.pendulum-artwork-mask",
-          id: "pendulum-artwork-cutout",
+          id: "pendulum-frame-clip",
           invert: true,
         },
-        { assetId: "card.series-10.pendulum-frame-mask.spell", id: "pendulum-frame-spell" },
+        {
+          assetId: "card.series-10.pendulum-texture-opacity",
+          coverageLayerId: "pendulumArtwork",
+          id: "pendulum-texture-opacity",
+        },
       ]),
     )
     const linkArrowGroup = template.layers.find((layer) => layer.id === "linkArrowLayers")
+    const inactiveLinkArrowGroup = template.layers.find(
+      (layer) => layer.id === "inactiveLinkArrowLayers",
+    )
+    const linkArrowShadowGroup = template.layers.find((layer) => layer.id === "linkArrowShadows")
     expect(linkArrowGroup?.kind).toBe("group")
+    expect(inactiveLinkArrowGroup?.kind).toBe("group")
+    expect(linkArrowShadowGroup?.kind).toBe("group")
     if (linkArrowGroup?.kind === "group") {
-      expect(linkArrowGroup.layers).toHaveLength(16)
+      expect(linkArrowGroup.layers).toHaveLength(8)
+    }
+    if (inactiveLinkArrowGroup?.kind === "group") {
+      expect(inactiveLinkArrowGroup.layers).toHaveLength(8)
+    }
+    if (linkArrowShadowGroup?.kind === "group") {
+      expect(linkArrowShadowGroup.layers).toHaveLength(8)
     }
   })
 
@@ -133,6 +228,13 @@ describe("Series 10 published contract", () => {
     const assets = DEFAULT_TEMPLATE.assets
     expect(assets["card.series-10.border"]).toMatch(/border\.(?:png|webp)$/u)
     expect(assets["card.series-10.artwork-mask"]).toMatch(/artwork-mask\.(?:png|webp)$/u)
+    expect(assets).toHaveProperty("card.series-10.artwork-box-shadow")
+    expect(assets).toHaveProperty("card.series-10.effects-border-shadow")
+    expect(assets).toHaveProperty("card.series-10.pendulum.unified-shadow.small")
+    expect(assets).toHaveProperty("card.series-10.pendulum.artwork-box.medium")
+    expect(assets).toHaveProperty("card.series-10.pendulum.effect-box.large")
+    expect(assets).toHaveProperty("card.series-10.link-arrow.shadow.top-center")
+    expect(assets).not.toHaveProperty("card.series-10.link-arrows-mask")
     expect(assets["card.series-10.xyz-texture"]).toMatch(/xyz-texture\.(?:png|webp)$/u)
     expect(assets["card.series-10.pendulum-scale.left"]).toMatch(
       /pendulum-scale-left\.(?:png|webp)$/u,
@@ -174,6 +276,23 @@ describe("Series 10 published contract", () => {
       id: "artwork-mask",
       invert: true,
     })
+    const pendulumPresentation = resolveCardPresentation(DEFAULT_TEMPLATE.template, {
+      values: {
+        kind: "monster",
+        "monster.frame": "effect",
+        "monster.pendulum": true,
+        "monster.pendulumSupported": true,
+      },
+    })
+    expect(pendulumPresentation.layerVisibility).toMatchObject({
+      artwork: false,
+      artworkOverlay: false,
+      pendulumArtwork: true,
+      pendulumArtworkOverlay: true,
+      pendulumUnifiedShadow: true,
+      pendulumArtworkBox: true,
+      pendulumEffectBox: true,
+    })
     const linkPresentation = resolveCardPresentation(DEFAULT_TEMPLATE.template, {
       values: {
         kind: "monster",
@@ -182,11 +301,14 @@ describe("Series 10 published contract", () => {
         "monster.pendulumSupported": true,
       },
     })
-    expect(linkPresentation.layerMasks.linkArrowLayers).toMatchObject({
-      assetId: "card.series-10.link-arrows-mask",
+    expect(linkPresentation.layerMasks.linkArrowShadows).toMatchObject({
+      assetId: "card.series-10.artwork-mask",
       channel: "luminance",
-      id: "link-arrows",
-      invert: false,
+      id: "artwork-mask",
+      invert: true,
     })
+    expect(linkPresentation.layerMasks).not.toHaveProperty("linkArrowLayers")
+    expect(linkPresentation.layerMasks).not.toHaveProperty("inactiveLinkArrowLayers")
+    expect(linkPresentation.layerVisibility.linkArrowShadows).toBe(true)
   })
 })

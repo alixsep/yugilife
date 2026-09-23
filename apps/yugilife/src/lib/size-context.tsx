@@ -31,6 +31,8 @@ interface SizeClasses {
   caption: string
   /** Horizontal padding of bounded controls (select trigger, inputs). */
   px: string
+  /** Leading horizontal padding for controls whose trailing slot owns the end inset. */
+  pxStart: string
   /** Horizontal padding of list/menu rows, which sit inside a padded popup
    *  or group and need less inset than a bounded control. */
   itemPx: string
@@ -76,6 +78,7 @@ const sizeMap: Record<SizeVariant, SizeClasses> = {
     text: sizeTypeClasses.default.body,
     ...sizeTypeClasses.default,
     px: "px-3",
+    pxStart: "pl-3",
     itemPx: "px-2",
     gap: "gap-2",
     icon: 16,
@@ -92,6 +95,7 @@ const sizeMap: Record<SizeVariant, SizeClasses> = {
     text: sizeTypeClasses.compact.body,
     ...sizeTypeClasses.compact,
     px: "px-2.5",
+    pxStart: "pl-2.5",
     itemPx: "px-1.5",
     gap: "gap-1",
     icon: 14,

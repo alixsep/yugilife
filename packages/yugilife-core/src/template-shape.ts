@@ -1,4 +1,4 @@
-import { mergeTextTypography } from "./rendering/layer-tree.js"
+import { mergeTextTypography, walkLayers } from "./rendering/layer-tree.js"
 import { richTextLineLengths } from "./rich-text.js"
 import { normalizeCardTemplateAuthoring } from "./template-normalization.js"
 
@@ -16,6 +16,7 @@ import type {
   TemplateStatus,
 } from "./contracts/index.js"
 import type {
+  ArtworkLayer,
   CardTemplate,
   LayerDefinition,
   TextFormat,
@@ -33,10 +34,13 @@ const textAlignments = new Set<string>(["justify"])
 const verticalTextAnchors = new Set<string>(["baseline", "top"])
 const textFits = new Set<string>(["font-size", "scale-x"])
 const textWraps = new Set<string>(["word"])
+const textStrokeAlignments = new Set<string>(["center", "outer"])
+const textStrokeLinejoins = new Set<string>(["bevel", "miter", "round"])
 const canvasMaskChannels = new Set<string>(["alpha", "luminance"])
 const textTypographyKeys = new Set([
   "autoScaleXQuantifier",
   "fill",
+  "stroke",
   "fit",
   "fitBlocks",
   "fitProfileOverrides",
@@ -99,7 +103,17 @@ const cardFieldKeys = new Set([
 const cardFieldSuggestionKeys = new Set(["label", "value"])
 const layerBaseKeys = ["defaultVisible", "editorVisible", "group", "id", "kind", "label"] as const
 const coreLayerKeys: Readonly<Record<string, ReadonlySet<string>>> = {
-  artwork: new Set([...layerBaseKeys, "field", "fit", "region"]),
+  artwork: new Set([
+    ...layerBaseKeys,
+    "field",
+    "fit",
+    "maskField",
+    "maskChannel",
+    "placementRegion",
+    "region",
+    "transformId",
+    "transformMode",
+  ]),
   canvas: new Set([...layerBaseKeys, "options", "region", "renderer"]),
   group: new Set([...layerBaseKeys, "layers"]),
   image: new Set([...layerBaseKeys, "assetId", "region"]),
@@ -342,6 +356,7 @@ const safeSvgAttributes = new Set([
   "stroke-miterlimit",
   "stroke-opacity",
   "stroke-width",
+  "paint-order",
   "text-anchor",
   "textLength",
   "transform",
@@ -590,6 +605,9 @@ function validateTypography(value: unknown, location: string) {
   const typography = record(value, location)
   assertNoUnknownKeys(typography, textTypographyKeys, location)
   nonEmptyString(typography["fill"], `${location}.fill`)
+  if (typography["stroke"] !== undefined) {
+    validateTextStroke(typography["stroke"], `${location}.stroke`)
+  }
   nonEmptyString(typography["fontFamily"], `${location}.fontFamily`)
   const fit = typography["fit"]
   if (fit !== undefined && (typeof fit !== "string" || !textFits.has(fit))) {
@@ -1101,6 +1119,7 @@ function validateLayer(
   nonMaskableLayerIds: Set<string>,
   regionLayerIds: Set<string>,
   semanticPaths: ReadonlySet<string>,
+  transformIds: ReadonlySet<string>,
 ) {
   const layer = record(value, location)
   const id = nonEmptyString(layer["id"], `${location}.id`)
@@ -1156,6 +1175,26 @@ function validateLayer(
     const fit = layer["fit"]
     if (fit !== undefined && fit !== "stretch" && fit !== "width") {
       fail(`${location}.fit must be "stretch" or "width".`)
+    }
+    if (layer["maskField"] !== undefined) {
+      const maskField = referencedField(layer["maskField"], `${location}.maskField`)
+      if (maskField["kind"] !== "image") {
+        fail(`${location}.maskField must reference an image field.`)
+      }
+    }
+    if (
+      layer["maskChannel"] !== undefined &&
+      layer["maskChannel"] !== "alpha" &&
+      layer["maskChannel"] !== "luminance"
+    ) {
+      fail(`${location}.maskChannel must be "alpha" or "luminance".`)
+    }
+    if (layer["placementRegion"] !== undefined) {
+      region(layer["placementRegion"], `${location}.placementRegion`)
+    }
+    optionalString(layer["transformId"], `${location}.transformId`)
+    if (layer["transformMode"] !== undefined) {
+      nonEmptyString(layer["transformMode"], `${location}.transformMode`)
     }
   }
   if (kind === "raster" || kind === "canvas") {
@@ -1231,14 +1270,30 @@ function validateLayer(
       semanticStyles.forEach((value, index) => {
         const styleLocation = `${location}.semanticStyles[${index}]`
         const style = record(value, styleLocation)
-        assertNoUnknownKeys(style, new Set(["id", "label", "typography", "when"]), styleLocation)
+        assertNoUnknownKeys(
+          style,
+          new Set(["id", "label", "typography", "when", "whenTransforms"]),
+          styleLocation,
+        )
         const styleId = nonEmptyString(style["id"], `${styleLocation}.id`)
         if (styleIds.has(styleId)) {
           fail(`${location}.semanticStyles contains duplicate ID "${styleId}".`)
         }
         styleIds.add(styleId)
         nonEmptyString(style["label"], `${styleLocation}.label`)
-        validateSemanticCondition(style["when"], `${styleLocation}.when`, semanticPaths)
+        if (style["when"] === undefined && style["whenTransforms"] === undefined) {
+          fail(`${styleLocation} must declare when or whenTransforms.`)
+        }
+        if (style["when"] !== undefined) {
+          validateSemanticCondition(style["when"], `${styleLocation}.when`, semanticPaths)
+        }
+        if (style["whenTransforms"] !== undefined) {
+          validateTransformModeGate(
+            style["whenTransforms"],
+            `${styleLocation}.whenTransforms`,
+            transformIds,
+          )
+        }
         validateTypographyPatch(
           style["typography"],
           typography as unknown as TextTypography,
@@ -1264,24 +1319,33 @@ function validateLayer(
         nonMaskableLayerIds,
         regionLayerIds,
         semanticPaths,
+        transformIds,
       ),
     )
   }
 }
 
-function validateCanvasMasks(value: unknown): ReadonlySet<string> {
+function validateCanvasMasks(value: unknown): ReadonlyMap<string, string | undefined> {
   const location = "masks"
   if (!Array.isArray(value) || value.length === 0) {
     fail(`${location} must be a non-empty array.`)
   }
-  const ids = new Set<string>()
+  const masks = new Map<string, string | undefined>()
   value.forEach((entry, index) => {
     const maskLocation = `${location}[${index}]`
     const mask = record(entry, maskLocation)
-    assertNoUnknownKeys(mask, new Set(["assetId", "channel", "id", "invert"]), maskLocation)
+    assertNoUnknownKeys(
+      mask,
+      new Set(["assetId", "channel", "coverageLayerId", "id", "invert"]),
+      maskLocation,
+    )
     const id = nonEmptyString(mask["id"], `${maskLocation}.id`)
-    if (ids.has(id)) fail(`${location} contains duplicate ID "${id}".`)
-    ids.add(id)
+    if (masks.has(id)) fail(`${location} contains duplicate ID "${id}".`)
+    const coverageLayerId =
+      mask["coverageLayerId"] === undefined
+        ? undefined
+        : nonEmptyString(mask["coverageLayerId"], `${maskLocation}.coverageLayerId`)
+    masks.set(id, coverageLayerId)
     nonEmptyString(mask["assetId"], `${maskLocation}.assetId`)
     const channel = mask["channel"]
     if (
@@ -1292,7 +1356,96 @@ function validateCanvasMasks(value: unknown): ReadonlySet<string> {
     }
     optionalBoolean(mask["invert"], `${maskLocation}.invert`)
   })
-  return ids
+  return masks
+}
+
+/**
+ * A coverage-scoped mask consults the already-rendered alpha of another layer, so that layer must
+ * render strictly before every layer the mask targets. `assertLayerTree` enforces this again on the
+ * resolved presentation at render time; checking it during validation rejects an unusable template
+ * or override at its ingestion boundary instead of at the consumer's first render.
+ */
+function assertCoverageRendersFirst(
+  maskId: string,
+  layerId: string,
+  location: string,
+  coverageLayerIds: ReadonlyMap<string, string | undefined>,
+  layerOrder: ReadonlyMap<string, number>,
+) {
+  const coverageLayerId = coverageLayerIds.get(maskId)
+  if (coverageLayerId === undefined) return
+  const coverageOrder = layerOrder.get(coverageLayerId)
+  const targetOrder = layerOrder.get(layerId)
+  if (coverageOrder === undefined || targetOrder === undefined) return
+  if (coverageOrder >= targetOrder) {
+    fail(
+      `${location} assigns mask "${maskId}" to layer "${layerId}", but its coverage layer "${coverageLayerId}" does not render before that layer.`,
+    )
+  }
+}
+
+/** Layer IDs in render order; both validation walks visit parents before their children. */
+function layerRenderOrder(layerIds: Iterable<string>) {
+  return new Map([...layerIds].map((id, index) => [id, index] as const))
+}
+
+/**
+ * Shared artwork transform IDs, collected before layer validation so a semantic style or
+ * presentation rule can reference a transform declared by a later layer. Malformed layers are
+ * skipped here and rejected by ordinary layer validation.
+ */
+function collectArtworkTransformIds(layers: unknown, into = new Set<string>()) {
+  if (!Array.isArray(layers)) return into
+  layers.forEach((value) => {
+    if (!isRecord(value)) return
+    if (value["kind"] === "artwork") {
+      const transformId = value["transformId"] ?? value["id"]
+      if (typeof transformId === "string" && transformId.length > 0) into.add(transformId)
+    }
+    if (value["kind"] === "group") collectArtworkTransformIds(value["layers"], into)
+  })
+  return into
+}
+
+/**
+ * Validates a presentation-only gate on resolved artwork transform modes. Presentation may read
+ * transform modes but never assigns them, so this gate cannot introduce a resolution cycle.
+ */
+function validateTransformModeGate(
+  value: unknown,
+  location: string,
+  transformIds: ReadonlySet<string>,
+) {
+  const gate = record(value, location)
+  if (Object.keys(gate).length === 0) fail(`${location} must not be empty.`)
+  Object.entries(gate).forEach(([transformId, mode]) => {
+    if (!transformIds.has(transformId)) {
+      fail(`${location} references unknown artwork transform "${transformId}".`)
+    }
+    if (mode === null) return
+    nonEmptyString(mode, `${location}.${transformId}`)
+  })
+}
+
+/**
+ * Stroke is painted, never measured, so it is deliberately excluded from every fitting and wrapping
+ * constraint: no stroke value can change which fit profile the renderer selects.
+ */
+function validateTextStroke(value: unknown, location: string) {
+  const stroke = record(value, location)
+  assertNoUnknownKeys(stroke, new Set(["align", "color", "linejoin", "opacity", "width"]), location)
+  nonEmptyString(stroke["color"], `${location}.color`)
+  positiveNumber(stroke["width"], `${location}.width`)
+  if (stroke["align"] !== undefined && !textStrokeAlignments.has(stroke["align"] as string)) {
+    fail(`${location}.align must be "center" or "outer".`)
+  }
+  if (stroke["linejoin"] !== undefined && !textStrokeLinejoins.has(stroke["linejoin"] as string)) {
+    fail(`${location}.linejoin must be "bevel", "miter", or "round".`)
+  }
+  if (stroke["opacity"] !== undefined) {
+    const opacity = finiteNumber(stroke["opacity"], `${location}.opacity`)
+    if (opacity < 0 || opacity > 1) fail(`${location}.opacity must be between 0 and 1.`)
+  }
 }
 
 function validateCardField(value: unknown, location: string, names: Set<string>) {
@@ -1455,6 +1608,7 @@ function validateSemanticPresentationRules(
   regionLayerIds: ReadonlySet<string>,
   maskIds: ReadonlySet<string>,
   semanticPaths: ReadonlySet<string>,
+  transformIds: ReadonlySet<string>,
 ) {
   const location = "presentationRules"
   if (!Array.isArray(value) || value.length === 0) {
@@ -1477,13 +1631,26 @@ function validateSemanticPresentationRules(
         "textPositions",
         "textValues",
         "when",
+        "whenTransforms",
       ]),
       ruleLocation,
     )
     const id = nonEmptyString(rule["id"], `${ruleLocation}.id`)
     if (ids.has(id)) fail(`${location} contains duplicate ID "${id}".`)
     ids.add(id)
-    validateSemanticCondition(rule["when"], `${ruleLocation}.when`, semanticPaths)
+    if (rule["when"] === undefined && rule["whenTransforms"] === undefined) {
+      fail(`${ruleLocation} must declare when or whenTransforms.`)
+    }
+    if (rule["when"] !== undefined) {
+      validateSemanticCondition(rule["when"], `${ruleLocation}.when`, semanticPaths)
+    }
+    if (rule["whenTransforms"] !== undefined) {
+      validateTransformModeGate(
+        rule["whenTransforms"],
+        `${ruleLocation}.whenTransforms`,
+        transformIds,
+      )
+    }
 
     const layerVisibility = rule["layerVisibility"]
     const layerRegions = rule["layerRegions"]
@@ -1623,10 +1790,18 @@ function validateSemanticPresentationRules(
   })
 }
 
+/**
+ * Only a card-data condition needs semantic bindings to resolve against. A style gated purely on a
+ * transform mode reads presentation state, so requiring bindings for it would reject a legitimate
+ * template with a misleading message.
+ */
 function layersUseSemanticStyles(layers: readonly unknown[]): boolean {
   return layers.some((value) => {
     if (!isRecord(value)) return false
-    if (value["semanticStyles"] !== undefined) return true
+    const styles = value["semanticStyles"]
+    if (Array.isArray(styles)) {
+      if (styles.some((style) => isRecord(style) && style["when"] !== undefined)) return true
+    } else if (styles !== undefined) return true
     return Array.isArray(value["layers"]) && layersUseSemanticStyles(value["layers"])
   })
 }
@@ -1696,6 +1871,9 @@ function validateTemplateAuthoringRegistries(template: UnknownRecord) {
 }
 
 function hasPresentationRules(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.some((rule) => isRecord(rule) && rule["when"] !== undefined)
+  }
   return value !== undefined
 }
 
@@ -1743,8 +1921,11 @@ export function validateCardTemplateShape(input: unknown): CardTemplate {
   }
   const layers = template["layers"]
   if (!Array.isArray(layers)) fail("layers must be an array.")
-  const maskIds =
-    template["masks"] === undefined ? new Set<string>() : validateCanvasMasks(template["masks"])
+  const canvasMasks =
+    template["masks"] === undefined
+      ? new Map<string, string | undefined>()
+      : validateCanvasMasks(template["masks"])
+  const maskIds = new Set(canvasMasks.keys())
   let semanticPaths = new Set<string>()
   if (template["semanticBindings"] !== undefined) {
     semanticPaths = new Set(
@@ -1770,6 +1951,9 @@ export function validateCardTemplateShape(input: unknown): CardTemplate {
   const optionsLayerIds = new Set<string>()
   const nonMaskableLayerIds = new Set<string>()
   const regionLayerIds = new Set<string>()
+  // Collected before validation so a style or rule may gate on a transform declared by a later
+  // layer; malformed layers are skipped here and rejected by ordinary layer validation below.
+  const transformIds = collectArtworkTransformIds(layers)
   layers.forEach((layer, index) =>
     validateLayer(
       layer,
@@ -1782,8 +1966,19 @@ export function validateCardTemplateShape(input: unknown): CardTemplate {
       nonMaskableLayerIds,
       regionLayerIds,
       semanticPaths,
+      transformIds,
     ),
   )
+  canvasMasks.forEach((coverageLayerId, maskId) => {
+    if (coverageLayerId !== undefined && !ids.has(coverageLayerId)) {
+      fail(`Canvas mask "${maskId}" references unknown coverage layer "${coverageLayerId}".`)
+    }
+    if (coverageLayerId !== undefined && nonMaskableLayerIds.has(coverageLayerId)) {
+      fail(
+        `Canvas mask "${maskId}" coverage layer "${coverageLayerId}" is not a raster-output layer.`,
+      )
+    }
+  })
   validateAutomaticFitLayers(cardFields, layers)
   if (template["presentationRules"] !== undefined) {
     validateSemanticPresentationRules(
@@ -1796,7 +1991,24 @@ export function validateCardTemplateShape(input: unknown): CardTemplate {
       regionLayerIds,
       maskIds,
       semanticPaths,
+      transformIds,
     )
+    // Rule shapes, layer IDs, and mask IDs are valid by this point; only the cross-cutting
+    // coverage/target ordering remains, and it needs the complete layer order.
+    const layerOrder = layerRenderOrder(ids)
+    ;(template["presentationRules"] as readonly UnknownRecord[]).forEach((rule, index) => {
+      const selections = rule["maskSelections"]
+      if (selections === undefined) return
+      Object.entries(selections as UnknownRecord).forEach(([layerId, maskId]) => {
+        assertCoverageRendersFirst(
+          maskId as string,
+          layerId,
+          `presentationRules[${index}].maskSelections`,
+          canvasMasks,
+          layerOrder,
+        )
+      })
+    })
   }
   return template as unknown as CardTemplate
 }
@@ -1828,7 +2040,7 @@ function templateLayerMaskTargets(template: CardTemplate) {
     })
   }
   visit(template.layers)
-  return { layerIds, nonMaskableLayerIds }
+  return { layerIds, layerOrder: layerRenderOrder(layerIds), nonMaskableLayerIds }
 }
 
 function typographyForStyle(layer: TextLayer, styleId: string, location: string) {
@@ -1846,12 +2058,45 @@ export function validatePresentationOverridesShape(
   const overrides = record(input, "Presentation overrides")
   assertNoUnknownKeys(
     overrides,
-    new Set(["layerMasks", "textFitProfiles", "textTypography"]),
+    new Set(["artworkTransforms", "layerMasks", "textFitProfiles", "textTypography"]),
     "Presentation overrides",
   )
   const textLayers = templateTextLayers(template)
-  const { layerIds, nonMaskableLayerIds } = templateLayerMaskTargets(template)
+  const { layerIds, layerOrder, nonMaskableLayerIds } = templateLayerMaskTargets(template)
   const maskIds = new Set(template.masks?.map((mask) => mask.id) ?? [])
+  const coverageLayerIds = new Map(
+    template.masks?.map((mask) => [mask.id, mask.coverageLayerId] as const) ?? [],
+  )
+
+  if (overrides["artworkTransforms"] !== undefined) {
+    const transforms = record(overrides["artworkTransforms"], "artworkTransforms")
+    const transformIds = new Set<string>()
+    walkLayers(template.layers, ({ layer }) => {
+      if (layer.kind === "artwork") {
+        const artwork = layer as ArtworkLayer
+        transformIds.add(artwork.transformId ?? artwork.id)
+      }
+    })
+    Object.entries(transforms).forEach(([id, value]) => {
+      if (!transformIds.has(id)) fail(`artworkTransforms references unknown transform "${id}".`)
+      const transform = record(value, `artworkTransforms.${id}`)
+      assertNoUnknownKeys(
+        transform,
+        new Set(["mode", "scale", "x", "y"]),
+        `artworkTransforms.${id}`,
+      )
+      const scale = finiteNumber(transform["scale"], `artworkTransforms.${id}.scale`)
+      const x = finiteNumber(transform["x"], `artworkTransforms.${id}.x`)
+      const y = finiteNumber(transform["y"], `artworkTransforms.${id}.y`)
+      if (transform["mode"] !== undefined) {
+        nonEmptyString(transform["mode"], `artworkTransforms.${id}.mode`)
+      }
+      if (scale < 1 || scale > 8) fail(`artworkTransforms.${id}.scale must be between 1 and 8.`)
+      if (x < -2 || x > 2 || y < -2 || y > 2) {
+        fail(`artworkTransforms.${id} pan values must be between -2 and 2.`)
+      }
+    })
+  }
 
   if (overrides["textTypography"] !== undefined) {
     const layerPatches = record(overrides["textTypography"], "textTypography")
@@ -1903,6 +2148,9 @@ export function validatePresentationOverridesShape(
       }
       if (typeof maskId === "string" && !maskIds.has(maskId)) {
         fail(`layerMasks.${layerId} references unknown mask "${maskId}".`)
+      }
+      if (typeof maskId === "string") {
+        assertCoverageRendersFirst(maskId, layerId, "layerMasks", coverageLayerIds, layerOrder)
       }
     })
   }

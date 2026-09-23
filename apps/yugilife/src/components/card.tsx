@@ -50,16 +50,34 @@ const overlayStyle: CSSProperties = {
   width: "100%",
 }
 
+/**
+ * Presentation attributes React knows under a camelCase spelling.
+ *
+ * The renderer emits the SVG spelling, which is what serialization and export need. React warns on
+ * every attribute in its own table that arrives hyphenated, so anything the template schema allows
+ * and React recognizes has to be translated on the way into JSX. `white-space` is deliberately
+ * absent: React has no entry for it, so it reaches the DOM untouched and correct.
+ */
 const reactSvgAttributeNames: Readonly<Record<string, string>> = {
   "baseline-shift": "baselineShift",
   "dominant-baseline": "dominantBaseline",
+  "fill-opacity": "fillOpacity",
+  "fill-rule": "fillRule",
   "font-family": "fontFamily",
   "font-size": "fontSize",
   "font-style": "fontStyle",
   "font-weight": "fontWeight",
   "letter-spacing": "letterSpacing",
+  "paint-order": "paintOrder",
+  "stroke-dasharray": "strokeDasharray",
+  "stroke-dashoffset": "strokeDashoffset",
+  "stroke-linecap": "strokeLinecap",
+  "stroke-linejoin": "strokeLinejoin",
+  "stroke-miterlimit": "strokeMiterlimit",
+  "stroke-opacity": "strokeOpacity",
   "stroke-width": "strokeWidth",
   "text-anchor": "textAnchor",
+  "vector-effect": "vectorEffect",
   "xml:space": "xmlSpace",
 }
 
@@ -183,6 +201,7 @@ export function Card({
   onError,
   onReady,
   onRenderMetadata,
+  preparedTextures,
   presetOverrides,
   presentationOverrides,
   renderRevision,
@@ -234,6 +253,7 @@ export function Card({
       assets,
       layerRenderers,
       layers,
+      preparedTextures,
       presetOverrides,
       presentationOverrides,
       signal: controller.signal,
@@ -245,6 +265,7 @@ export function Card({
       card,
       layerRenderers,
       layers,
+      preparedTextures,
       presetOverrides,
       presentationOverrides,
       renderRevision,
@@ -383,6 +404,7 @@ export function Card({
     debugLogging,
     layerRenderers,
     layers,
+    preparedTextures,
     presetOverrides,
     presentationOverrides,
     renderRevision,

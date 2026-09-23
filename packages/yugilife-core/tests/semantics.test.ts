@@ -4,25 +4,25 @@ import { deriveCardSemantics, resolveCardPresentation, validateCardTemplate } fr
 
 import { NAME_FIELD, testTemplate } from "./fixtures"
 
-const effectTypography = {
+const bodyTypography = {
   fill: "#000",
   fitProfiles: [
     { fontSize: 30, id: "large", label: "Large", maxLines: 4 },
     { fontSize: 20, id: "small", label: "Small", maxLines: 8 },
   ],
-  fontFamily: "Effect",
+  fontFamily: "Body",
   fontSize: 30,
   maxWidth: 100,
   wrap: "word" as const,
 }
 
-const loreTypography = {
+const annotationTypography = {
   fill: "#000",
   fitProfiles: [
     { fontSize: 28, id: "large", label: "Large", maxLines: 2 },
     { fontSize: 25, id: "small", label: "Small", maxLines: 4 },
   ],
-  fontFamily: "Lore",
+  fontFamily: "Annotation",
   fontSize: 28,
   maxWidth: 100,
   wrap: "word" as const,
@@ -34,19 +34,19 @@ function semanticTemplate() {
       cardFields: [
         NAME_FIELD,
         {
-          defaultValue: "effect",
+          defaultValue: "plain",
           kind: "text",
-          label: "Monster frame",
-          name: "monsterFrame",
-          options: ["normal", "effect"],
+          label: "Layout variant",
+          name: "layoutVariant",
+          options: ["annotated", "plain"],
           required: true,
         },
         { kind: "multiline", label: "Description", name: "description" },
       ],
       semanticBindings: {
         bindings: [
-          { path: "kind", source: { value: "monster" } },
-          { path: "monster.frame", source: { field: "monsterFrame" } },
+          { path: "kind", source: { value: "document" } },
+          { path: "document.layout", source: { field: "layoutVariant" } },
         ],
       },
       layers: [
@@ -58,18 +58,18 @@ function semanticTemplate() {
           position: { x: 0, y: 20 },
           semanticStyles: [
             {
-              id: "lore",
-              label: "Lore text",
+              id: "annotation",
+              label: "Annotation text",
               typography: {
-                fitProfiles: loreTypography.fitProfiles,
-                fontFamily: loreTypography.fontFamily,
-                fontSize: loreTypography.fontSize,
-                maxWidth: loreTypography.maxWidth,
+                fitProfiles: annotationTypography.fitProfiles,
+                fontFamily: annotationTypography.fontFamily,
+                fontSize: annotationTypography.fontSize,
+                maxWidth: annotationTypography.maxWidth,
               },
-              when: { equals: "normal", path: "monster.frame" },
+              when: { equals: "annotated", path: "document.layout" },
             },
           ],
-          typography: effectTypography,
+          typography: bodyTypography,
         },
       ],
     }),
@@ -77,18 +77,18 @@ function semanticTemplate() {
 }
 
 describe("card semantics and presentation", () => {
-  it("derives monster meaning from validated semantic bindings, not display text", () => {
+  it("derives template-owned meaning from bindings rather than display text", () => {
     const template = semanticTemplate()
 
     expect(
       deriveCardSemantics(
-        { description: "Lore", monsterFrame: "normal", name: "Card", types: ["Effect"] },
+        { description: "Note", layoutVariant: "annotated", name: "Document" },
         template,
       ),
     ).toStrictEqual({
       values: {
-        kind: "monster",
-        "monster.frame": "normal",
+        kind: "document",
+        "document.layout": "annotated",
       },
     })
   })
@@ -99,11 +99,11 @@ describe("card semantics and presentation", () => {
         cardFields: [
           NAME_FIELD,
           {
-            defaultValue: "future-frame",
+            defaultValue: "future-layout",
             kind: "text",
             label: "Template variant",
             name: "variant",
-            options: ["synchro", "future-frame"],
+            options: ["legacy-layout", "future-layout"],
             required: true,
           },
         ],
@@ -113,8 +113,10 @@ describe("card semantics and presentation", () => {
       }),
     )
 
-    expect(deriveCardSemantics({ name: "Card", variant: "future-frame" }, template)).toStrictEqual({
-      values: { "card.variant": "future-frame" },
+    expect(
+      deriveCardSemantics({ name: "Document", variant: "future-layout" }, template),
+    ).toStrictEqual({
+      values: { "card.variant": "future-layout" },
     })
   })
 
@@ -124,11 +126,11 @@ describe("card semantics and presentation", () => {
         cardFields: [
           NAME_FIELD,
           {
-            defaultValue: "effect",
+            defaultValue: "print",
             kind: "text",
             label: "Card variant",
             name: "variant",
-            options: ["effect", "spell"],
+            options: ["print", "screen"],
             required: true,
           },
         ],
@@ -139,7 +141,7 @@ describe("card semantics and presentation", () => {
               source: { field: "variant" },
               transform: {
                 kind: "lookup",
-                values: { effect: "monster", spell: "spell" },
+                values: { print: "static", screen: "interactive" },
               },
             },
           ],
@@ -147,8 +149,8 @@ describe("card semantics and presentation", () => {
       }),
     )
 
-    expect(deriveCardSemantics({ name: "Card", variant: "spell" }, template)).toStrictEqual({
-      values: { kind: "spell" },
+    expect(deriveCardSemantics({ name: "Document", variant: "screen" }, template)).toStrictEqual({
+      values: { kind: "interactive" },
     })
   })
 
@@ -157,41 +159,49 @@ describe("card semantics and presentation", () => {
     const overrides = {
       textTypography: {
         description: {
-          lore: { fill: "#f00" },
+          annotation: { fill: "#f00" },
         },
       },
       textFitProfiles: {
-        description: { default: "large", lore: "small" },
+        description: { annotation: "small", default: "large" },
       },
     }
-    const normal = deriveCardSemantics({ monsterFrame: "normal", name: "Card" }, template)
-    const effect = deriveCardSemantics({ monsterFrame: "effect", name: "Card" }, template)
+    const annotated = deriveCardSemantics(
+      { layoutVariant: "annotated", name: "Document" },
+      template,
+    )
+    const plain = deriveCardSemantics({ layoutVariant: "plain", name: "Document" }, template)
 
-    expect(resolveCardPresentation(template, normal, overrides).text["description"]).toMatchObject({
+    expect(
+      resolveCardPresentation(template, annotated, overrides).text["description"],
+    ).toMatchObject({
       fitProfileId: "small",
-      styleId: "lore",
-      styleLabel: "Lore text",
-      typography: { fill: "#f00", fontFamily: "Lore" },
+      styleId: "annotation",
+      styleLabel: "Annotation text",
+      typography: { fill: "#f00", fontFamily: "Annotation" },
     })
-    expect(resolveCardPresentation(template, effect, overrides).text["description"]).toMatchObject({
+    expect(resolveCardPresentation(template, plain, overrides).text["description"]).toMatchObject({
       fitProfileId: "large",
       styleId: "default",
       styleLabel: "description",
-      typography: { fill: "#000", fontFamily: "Effect" },
+      typography: { fill: "#000", fontFamily: "Body" },
     })
   })
 
   it("inherits default typography fields through partial semantic styles", () => {
     const template = semanticTemplate()
-    const normal = deriveCardSemantics({ monsterFrame: "normal", name: "Card" }, template)
-
-    expect(resolveCardPresentation(template, normal).text["description"]?.typography).toMatchObject(
-      {
-        fill: "#000",
-        fontFamily: "Lore",
-        wrap: "word",
-      },
+    const annotated = deriveCardSemantics(
+      { layoutVariant: "annotated", name: "Document" },
+      template,
     )
+
+    expect(
+      resolveCardPresentation(template, annotated).text["description"]?.typography,
+    ).toMatchObject({
+      fill: "#000",
+      fontFamily: "Annotation",
+      wrap: "word",
+    })
   })
 
   it("allows a semantic patch to clear an optional default property", () => {
@@ -235,22 +245,25 @@ describe("card semantics and presentation", () => {
 
   it("lets editor typography patches override semantic patches", () => {
     const template = semanticTemplate()
-    const normal = deriveCardSemantics({ monsterFrame: "normal", name: "Card" }, template)
+    const annotated = deriveCardSemantics(
+      { layoutVariant: "annotated", name: "Document" },
+      template,
+    )
 
     expect(
-      resolveCardPresentation(template, normal, {
-        textTypography: { description: { lore: { fill: "#0f0", fontSize: 18 } } },
+      resolveCardPresentation(template, annotated, {
+        textTypography: { description: { annotation: { fill: "#0f0", fontSize: 18 } } },
       }).text.description?.typography,
     ).toMatchObject({
       fill: "#0f0",
-      fontFamily: "Lore",
+      fontFamily: "Annotation",
       fontSize: 18,
     })
   })
 
   it("validates persisted presentation overrides before resolving them", () => {
     const template = semanticTemplate()
-    const semantics = deriveCardSemantics({ monsterFrame: "effect", name: "Card" }, template)
+    const semantics = deriveCardSemantics({ layoutVariant: "plain", name: "Document" }, template)
 
     expect(() =>
       resolveCardPresentation(template, semantics, {

@@ -1,7 +1,7 @@
 import { act } from "react"
 
 import { createRoot } from "react-dom/client"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { ImageDropzone } from "./file-upload"
 import { NumberInput } from "./number-input"
@@ -69,4 +69,28 @@ describe("editor control fine-tuning", () => {
 
     act(() => root.unmount())
   })
+})
+
+it("does not route nested image action keys to the file chooser", () => {
+  const { container, root } = render(<ImageDropzone />)
+  const input = container.querySelector<HTMLInputElement>('input[type="file"]')!
+  const browse = vi.spyOn(input, "click").mockImplementation(() => {})
+  const dropzone = container.querySelector<HTMLElement>('[role="button"]')!
+  const action = document.createElement("button")
+  dropzone.append(action)
+  for (const key of ["Enter", " "]) {
+    const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })
+    act(() => {
+      action.dispatchEvent(event)
+    })
+    expect(event.defaultPrevented).toBe(false)
+  }
+  expect(browse).not.toHaveBeenCalled()
+  act(() => {
+    dropzone.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+    )
+  })
+  expect(browse).toHaveBeenCalledOnce()
+  act(() => root.unmount())
 })

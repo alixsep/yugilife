@@ -121,6 +121,9 @@ export function ReferenceComparison({
                   <SelectItem index={1} value="side-by-side">
                     Side by side
                   </SelectItem>
+                  <SelectItem index={2} value="off">
+                    Off
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </Field>

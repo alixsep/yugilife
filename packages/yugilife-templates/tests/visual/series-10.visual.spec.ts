@@ -1,4 +1,6 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+
+import { checkPreparedTextures, showFixture, test } from "./visual-fixture"
 
 import type { Locator } from "@playwright/test"
 
@@ -38,9 +40,8 @@ const realCardFixtures = [
 ] as const
 
 for (const [fixtureId, cardName] of realCardFixtures) {
-  test(`Series 10 real card: ${cardName}`, async ({ page }) => {
-    await page.goto(`/?fixture=${encodeURIComponent(fixtureId)}`)
-    const card = page.locator("[data-visual-fixture]")
+  test(`Series 10 real card: ${cardName}`, async ({ fixturePage }) => {
+    const card = await showFixture(fixturePage, `?fixture=${encodeURIComponent(fixtureId)}`)
     await expect(card).toHaveAttribute("data-ready", "true")
     await expect(card).toHaveAttribute("data-card-fixture", fixtureId)
     await expectPortableOutlinedSvg(card)
@@ -48,28 +49,47 @@ for (const [fixtureId, cardName] of realCardFixtures) {
   })
 }
 
-test("Series 10 deterministic render", async ({ page }) => {
-  await page.goto("/")
-  const card = page.locator("[data-visual-fixture]")
+/**
+ * The claim the prepared-texture cache rests on: a stored texture is the exact pixels grading
+ * produces, not merely a similar-looking one. The screenshots cannot establish it, because a
+ * texture is mostly covered by the layers drawn over it.
+ */
+test("Series 10 prepared textures hold exactly the graded pixels", async ({ fixturePage }) => {
+  const { checked, mismatches } = await checkPreparedTextures(fixturePage)
+
+  expect(mismatches).toEqual([])
+  expect(checked).toBeGreaterThan(0)
+})
+
+test("Series 10 deterministic render", async ({ fixturePage }) => {
+  const card = await showFixture(fixturePage, "")
   await expect(card).toHaveAttribute("data-ready", "true")
   await expectPortableOutlinedSvg(card)
   await expect(card).toHaveScreenshot("series-10.webp")
 })
 
-test("Series 10 XYZ Pendulum frame masks", async ({ page }) => {
-  await page.goto("/?variant=xyz&pendulum=true&artwork=false")
-  const card = page.locator("[data-visual-fixture]")
+test("Series 10 renders without prepared textures", async ({ fixturePage }) => {
+  const card = await showFixture(fixturePage, "?prepared=false")
+  await expect(card).toHaveAttribute("data-ready", "true")
+  await expectPortableOutlinedSvg(card)
+  await expect(card.locator("image")).toHaveCount(1)
+})
+
+test("Series 10 XYZ Pendulum frame masks", async ({ fixturePage }) => {
+  const card = await showFixture(fixturePage, "?variant=xyz&pendulum=true&artwork=false")
   await expect(card).toHaveAttribute("data-ready", "true")
   await expectPortableOutlinedSvg(card)
   await expect(card.locator("image")).toHaveCount(1)
   await expect(card).toHaveScreenshot("series-10-xyz-pendulum.webp")
 })
 
-test("Series 10 Pendulum effect texture geometry", async ({ page }) => {
+test("Series 10 Pendulum effect texture geometry", async ({ fixturePage }) => {
   for (const variant of ["effect", "fusion"]) {
     for (const size of ["small", "large"]) {
-      await page.goto(`/?variant=${variant}&pendulum=true&pendulumSize=${size}&artwork=false`)
-      const card = page.locator("[data-visual-fixture]")
+      const card = await showFixture(
+        fixturePage,
+        `?variant=${variant}&pendulum=true&pendulumSize=${size}&artwork=false`,
+      )
       await expect(card).toHaveAttribute("data-ready", "true")
       await expectPortableOutlinedSvg(card)
       await expect(card).toHaveScreenshot(`series-10-${variant}-pendulum-${size}.webp`)
@@ -77,26 +97,40 @@ test("Series 10 Pendulum effect texture geometry", async ({ page }) => {
   }
 })
 
-test("Series 10 Link and XYZ frame masks", async ({ page }) => {
+test("Series 10 Link and XYZ frame masks", async ({ fixturePage }) => {
   for (const variant of ["link", "xyz"]) {
-    await page.goto(`/?variant=${variant}`)
-    const card = page.locator("[data-visual-fixture]")
+    const card = await showFixture(fixturePage, `?variant=${variant}`)
     await expect(card).toHaveAttribute("data-ready", "true")
     await expectPortableOutlinedSvg(card)
   }
 })
 
-test("Series 10 rich text glyph outlines", async ({ page }) => {
-  await page.goto("/?rich=true")
-  const card = page.locator("[data-visual-fixture]")
+test("Series 10 full-art Link compositing", async ({ fixturePage }) => {
+  const card = await showFixture(fixturePage, "?variant=link&fullArt=true")
+  await expect(card).toHaveAttribute("data-ready", "true")
+  await expectPortableOutlinedSvg(card)
+  await expect(card).toHaveScreenshot("series-10-link-full-art.webp")
+})
+
+test("Series 10 full-art Pendulum compositing", async ({ fixturePage }) => {
+  const card = await showFixture(
+    fixturePage,
+    "?variant=effect&pendulum=true&fullArt=true&pendulumSize=medium",
+  )
+  await expect(card).toHaveAttribute("data-ready", "true")
+  await expectPortableOutlinedSvg(card)
+  await expect(card).toHaveScreenshot("series-10-pendulum-full-art.webp")
+})
+
+test("Series 10 rich text glyph outlines", async ({ fixturePage }) => {
+  const card = await showFixture(fixturePage, "?rich=true")
   await expect(card).toHaveAttribute("data-ready", "true")
   await expectPortableOutlinedSvg(card)
   await expect(card).toHaveScreenshot("series-10-rich-text-paths.webp")
 })
 
-test("Series 10 native rich text reference", async ({ page }) => {
-  await page.goto("/?rich=true&textMode=text")
-  const card = page.locator("[data-visual-fixture]")
+test("Series 10 native rich text reference", async ({ fixturePage }) => {
+  const card = await showFixture(fixturePage, "?rich=true&textMode=text")
   await expect(card).toHaveAttribute("data-ready", "true")
   await expect(card.locator("svg")).toHaveAttribute("data-yugilife-text-mode", "text")
   await expect(card).toHaveScreenshot("series-10-rich-text-native.webp")

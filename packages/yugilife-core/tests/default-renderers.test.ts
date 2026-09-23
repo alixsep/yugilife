@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest"
 import { createDefaultLayerRenderers } from "../src/rendering/default-renderers"
 
 class FakeCanvasContext {
+  readonly clips: number[][] = []
+  readonly drawImages: unknown[][] = []
   readonly fillStyles: string[] = []
   readonly globalAlphas: number[] = []
 
@@ -31,11 +33,21 @@ class FakeCanvasContext {
 
   closePath() {}
 
+  clip() {}
+
+  drawImage(...values: unknown[]) {
+    this.drawImages.push(values)
+  }
+
   fill() {}
 
   lineTo() {}
 
   moveTo() {}
+
+  rect(...values: number[]) {
+    this.clips.push(values)
+  }
 
   restore() {}
 
@@ -84,5 +96,79 @@ describe("default bevel renderer", () => {
     })
 
     expect(context.globalAlphas).toEqual([0.32, 0.32, 0.37, 0.37])
+  })
+})
+
+describe("default artwork renderer", () => {
+  it("shares a normalized crop transform while retaining template placement and clipping", async () => {
+    const context = new FakeCanvasContext()
+    const drawable = { height: 300, width: 600 }
+    const renderer = createDefaultLayerRenderers().artwork
+    if (!renderer) throw new Error("The default artwork renderer is missing.")
+
+    await renderer.render(
+      {
+        card: { artwork: drawable },
+        context: context as unknown as CanvasRenderingContext2D,
+        presentation: {
+          artworkTransforms: { shared: { scale: 2, x: 0.25, y: -0.5 } },
+        },
+      } as never,
+      {
+        field: "artwork",
+        fit: "width",
+        id: "artwork",
+        kind: "artwork",
+        placementRegion: { height: 400, width: 300, x: 100, y: 200 },
+        region: { height: 900, width: 700, x: 50, y: 60 },
+        transformId: "shared",
+      },
+    )
+
+    expect(context.clips).toEqual([[50, 60, 700, 900]])
+    expect(context.drawImages).toEqual([[drawable, 25, -75, 600, 300]])
+  })
+
+  it("emits a mode-gated artwork layer only for the matching opaque transform mode", async () => {
+    const renderer = createDefaultLayerRenderers().artwork
+    if (!renderer) throw new Error("The default artwork renderer is missing.")
+    const drawable = { height: 300, width: 600 }
+    const layer = {
+      field: "artwork",
+      id: "overlay",
+      kind: "artwork",
+      placementRegion: { height: 400, width: 300, x: 100, y: 200 },
+      region: { height: 900, width: 700, x: 50, y: 60 },
+      transformId: "shared",
+      transformMode: "expanded",
+    } as const
+
+    const disabled = new FakeCanvasContext()
+    const disabledResult = await renderer.render(
+      {
+        card: { artwork: drawable },
+        context: disabled as unknown as CanvasRenderingContext2D,
+        presentation: { artworkTransforms: { shared: { scale: 1, x: 0, y: 0 } } },
+      } as never,
+      layer,
+    )
+    expect(disabledResult).toBe(false)
+    expect(disabled.clips).toEqual([])
+    expect(disabled.drawImages).toEqual([])
+
+    const enabled = new FakeCanvasContext()
+    const enabledResult = await renderer.render(
+      {
+        card: { artwork: drawable },
+        context: enabled as unknown as CanvasRenderingContext2D,
+        presentation: {
+          artworkTransforms: { shared: { mode: "expanded", scale: 1, x: 0, y: 0 } },
+        },
+      } as never,
+      layer,
+    )
+    expect(enabledResult).toBe(true)
+    expect(enabled.clips).toEqual([[50, 60, 700, 900]])
+    expect(enabled.drawImages).toHaveLength(1)
   })
 })

@@ -7,19 +7,47 @@ import { Card } from "@/components/card"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { PreviewPlayground } from "@/components/ui/preview-playground"
+import { Progress } from "@/components/ui/progress"
 import { Elevated } from "@/lib/elevated"
 import { useShape } from "@/lib/shape-context"
 import { spring } from "@/lib/springs"
 import { cn } from "@/lib/utils"
 
+import { ArtworkMaskWorkspace } from "../editor/components/artwork-editor"
+import { activationProgressPercent } from "../templates/prepare-template-textures"
+
 import { renderedTextBounds, renderedTextFieldAt } from "./card-preview-hit-test"
 
+import type { ArtworkEditorTool } from "../editor/components/artwork-editor"
+import type { ArtworkMaskEditingState } from "../editor/model/editor-document"
 import type { useBuildController } from "./use-build-controller"
 import type { CardRenderMetadata } from "@/components/card"
+import type {
+  ArtworkMaskChannel,
+  ProcessedArtworkMaskPixels,
+} from "@/lib/pin-mask/artwork-mask-effects"
 import type { MouseEvent } from "react"
 import type { RenderManifest } from "yugilife-core"
 
+interface ArtworkWorkspaceProps {
+  artwork: Blob
+  mask: ArtworkMaskEditingState
+  maskChannel: ArtworkMaskChannel
+  artworkEffectsError?: string | undefined
+  processedMaskBusy: boolean
+  getProcessedMaskPixels: () => ProcessedArtworkMaskPixels | undefined
+  processedMaskRevision: number
+  onMaskChange: (mask: ArtworkMaskEditingState) => void
+  onMaskComplete?: (artwork: Blob, points: ArtworkMaskEditingState["points"], mask: Blob) => void
+  onRetryArtworkEffects?: () => void
+  onSelectedPinChange: (id: number | null) => void
+  pinSize: number
+  selectedPinId: number | null
+  tool: ArtworkEditorTool
+}
+
 interface CardPreviewProps {
+  artworkWorkspace: ArtworkWorkspaceProps | undefined
   controller: ReturnType<typeof useBuildController>
   manifest?: RenderManifest | undefined
   onFocusField: (fieldName: string, controlIndex?: number) => void
@@ -29,6 +57,7 @@ interface CardPreviewProps {
 }
 
 export function CardPreview({
+  artworkWorkspace,
   controller,
   manifest,
   onFocusField,
@@ -51,6 +80,7 @@ export function CardPreview({
     loadSelectedTemplate,
     mode,
     newCardBusy,
+    preparedTextures,
     presentationOverrides,
     presetOverrides,
     reference,
@@ -63,19 +93,24 @@ export function CardPreview({
     templateLoadPaused,
     templateLoadProgress,
     templateLoading,
+    templateReady,
   } = controller
   const cardHeight = activeEditorTemplate.dimensions.height
   const cardWidth = activeEditorTemplate.dimensions.width
-  const sideBySide = Boolean(reference && comparisonMode === "side-by-side")
+  const referenceSideBySide = Boolean(reference && comparisonMode === "side-by-side")
+  const artworkSideBySide = artworkWorkspace !== undefined
+  const comparisonItemCount = 1 + Number(artworkSideBySide) + Number(referenceSideBySide)
+  const comparisonGapCount = comparisonItemCount - 1
+  const splitPreview = comparisonItemCount > 1
   const comparisonGap = 48
-  const comparisonWidth = cardWidth * 2 + comparisonGap
+  const comparisonWidth = cardWidth * comparisonItemCount + comparisonGap * comparisonGapCount
   const cardShare = `${(cardWidth / comparisonWidth) * 100}%`
   const gapShare = `${(comparisonGap / comparisonWidth) * 100}%`
   const aspectRatio = `${activeEditorTemplate.dimensions.width} / ${activeEditorTemplate.dimensions.height}`
-  const downloadPercent =
-    templateLoadProgress?.total && templateLoadProgress.total > 0
-      ? Math.min(100, Math.round((templateLoadProgress.loaded / templateLoadProgress.total) * 100))
-      : undefined
+  const preparing = templateLoadProgress?.phase === "preparing"
+  const activationPercent = templateLoadProgress
+    ? activationProgressPercent(templateLoadProgress)
+    : undefined
 
   const acceptRenderMetadata = useCallback(
     (metadata: CardRenderMetadata | undefined) => {
@@ -135,7 +170,12 @@ export function CardPreview({
         actions={
           <div className="flex items-center gap-1.5">
             <Button
-              disabled={!hasUnsavedChanges || !templateBundle || newCardBusy}
+              disabled={
+                !hasUnsavedChanges ||
+                !templateBundle ||
+                newCardBusy ||
+                controller.artworkMaskPending
+              }
               leadingIcon={Save}
               loading={savingCard}
               onClick={() => void saveCard()}
@@ -162,27 +202,43 @@ export function CardPreview({
           </div>
         }
         contentHeight={cardHeight}
-        contentWidth={sideBySide ? comparisonWidth : cardWidth}
+        contentWidth={splitPreview ? comparisonWidth : cardWidth}
         label="Card preview. Drag to pan, scroll to zoom, or use the zoom controls."
         onContentDoubleClick={focusRenderedElement}
       >
         <div className="flex size-full items-center justify-center">
+          {artworkWorkspace && (
+            <motion.figure
+              animate={{
+                height: newCardBusy ? "0%" : "100%",
+                opacity: newCardBusy ? 0 : 1,
+                width: newCardBusy ? "0%" : cardShare,
+              }}
+              className="min-w-0 shrink-0 overflow-visible"
+              initial={false}
+              transition={spring.moderate}
+            >
+              <ArtworkMaskWorkspace {...artworkWorkspace} />
+            </motion.figure>
+          )}
           <motion.figure
             animate={{
               height: newCardBusy ? "0%" : "100%",
-              width: newCardBusy ? "0%" : sideBySide ? cardShare : "100%",
+              marginLeft: newCardBusy || !artworkSideBySide ? 0 : gapShare,
+              width: newCardBusy ? "0%" : splitPreview ? cardShare : "100%",
             }}
             className="min-w-0 shrink-0 overflow-hidden"
             initial={false}
             transition={spring.moderate}
           >
             <div className="shadow-surface-7 relative size-full overflow-hidden" ref={cardElement}>
-              {templateBundle ? (
+              {templateBundle && templateReady ? (
                 <Card
                   card={renderCardData}
                   className="size-full"
                   debugLogging={mode === "advanced" && debugLoggingEnabled}
                   layers={layers}
+                  preparedTextures={preparedTextures}
                   presetOverrides={presetOverrides}
                   presentationOverrides={presentationOverrides}
                   templateBundle={templateBundle}
@@ -218,25 +274,19 @@ export function CardPreview({
                     ) : (
                       <>
                         <p role="status">
-                          {templateLoading ? "Downloading template…" : "Preparing template…"}
-                          {downloadPercent === undefined ? "" : ` ${downloadPercent}%`}
+                          {templateLoading && !preparing
+                            ? "Downloading template…"
+                            : "Preparing template…"}
+                          {activationPercent === undefined ? "" : ` ${activationPercent}%`}
                         </p>
-                        <div
-                          aria-hidden="true"
-                          className="bg-surface-2 h-1.5 overflow-hidden rounded-full"
-                        >
-                          <div
-                            className={cn(
-                              "bg-foreground h-full rounded-full transition-[width] duration-150",
-                              downloadPercent === undefined && "w-1/3 animate-pulse",
-                            )}
-                            style={
-                              downloadPercent === undefined
-                                ? undefined
-                                : { width: `${downloadPercent}%` }
-                            }
-                          />
-                        </div>
+                        <Progress
+                          label={
+                            preparing
+                              ? "Preparing template textures"
+                              : "Downloading template assets"
+                          }
+                          value={activationPercent}
+                        />
                       </>
                     )}
                   </div>
@@ -303,7 +353,7 @@ export function CardPreview({
             </div>
           </motion.figure>
           <AnimatePresence initial={false}>
-            {reference && sideBySide && (
+            {reference && referenceSideBySide && (
               <motion.figure
                 animate={{
                   height: newCardBusy ? "0%" : "100%",

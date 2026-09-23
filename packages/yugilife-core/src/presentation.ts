@@ -3,6 +3,7 @@ import { matchesSemanticCondition } from "./semantics.js"
 import { validatePresentationOverrides } from "./validation.js"
 
 import type {
+  ArtworkTransformOverrides,
   CanvasMask,
   CardSemantics,
   CardTemplate,
@@ -18,17 +19,42 @@ import type {
   TextLayer,
   TextPosition,
   TextTypography,
+  TransformModeCondition,
 } from "./contracts/index.js"
 
-function matches(semantics: CardSemantics, condition: SemanticCondition) {
-  return matchesSemanticCondition(semantics, condition)
+/**
+ * Evaluates the combined card-data and transform-mode gate shared by presentation rules and semantic
+ * text styles. Both clauses are required to match, and a construct that declares neither is rejected
+ * during template validation rather than here.
+ *
+ * Every consumer that asks "is this rule or style currently active?" must route through this one
+ * function, so a gate can never be honored by resolution and ignored by render-manifest analysis.
+ */
+export function matchesPresentationGate(
+  semantics: CardSemantics,
+  transforms: ArtworkTransformOverrides,
+  gate: {
+    when?: SemanticCondition | undefined
+    whenTransforms?: TransformModeCondition | undefined
+  },
+) {
+  if (gate.when && !matchesSemanticCondition(semantics, gate.when)) return false
+  if (!gate.whenTransforms) return true
+  return Object.entries(gate.whenTransforms).every(
+    ([transformId, mode]) => (transforms[transformId]?.mode ?? null) === mode,
+  )
 }
 
 function matchingPresentationRules(
   template: CardTemplate,
   semantics: CardSemantics,
+  transforms: ArtworkTransformOverrides,
 ): readonly SemanticPresentationRule[] {
-  return template.presentationRules?.filter((rule) => matches(semantics, rule.when)) ?? []
+  return (
+    template.presentationRules?.filter((rule) =>
+      matchesPresentationGate(semantics, transforms, rule),
+    ) ?? []
+  )
 }
 
 function resolveRuleValues<T extends boolean | string>(
@@ -164,6 +190,7 @@ function resolveLayerMasks(
     resolved[layerId] = Object.freeze({
       assetId: mask.assetId,
       channel: mask.channel ?? "luminance",
+      ...(mask.coverageLayerId ? { coverageLayerId: mask.coverageLayerId } : {}),
       id: mask.id,
       invert: mask.invert ?? false,
     })
@@ -171,8 +198,14 @@ function resolveLayerMasks(
   return Object.freeze(resolved)
 }
 
-function activeStyle(layer: TextLayer, semantics: CardSemantics): SemanticTextStyle | undefined {
-  const matchesSemantics = layer.semanticStyles?.filter((style) => matches(semantics, style.when))
+function activeStyle(
+  layer: TextLayer,
+  semantics: CardSemantics,
+  transforms: ArtworkTransformOverrides,
+): SemanticTextStyle | undefined {
+  const matchesSemantics = layer.semanticStyles?.filter((style) =>
+    matchesPresentationGate(semantics, transforms, style),
+  )
   if (!matchesSemantics || matchesSemantics.length === 0) return undefined
   if (matchesSemantics.length > 1) {
     throw new Error(
@@ -207,7 +240,10 @@ export function resolveCardPresentation(
   const validatedOverrides = overrides
     ? validatePresentationOverrides(overrides, template)
     : undefined
-  const rules = matchingPresentationRules(template, semantics)
+  // Transforms are resolved input rather than rule output, so reading them here cannot create a
+  // cycle: no presentation rule may assign a transform mode.
+  const artworkTransforms = Object.freeze({ ...(validatedOverrides?.artworkTransforms ?? {}) })
+  const rules = matchingPresentationRules(template, semantics, artworkTransforms)
   const text: Record<string, ResolvedTextPresentation> = {}
   const layerRegions = resolveLayerRegions(rules)
   const textPositions = resolveTextPositions(rules)
@@ -216,7 +252,7 @@ export function resolveCardPresentation(
   walkLayers(template.layers, ({ layer }) => {
     if (layer.kind !== "text") return
     const textLayer = layer as TextLayer
-    const style = activeStyle(textLayer, semantics)
+    const style = activeStyle(textLayer, semantics, artworkTransforms)
     const styleId = style?.id ?? "default"
     const typography = mergeTextTypography(
       textLayer.typography,
@@ -250,6 +286,7 @@ export function resolveCardPresentation(
   const presets = resolveRuleValues(rules, (rule) => rule.presets, "preset target")
   return Object.freeze({
     assetSelections: Object.freeze(assetSelections),
+    artworkTransforms,
     layerRegions,
     layerMasks,
     layerOptions,

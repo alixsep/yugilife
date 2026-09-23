@@ -13,6 +13,7 @@
     "generate": "pnpm generate:assets && pnpm generate:catalog",
     "generate:assets": "pnpm --filter yugilife-templates generate",
     "generate:catalog": "pnpm --filter yugilife-templates generate:runtime",
+    "generate:card-catalog": "pnpm --filter yugilife generate:card-catalog",
     "check:generated": "pnpm --recursive --stream --if-present check:generated",
     "build": "pnpm --recursive --stream --if-present build",
     "build:pages": "pnpm --filter yugilife build:pages",

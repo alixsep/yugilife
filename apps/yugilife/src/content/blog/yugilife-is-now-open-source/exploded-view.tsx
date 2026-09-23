@@ -24,6 +24,7 @@ import glyphSerialNumber from "./assets/exploded-view/glyph-serialNumber.svg"
 import glyphTypeLine from "./assets/exploded-view/glyph-typeLine.svg"
 import artwork from "./assets/exploded-view/odd-eyes-rebellion-dragon.webp"
 import pendulumArtworkMask from "./assets/exploded-view/pendulum-artwork-mask.webp"
+// TODO: Update this standalone illustration to match the final Pendulum split-layer stack once it stabilizes.
 import pendulumBorder from "./assets/exploded-view/pendulum-border-medium.webp"
 import pendulumEffectTexture from "./assets/exploded-view/pendulum-effect-texture.webp"
 import pendulumFrameBottomMask from "./assets/exploded-view/pendulum-frame-bottom-mask.webp"

@@ -1,6 +1,10 @@
 import { editorColorPresets, editorTemplate } from "../../build/editor/model/editor-config"
 import { validateEditorDocumentState } from "../../build/editor/model/editor-document-validation"
 import { createInitialEditorDocument } from "../../build/editor/model/editor-store"
+import {
+  moveLegacyArtworkMaskEffects,
+  moveLegacyArtworkTransformMode,
+} from "../../build/migrations/document"
 import { migrateEditorTemplateVersion } from "../../build/migrations/template"
 import { readStoredTemplate } from "../../build/templates/template-storage"
 
@@ -23,13 +27,15 @@ export function migrateInventoryCardDocument(
       `No migration is available from template "${document.templateId}@${document.templateVersion}" to "${current.templateId}@${current.templateVersion}".`,
     )
   }
+  const moved = moveLegacyArtworkTransformMode(moveLegacyArtworkMaskEffects(migrated))
   const candidate: EditorDocumentState = {
     ...current,
-    ...migrated,
-    card: { ...current.card, ...migrated.card },
-    layers: migrated.layers ?? {},
-    presetOverrides: migrated.presetOverrides ?? {},
-    presentationOverrides: migrated.presentationOverrides ?? {},
+    ...moved,
+    card: { ...current.card, ...moved.card },
+    layers: moved.layers ?? {},
+    presetOverrides: moved.presetOverrides ?? {},
+    presentationOverrides: moved.presentationOverrides ?? {},
+    artworkMaskEffects: moved.artworkMaskEffects ?? {},
     templateId: current.templateId,
     templateVersion: current.templateVersion,
   }

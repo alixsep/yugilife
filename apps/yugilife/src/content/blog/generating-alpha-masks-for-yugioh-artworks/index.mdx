@@ -1,0 +1,222 @@
+import { BarChart, CompositionBar, LineChart, ScatterPlot } from "@/components/data-visualization"
+
+import {
+  AVIF_SHIPPED_SIZE,
+  avifErrorBySize,
+  avifQualityAt,
+  avifQualityWaypoints,
+  coldFirstAlpha,
+  maskPipelines,
+  quantizationVariants,
+} from "./chart-data"
+import { Sam3Comparison, ToonOutComparison } from "./mask-comparison"
+import { EdgeCloseUps } from "./edge-close-ups"
+import { DotPresets } from "./dot-presets"
+import { EdgeCropSheet } from "./edge-crop-sheet"
+import { FullArtStages } from "./full-art-stages"
+import { PhraseModelReadings } from "./phrase-models"
+
+Konami has recently introduced a full art layout for Yu-Gi-Oh! cards, which, to describe it reductively, is basically Series 10 but with the artwork zoomed in and its foreground extending beyond its frame. There are more details to it, but focusing on the artwork for this blog, the question is: if Yugilife wants to support full art, how should it do so? We somehow need to isolate the foreground from the image, or, in other words, remove the background for the overlay. Software development decisions can sometimes be difficult, and this is one of those cases. There are simply too many routes that seem appealing, and you have to try them first to see whether they are convenient enough to ship with the product.
+
+<FullArtStages />
+
+There is no obvious way to do this. This post is about the approaches I tried before one worked. But there is one thing I am decisive about, and that is to not make users waste time for no reason. This is why Yugilife has an autocomplete feature. There are more than 14,000 official Yu-Gi-Oh! cards, and there shouldn't be a need for anyone to enter all the fields manually when they can just search for a card and have the app do it for them immediately. This feature would have felt incomplete if it didn't also provide the artwork, so a database of artworks was needed. We gathered the most accurate and high-quality artworks we could find online and upscaled them using the best model available at the time, called [`4x-UltraSharpV2`](https://ko-fi.com/s/4b3245cfe5) (a few models were tested on a bunch of examples, and the one that looked subjectively best to my eyes was picked).
+
+For adding full art layout support, these were some of the questions I had in mind before doing anything:
+
+- How do I remove the background (or extract the foreground) of an artwork?
+- What tools let me do the above?
+- Should I allow the user to upload the foreground and just stick it into the card, so I leave the heavy work to the user?
+- Should I implement alpha masking?
+- If we let the user use AI for generating and possibly outpainting the foreground, then how do we ensure that there are no pixel mismatches?
+- If I pre-process foregrounds, or alpha masks, what if the user wants to make a custom card with a custom artwork? After all, Yugilife is a custom card maker.
+- If I pre-process foregrounds, or alpha masks, what if the user doesn't like it and wants different results?
+
+## Attempt one: an interactive tool in the browser
+
+My first idea was interactive. If a person has to make judgement calls about where the foreground stops, give them a great tool for making them. This way anyone could cut out their own artwork inside Yugilife.
+
+The first thing I reached for was MediaPipe's [Interactive Segmenter](https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter) v2, because it is small and is backed by Google, so I had a lot of hope. Unfortunately, no matter how hard I tried, the result quality was HORRIBLE! On CPU (an i7-12700H) it took 5 seconds to process each of my marks, and even then, the mask came back at the model's own resolution rather than the artwork's, which looked so low quality it was unusable. Even that aside, the click was the entire interface: it either came back with the region I wanted or it did not, and there was nothing in between to adjust. On an illustration it would take the character and leave the glow, or take the character and a third of the sky with it, and the only thing I could do was to click somewhere else and hope.
+
+So I went looking for something that would give me more control, which was Photoshop's Quick Selection tool (`W`), and that meant finding out how it actually works. Adobe has never published the implementation. The closest thing to an official explanation is that it is brush-driven, uses pixel-level similarity plus traditional edge detection, and expands the painted region toward boundaries in real time. The academic blueprint is Microsoft Research's [_Paint Selection_](https://www.microsoft.com/en-us/research/wp-content/uploads/2009/08/PaintSelection_SIGGRAPH09.pdf) paper from SIGGRAPH 2009, which states outright that it was inspired by Photoshop CS3/CS4's Quick Selection, and describes progressive local graph cuts, foreground and background color models, connectivity filtering, and multilevel narrow-band optimization so that you are not re-solving the whole image on every mouse move. GIMP has [an implementation of that paper](https://developer.gimp.org/core/algorithm/paint-select/) in [GEGL](https://gitlab.gnome.org/GNOME/gegl/-/blob/master/operations/workshop/external/paint-select.cc), which the GIMP developers describe as producing good selections while being too slow to promote out of Playground.
+
+The best thing I found was [Patchy](https://github.com/SethRobinson/Patchy), an MIT-licensed Photoshop-oriented editor whose [`quick_select.cpp`](https://github.com/SethRobinson/Patchy/blob/main/src/core/quick_select.cpp) is about a thousand lines of C++ that the author has explicitly calibrated against Photoshop 2026, with comments recording exactly which behaviors were matched: how far a selection may spread past the brush (roughly 1.5 to 2.5 brush diameters, then edge snapping, rather than an unbounded color flood), how a click on a featureless area should behave, how noise-scale edges are suppressed. Underneath it builds local foreground and background color histograms, adds a spatial growth penalty from the brush, and solves a contrast-sensitive grid max-flow/min-cut where strong edges are cheap places for the cut to pass. That deliberate distinction between Quick Select and flood fill is the whole reason the tool feels good. The brush gives it a finite growth budget and the image evidence decides where inside that budget the selection goes. It is why one click does not suddenly select half the image.
+
+So I compiled that file to WebAssembly and put it in the browser next to MediaPipe, hoping for a way to take the mask MediaPipe handed back and push it where it was wrong, with a brush, against the image's own edges. That became a mask workbench. MediaPipe's Interactive Segmenter ran in one Web Worker as the semantic prior and Patchy's Quick Select ran in another as the classical brush-grow layer, with the two composited using add, subtract, intersect, or replace.
+
+Then, because the result looked disappointingly soft, with edges that lacked contrast and sharpness, I added everything I could think of to clean it up and regain some edge definition: a 4096-entry cubic curve editor with a log-scaled histogram and draggable control points and exact 0-255 input/output fields, edge-preserving smoothing, Gaussian feathering, mask choke and bleed, edge color decontamination, island removal, hole filling, non-destructive reveal and hide brushes, white/black/checkerboard inspection, hold-to-compare, and portable project files containing the source image and the complete editing state.
+
+And it did not work. I could make the result sharper, harder, and _seemingly_ cleaner, but I could not make a bad selection take the right shape. Two engines that disagree do not average into one that agrees, so most of my time in that tool went on repairing the seam between them rather than on cutting anything out. MediaPipe was still slow. The brush was still arguing with a mask that had been wrong before I touched it. Every one of those controls was one more thing I had to adjust manually, and the honest measure of the whole thing is how long it took to drag a single artwork to a result I would call barely usable.
+
+## Attempt two: run a real matting model in the browser
+
+MediaPipe was extremely low quality, so I decided to swap it for another model. I picked [SAM2Matting](https://huggingface.co/FudanCVL/SAM2Matting) ([SAM 2](https://ai.meta.com/research/publications/sam-2-segment-anything-in-images-and-videos/) with progressive matting heads integrated), took its Tiny checkpoint, and set out to make it run in a browser without WebGPU.
+
+I ran the PyTorch model on CPU first to get reference outputs with fixed prompts on a fixed eight-image corpus. I found the natural export boundary, which is not where I expected it to be: a plain SAM image embedding is not enough, because the matting heads need the full FPN pyramid _and_ the normalized image. So it split into an encoder that runs once per image and a prompt-plus-matting graph that runs per click, with about 29 MB of raw tensors sitting between them that have to stay resident for as long as the reader keeps clicking.
+
+I exported both halves to ONNX, verified them against PyTorch (mean absolute error around 1e-7 on the encoder outputs, so the graphs were right), and ran them in real headless Chrome with the GPU disabled, on [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/) with `executionProviders: ["wasm"]`, in a dedicated Worker. The numbers were unfortunate:
+
+<CompositionBar
+  title="Time to first result"
+  description="Headless Chrome on an i7-12700H, GPU disabled, one WASM thread."
+  segments={coldFirstAlpha}
+  format={(value) => `${(value / 1000).toFixed(1)} s`}
+  totalLabel="First result"
+/>
+
+The Worker kept the page responsive throughout, which turned out to be beside the point. You wait seventeen seconds before the first cut-out edge appears, and then about eight seconds again for every click after it! A tool that responds to a brush stroke eight seconds later is not an interactive tool.
+
+The obvious move was quantization, and it failed twice over. The INT8 variants were faster, but only a little: nothing that turns eight seconds into a number a person would sit through. I also tried the LiteRT route, which is the usual way to get a model of this shape onto a phone or into a browser without going through ONNX. The converter did not produce a usable interactive prompt/matting graph at all. The stage that takes a click and returns a matte never came through, so there was nothing on the other side to even benchmark.
+
+And on top of all of that, the SAM2Matting license is non-commercial, which is fine for a technical experiment and not fine for something I ship.
+
+## Attempt three: quantize a 344 MiB encoder until it fits
+
+I read that result as a model problem rather than a placement problem. Pick something better suited, and the browser would be fine.
+
+So I moved to [ZIM](https://github.com/naver-ai/ZIM), a zero-shot interactive matting model. Its [ViT-B](https://huggingface.co/naver-iv/zim-anything-vitb) ONNX encoder is 343.97 MiB, with an 18.44 MiB decoder next to it. I wanted it under about 70 MiB, so that a browser could download and cache it, but only if results were good enough to convince users to download it in the first place.
+
+I built a benchmark that turned out to be a very thorough way of proving the idea wrong. It pinned the official checkpoints by hash, inspected the graph, mirrored the model's exact preprocessing and postprocessing so that no variant could look good by accident, calibrated on real images rather than random tensors, and generated every quantization I could reach: FP16, INT8, and INT4 in RTN, HQQ, and GPTQ flavours. Then it scored each one against a deterministic subset of [MicroMat-3K](https://huggingface.co/datasets/naver-iv/MicroMat-3K), and scored it only inside the uncertain alpha bands (`0.05 < α < 0.95`), because that is where a matte lives, and a thresholded IoU will happily tell you everything is fine while the edges turn to mush.
+
+Inspecting the graph made the problem pretty clear. Nearly all of the encoder's size comes from one place: 94.2% of its bytes are MatMul weights. So I could calculate the smallest the model could possibly get before trying anything. Even if I quantized every one of those weights all the way down to 4 bits (the most aggressive option I was considering) and left everything else untouched, the encoder would still be 60.47 MiB.
+
+My target was 70 MiB. In other words, only the most aggressive quantization had enough room to get me under budget. Anything less destructive was already too large.
+
+<ScatterPlot
+  title="Size against edge damage"
+  description="Every quantization I could generate, scored only where the alpha is uncertain: the part of a mask anyone can actually see."
+  goal={{ direction: "lower-left" }}
+  quadrants={{ goal: "lower-left", label: "Goal", x: 70, y: 0.005 }}
+  points={quantizationVariants}
+  absent={[{ label: "INT4 GPTQ b128", note: "fail" }]}
+  xLabel="Encoder size (MiB)"
+  yLabel="Alpha drift vs FP32"
+  formatY={(value) => value.toFixed(3)}
+  xTarget={{ label: "70 MiB budget", value: 70 }}
+  bands={[
+    { from: 0, label: "excellent", to: 0.005 },
+    { from: 0.015, label: "borderline", to: 0.03 },
+  ]}
+  footnote="INT4 GPTQ b128 never generated, so it has no point. The verdict bands are engineering gates I set for this experiment, not a perceptual standard."
+/>
+
+Every single row that reached my size target was "borderline" by my own thresholds. And when I finally got a strict-WebGPU browser harness running (no silent WASM fallback, operator and session errors recorded as failures), the actual in-browser inference came back as `browser_timeout_or_error`.
+
+Then I realized I had been treating two different cases as the same problem. For official cards, the masks never change, so I could generate them once, store them in the database, and have the app load them as needed alongside the artworks. Custom artwork was the only case that actually needed on-device mask generation, and for that I could use a lighter approach that still produced good results without requiring a heavy AI model to run in the browser.
+
+## Attempt four: local processing with vision models and SAM3
+
+Free of the browser, I went straight to the biggest thing I could run: [SAM 3](https://huggingface.co/facebook/sam3), natively, on CUDA, from a local checkpoint.
+
+SAM3 takes a text phrase. So the pipeline needed something to look at an artwork and say what was in it, and I benchmarked four lightweight vision frontends for that job:
+
+- [WD SwinV2 Tagger v3](https://huggingface.co/SmilingWolf/wd-swinv2-tagger-v3): an anime tag classifier, 46.05 ms
+- [Florence-2-base-ft](https://huggingface.co/microsoft/Florence-2-base-ft): constrained phrase extraction, 75.64 ms
+- [LFM2.5-VL-450M](https://huggingface.co/LiquidAI/LFM2.5-VL-450M): short noun phrases, 277.82 ms
+- [FastVLM-0.5B](https://huggingface.co/apple/FastVLM-0.5B): short noun phrases, 421.93 ms
+
+For visual detection, the timings were honestly fine, but just look at how absurd the results can be! Are you serious Florence-2? A freaking metallic dragon is not a "Person"!
+
+<PhraseModelReadings />
+
+Then `phrase → SAM3 → mask`, on 25 artworks, four phrase models each, on an RTX 4070 Laptop, with cached text embeddings and BF16 autocast. It worked, in the sense that it ran. End to end it took between 2.2 and 3.5 seconds per artwork depending on which phrase model fed it, all 100 runs succeeded, nothing crashed.
+
+And the masks were wrong in a way I could not do anything about.
+
+<Sam3Comparison />
+
+SAM3 is a semantic segmenter, and it is excellent at being one. Given "dragon", it finds the dragon and draws a confident boundary around the dragon. But a Yu-Gi-Oh! artwork is not a photograph of an object on a background. The lightning, the aura, and even something like a magic circle halo is sometimes part of the foreground. Asking "where is the dragon" throws away half of what a person would see as foreground, and every phrase model made this mistake differently, so I could not even fail consistently. The phrases above are the evidence: results were dirty, inconsistent, and sometimes straight up wrong. I'm quite impressed by LFM2.5-VL though. It's actually the best performer, at least in my benchmark.
+
+I tried cleaning up the result afterward. SAM3 could cut too far into the foreground while still leaving a faint halo of background behind, so I tried correcting both problems. To give the foreground some room back, I first added a hard one-pixel ring around the mask, then tried a softer version that faded out instead of ending abruptly. To get rid of the remaining background, I suppressed the weakest alpha values until the residue disappeared without affecting the solid parts of the foreground. And when the boundary itself was ragged, I passed the mask through SAM2Matting to refine the edge.
+
+<EdgeCropSheet />
+
+I even built a little browser UI to tune all of it interactively: the two ring sliders and a Photoshop-style 0-255 curve editor. I was adjusting these numbers so often that editing a config file had become the bottleneck.
+
+All of it was just cosmetic fixes for a decision that had already been made incorrectly upstream. You cannot dilate your way out of having segmented the wrong concept.
+
+## Attempt five (final): local processing with ToonOut
+
+Somewhere in the middle of the SAM3 work I added one more comparison branch, mostly for completeness, expecting it to be a footnote in the report.
+
+[ToonOut](https://huggingface.co/joelseytre/toonout) is [BiRefNet](https://github.com/ZhengPeng7/BiRefNet) (a dichotomous image segmentation architecture) fine-tuned on cartoon and anime foregrounds, and run through [its authors' fork](https://github.com/MatteoKartoon/BiRefNet) of the reference implementation. It takes no prompt. There is nothing to ask it. You hand it an image and it hands you a float alpha map.
+
+The difference in mask quality is absurd! It even manages to get the lightning and floating rocks correct. It keeps individual hairs and the tips of wings and the wisps coming off a staff. It does not need to be told what the subject is, because "the drawn subject of an illustration" is the only thing it was ever trained to find, and that is precisely the behavior I had been trying to prompt.
+
+<ToonOutComparison />
+
+There was a second surprise waiting in the same report. I had assumed the high-quality thing would be the slow thing, but it was between four and seven times faster.
+
+<BarChart
+  title="Average time to generate an alpha mask from an artwork"
+  description="Over 25 artworks on an RTX 4070 Laptop. A SAM3 bar includes its phrase model; ToonOut needs none."
+  goal={{ direction: "lower" }}
+  data={maskPipelines}
+  unit="ms"
+  format={(value) => value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+  categoryLabel="Pipeline"
+  valueLabel="Time per artwork"
+/>
+
+SAM3's soft output is a confidence map: how sure the model is that a pixel belongs to the phrase. Threshold it and you get an ugly boundary; leave it alone and the character itself is semi-transparent. ToonOut's output is coverage, opaque where the character is, soft only where the character is actually soft. That is the whole distinction between a mask and a matte, measured rather than asserted: inside the subject, SAM3's map is between 71% and 97% mid-grey, and ToonOut's is 0%.
+
+<EdgeCloseUps />
+
+Then I pointed it at everything. Inference is the cheap part (at 484 ms per artwork, the total model time for the full set is only a couple of hours), but "everything" means fetching, auditing, matching artworks to cards, re-running the ones that came back wrong, and redoing batches after I changed my mind about how they should be resampled. My laptop was busy for 4 days. I was actually worried I would fry it, so I put it right under the AC while it was working. `btop` didn't report any noticeable temperature change, but at least the chassis didn't feel like it was on the verge of melting.
+
+## Shipping fourteen thousand alpha masks
+
+A finished mask is a grayscale image, which is one of the easiest kinds of image to ruin with bad compression. So I ran the quality sweep rather than guessing: fifteen masks at the size they ship at, measuring both file size and mean absolute alpha error against the PNG original.
+
+<LineChart
+  title="Alpha error as the mask file gets smaller"
+  description="Fifteen real alpha masks, encoded at effort 10 across AVIF qualities from 100 down to 10. Each point is one setting: how much smaller it made the file, and how far it moved the alpha."
+  goal={{ direction: "lower-left" }}
+  series={[{ id: "error", label: "Mean alpha error", points: avifErrorBySize }]}
+  height={360}
+  waypoints={avifQualityWaypoints}
+  xLabel="Final compressed size compared to the original (log scale)"
+  xScale="log"
+  yLabel="Mean alpha error (%)"
+  formatX={(value) => `${value < 10 ? value.toFixed(1) : value.toFixed(0)}%`}
+  formatY={(value) => `${value.toFixed(2)}%`}
+  annotations={[{ detail: "quality 50", label: "Final decision", x: AVIF_SHIPPED_SIZE }]}
+  secondary={{ at: avifQualityAt, label: "Quality" }}
+  tableRowLimit={avifErrorBySize.length}
+/>
+
+The curve makes the trade-off pretty clear. Most of a mask is just solid black or solid white, so it compresses extremely well. By quality 80, the file is already 89% smaller than the PNG while the mean alpha error is only 0.02%.
+
+Past that point, the returns fall off quickly. Lowering the quality further saves relatively little space while the error rises much faster, and most of that error shows up around the edges, the part of the mask that actually matters visually.
+
+I ended up shipping quality 50. At that setting, the masks are 94% smaller than the PNG originals with only 0.05% mean alpha error. Pushing all the way to the bottom of the curve would save just another four percentage points, even though the mask is already tiny compared with the artwork it accompanies, while increasing the error by roughly four times.
+
+## Making every mask editable again
+
+Now that every official artwork has a pre-computed alpha mask, users still need some control when they are not happy with the result. Custom artworks need an option too: if someone wants to make a card with their own artwork, they should still be able to generate a mask for it.
+
+I already had most of the tool for that from my first attempt. What started as the Quick Selection workbench eventually became a point-based masking tool: you place plus points on what you want to keep and minus points on what you want to remove, and the segmentation engine generates a mask from them.
+
+The segmentation itself is fast. The reason it cannot replace the automatic pipeline is that someone has to place those points manually, which obviously does not scale to fourteen thousand artworks. But that is perfectly fine for its new role. If a user does not like the pre-computed mask, they can open the artwork in the masking tool and generate another one themselves.
+
+That does not mean they are directly editing the existing mask. The two masks may look quite different because they come from entirely different algorithms. What matters is that the user is no longer stuck with whatever the automatic pipeline produced: they have a way to take control of the selection.
+
+To turn the finished mask back into something the point-based tool can use, the pipeline has to choose where to place its plus and minus points. It begins with the large areas of the mask. Every foreground region gets a plus point, and every enclosed background region gets a minus point.
+
+Those first points are placed as far from the boundary as possible. For each region, the pipeline finds the centre of the largest circle that can fit entirely inside it and puts the point there. An exact Euclidean distance transform is used to find that position. This works even for long or irregular shapes, where the visual centre might otherwise end up uncomfortably close to an edge.
+
+After that, the pipeline adds more points around the boundary. For every selected location along the outline, it places one point just inside the foreground and another just outside it in the background. Farthest-point sampling decides where those pairs go, spreading them around the full outline rather than letting them cluster in one complicated section.
+
+Finally, each point gets its own pin size, from 4 to 128 pixels. The size depends on how far that point is from the opposite side of the mask, so points in open areas can be larger while points near tight boundaries stay smaller.
+
+<DotPresets />
+
+For this artwork, the pipeline generates 216 points. Packed into the format Yugilife stores, they take only 557 bytes; the same data written as readable JSON would take about 114 KB. That makes the packed version small enough to store alongside the AVIF for every artwork.
+
+So each pre-computed mask is accompanied by the points needed to recreate a similar starting selection in the interactive masking tool. The mask itself is still what Yugilife uses to render the card, while the points are only there in case the user wants to generate a different result.
+
+Generating those points is cheap enough that it never became a bottleneck. A 2048 × 2048 mask takes about three seconds on the same laptop GPU. The batch runner is also resumable and content-addressed, so restarting it skips anything that has already been processed.
+
+When a user is unhappy with an automatic mask, the masking tool therefore does not have to open with an empty selection. It can start from the generated points and give the user something useful to work from.
+
+That also gave the interactive tool from my first attempt a new purpose. It could never generate the entire dataset on its own because it depends on user input, but it works well as the manual fallback when the automatic pipeline gets something wrong. So every official artwork arrives with a mask and the points that would have made it, and the points are editable.

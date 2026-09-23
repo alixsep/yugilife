@@ -28,6 +28,11 @@ The first release accepts this transport format:
   },
   "files": {
     "artwork": "./artwork.png"
+  },
+  "presentationOverrides": {
+    "artworkTransforms": {
+      "artwork": { "scale": 1.5, "x": 0, "y": 0, "mode": "full-art" }
+    }
   }
 }
 ```
@@ -35,8 +40,9 @@ The first release accepts this transport format:
 `template` resolves an exact or locally installed official template. Omitting it uses the Series 10
 template packaged with `yugilife-templates`; `--use-default-template` makes that choice explicit.
 File references are resolved relative to the input JSON file. A file key matching an image card
-field supplies that field; other keys are passed as semantic asset overrides. SVG output uses
-outlined text by default.
+field supplies that field; other keys are passed as semantic asset overrides. Optional
+`presentationOverrides` is passed through to core for explicit crop, full-art, layer, mask, preset,
+and typography choices. SVG output uses outlined text by default.
 
 The output extension selects SVG, PNG, JPEG (`.jpg` or `.jpeg`), or WebP. Raster output defaults to
 the template's native dimensions and lossless PNG. Use exactly one of `--scale`, `--width`, or
@@ -56,4 +62,4 @@ small browser-side renderer smoke check. Install the browser during setup with t
 `pnpm setup:browsers` command, or with the browser package's package-manager install lifecycle.
 
 For an installed package, run `yugilife-cli doctor` and `yugilife-cli render ...` directly. From this
-workspace, build the package first with `pnpm --filter yugilife-cli build`.
+workspace, run `pnpm build` before invoking the CLI so its workspace dependencies are built.

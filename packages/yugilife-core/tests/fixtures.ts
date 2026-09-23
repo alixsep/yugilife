@@ -1,28 +1,11 @@
 import type {
   AssetSourceMap,
-  CardData,
   CardFieldDefinition,
   CardTemplate,
   CardTemplateBundle,
   ColorPresetCollection,
   LayerDefinition,
 } from "../src"
-
-export const SAMPLE_CARD: CardData = {
-  name: "Sample Card Title",
-  attribute: "DARK",
-  cardVariant: "effect",
-  level: 8,
-  spellTrapType: "normal",
-  types: ["Dragon", "Effect"],
-  description: ["A test card rendered through a synthetic template fixture."],
-  attack: "2500",
-  defense: "2000",
-  cardCode: "CARD-EN001",
-  serialNumber: "12345678",
-  edition: "1st Edition",
-  copyright: "TEST",
-}
 
 export const NAME_FIELD: CardFieldDefinition = {
   defaultValue: "Test card",

@@ -1,0 +1,82 @@
+import inventory from "./assets/inventory.webp"
+import { FullArtGallery } from "./full-art-gallery"
+import { StickerGallery } from "./sticker-gallery"
+
+The convenience of Yugilife users is always a priority to me. There are more than 14,000 official Yu-Gi-Oh! cards, and I don't want anyone wasting time filling in fields when it can be automated.
+
+Yugilife now has a searchable database of 14,000+ real Yu-Gi-Oh! cards, and picking a card from that database fills in every field and downloads its official artwork for you. There is also support for the full art layout, along with an artwork masking workspace, per-field text color and outline, and stickers.
+
+## Full art
+
+Yu-Gi-Oh! got a full art layout in 2026. Konami calls it Overframe in the OCG and extended art in the TCG. The artwork covers the whole card instead of sitting in a box, and the frame, the name, the effect box, and the stats sit on top.
+
+<FullArtGallery />
+
+The artwork mask is the main requirement for full art because it separates the foreground from the background, letting the foreground extend beyond the artwork frame while the rest stays behind it. Official artworks come with precomputed masks from Yugilife's database, and users can still adjust them in the editor, or create a mask from scratch for custom artwork. How those precomputed masks are produced is covered in [a separate post](/blog/generating-alpha-masks-for-yugioh-artworks).
+
+## Autocomplete for official cards
+
+Yugilife now ships with a database of almost every official card. You search a name on the Build page and pick the one you want.
+
+Picking one does everything at once. It fills the name, the type line, the description, the ATK and DEF or the Link rating and arrows, the attribute, the level or rank or scales, the set code, the passcode. Then it downloads that card's official artwork and its alpha mask, and puts them on the card. If a card has more than one artwork, you get to choose between them.
+
+The catalog is one compressed binary file. It is downloaded once, verified against a SHA-256 of both the compressed artifact and the decoded text, stored in your browser, and parsed inside a Web Worker so it does not block the UI. Searching also happens in that worker. If a newer catalog is published, the app checks for it and updates; if you are offline, the saved one still works.
+
+The artworks themselves are not in the catalog or the repository. They are fetched only when you pick a card, as two separate bundles: the image and the alpha. Each bundle is verified, and every asset inside it is checked against its own SHA-256 before anything is drawn.
+
+## Inventory
+
+The Inventory has been redesigned. It is a gallery of your saved cards, and the card you are on carries its own controls: edit, duplicate, delete, with its template and the date you last changed it underneath.
+
+<figure>
+  <img
+    src={inventory}
+    alt="The redesigned Inventory with the selected card's controls attached to it."
+  />
+</figure>
+
+The Inventory can now regenerate all of its previews in one pass, which matters after a template change: your saved cards were rendered with the old template, and now they are not. It also migrates each card to the current template as it goes. The update reports its progress where you started it, and you can stop it at any point; the cards it already finished keep their new previews.
+
+## An artwork masking workspace
+
+Automatic masks are not always right. Sometimes the model misses a corner, keeps a piece of background glow, or decides the magic circle behind the character is background. And sometimes you are not using an official artwork at all: you are using your own drawing, a render, or something else you want to use.
+
+The new masking workspace gives you two ways to create a mask. If you already have an alpha mask from another editor or tool, you can upload it as a grayscale image and Yugilife will use it directly to separate the foreground from the background. Otherwise, you can use dot masking: place plus points on what you want to keep and minus points on what you want to remove, set their sizes, and let the segmentation engine work out the coverage from them.
+
+It is an interactive selection tool, not a "remove background" button, so you stay in control of what is kept. That is deliberate: the masking workspace does not depend on any external APIs.
+
+On top of whichever mask you end up with, there is mask anti-aliasing and a mask glow. Artwork zoom and position controls are also shared between the normal and full art layers.
+
+All the heavy work runs in dedicated workers using checked-in WebAssembly kernels. The segmentation graph, smoothing, glow, and PNG encoding never run on the UI thread. Live previews are coalesced, so a fast series of edits does not queue up an equally fast series of renders. And if a mask is still being computed, saving or exporting will wait rather than quietly writing a half-finished result.
+
+## Text color and outline
+
+Every text field on the card can now have its own color, outline color, and outline width, with a reset to return to the template defaults.
+
+This is especially important for full art cards, where the card name can sit directly over the artwork. Konami uses white text with a black outline for these cards so the name remains readable regardless of what is behind it.
+
+## Stickers (Security foil)
+
+Yu-Gi-Oh! cards have a small security foil in the bottom-right corner, commonly known as the Eye of Anubis hologram. Yugilife now includes it as well, with thirteen variants to choose from.
+
+<StickerGallery />
+
+## Jump to a field by double-clicking it
+
+Double-click any text on the card preview and the editor focuses that field's input, scrolling it into view if it is off screen. Double-clicking anywhere else on the preview resets the zoom and position.
+
+## Turning off the custom cursor
+
+Yugilife draws its own cursor: a ring that reacts to whatever is under it. Not everyone wants that, so the settings menu in the header now has a Cursor option with two choices, Custom and Native. Native hands the pointer back to your operating system, and the choice is remembered in your browser.
+
+It was already off on touch devices and for anyone who asks for reduced motion. This is the switch for everyone else.
+
+## The rest
+
+Some of the smaller things:
+
+- Advanced mode now groups its settings into categories by what each control acts on, and every category says how many of its choices depart from the template.
+- Advanced mode also gained diagnostics: exact bounding boxes, text interaction boxes, original textures, alpha mask export, and render logging. Useful for debugging and calibrating templates.
+- Sliders support a non-linear scale where the small end of a range needs finer control, like the 4 to 128 pixel pin size in the masking workspace.
+- Color controls pick a readable foreground automatically by contrast rather than by guessing.
+- Release posts now carry a flag and a link to their publishing commit, and the blog has pagination.

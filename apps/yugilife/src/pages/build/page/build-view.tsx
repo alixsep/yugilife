@@ -6,9 +6,11 @@ import { Link } from "react-router"
 import { AppNavigation } from "@/components/app-navigation"
 import { Button } from "@/components/ui/button"
 import { TabsSubtle, TabsSubtleItem, TabsSubtlePanel } from "@/components/ui/tabs-subtle"
+import { useShape } from "@/lib/shape-context"
 import { createZipBlob } from "@/lib/zip"
 
 import { EditorSidebar } from "../editor/components/editor-sidebar"
+import { artworkEditorConfig, shouldRenderArtworkWorkspace } from "../editor/model/editor-config"
 import { ReferenceComparison } from "../references/reference-comparison"
 import { TemplateManager } from "../templates/template-manager"
 
@@ -18,6 +20,7 @@ import { CardPreview } from "./card-preview"
 import { ExportToolbar } from "./export-toolbar"
 import { editorTemplateCatalog } from "./use-build-controller"
 
+import type { ArtworkEditorTool } from "../editor/components/artwork-editor"
 import type { useBuildController } from "./use-build-controller"
 import type { CardRenderMetadata } from "@/components/card"
 import type { RenderManifest } from "yugilife-core"
@@ -27,6 +30,8 @@ interface BuildViewProps {
 }
 
 export function BuildView({ controller }: BuildViewProps) {
+  const shape = useShape()
+  const artworkConfig = artworkEditorConfig(controller.activeEditorTemplate)
   const [workflow, setWorkflow] = useState(0)
   const renderMetadata = useRef<CardRenderMetadata | undefined>(undefined)
   const showExactBoundsRef = useRef(false)
@@ -38,6 +43,9 @@ export function BuildView({ controller }: BuildViewProps) {
   const [exactAnalysisFailure, setExactAnalysisFailure] = useState<CardRenderMetadata>()
   const [showExactBounds, setShowExactBounds] = useState(false)
   const [showTextInteractionBounds, setShowTextInteractionBounds] = useState(false)
+  const [artworkPinSize, setArtworkPinSize] = useState(24)
+  const [artworkSelectedPinId, setArtworkSelectedPinId] = useState<number | null>(null)
+  const [artworkTool, setArtworkTool] = useState<ArtworkEditorTool>("select")
   const [alphaExportBusy, setAlphaExportBusy] = useState(false)
   const [alphaExportError, setAlphaExportError] = useState<string>()
   const {
@@ -86,6 +94,11 @@ export function BuildView({ controller }: BuildViewProps) {
     exactAnalysis?.metadata !== exactRequestMetadata &&
     exactAnalysisFailure !== exactRequestMetadata,
   )
+
+  const changeArtworkTool = useCallback((tool: ArtworkEditorTool) => {
+    setArtworkTool(tool)
+    if (tool !== "select") setArtworkSelectedPinId(null)
+  }, [])
 
   function changeExactBounds(visible: boolean) {
     showExactBoundsRef.current = visible
@@ -219,7 +232,9 @@ export function BuildView({ controller }: BuildViewProps) {
   if (inventoryError) {
     return (
       <main className="grid min-h-dvh place-items-center p-6">
-        <div className="border-border bg-card shadow-surface-2 grid max-w-md gap-3 rounded-xl border p-5">
+        <div
+          className={`${shape.container} border-border bg-card shadow-surface-2 grid max-w-md gap-3 border p-5`}
+        >
           <h1 className="text-title font-medium">Could not open this card</h1>
           <p className="text-body text-destructive" role="alert">
             {inventoryError}
@@ -249,7 +264,7 @@ export function BuildView({ controller }: BuildViewProps) {
             documentTransferError ||
             alphaExportError) && (
             <div
-              className="bg-destructive-light text-destructive text-body rounded-lg px-3 py-2"
+              className={`${shape.bg} bg-destructive-light text-destructive text-body px-3 py-2`}
               role="alert"
             >
               {newCardError ??
@@ -275,13 +290,21 @@ export function BuildView({ controller }: BuildViewProps) {
             </TabsSubtle>
           </div>
 
-          <div className="border-border bg-card shadow-surface-1 min-h-0 flex-1 overflow-y-auto rounded-xl border">
+          <div
+            className={`${shape.container} border-border bg-card shadow-surface-1 min-h-0 flex-1 overflow-y-auto border`}
+          >
             <TabsSubtlePanel idPrefix="build-workflow" index={0} selectedIndex={workflow}>
               <EditorSidebar
                 alphaExportBusy={alphaExportBusy}
                 alphaExportReady={templateBundleMatchesSelection}
+                artworkPinSize={artworkPinSize}
+                artworkSelectedPinId={artworkSelectedPinId}
+                artworkTool={artworkTool}
                 controller={controller}
                 exactBoundsBusy={exactBoundsBusy}
+                onArtworkPinSizeChange={setArtworkPinSize}
+                onArtworkSelectedPinChange={setArtworkSelectedPinId}
+                onArtworkToolChange={changeArtworkTool}
                 showExactBounds={showExactBounds}
                 showTextInteractionBounds={showTextInteractionBounds}
                 onDownloadAlphaChannels={() => void downloadAlphaChannels()}
@@ -352,6 +375,29 @@ export function BuildView({ controller }: BuildViewProps) {
         </div>
         <div className="min-h-0">
           <CardPreview
+            artworkWorkspace={
+              shouldRenderArtworkWorkspace(
+                controller.card.artwork,
+                controller.presentationOverrides.artworkTransforms?.[artworkConfig.transformId],
+              )
+                ? {
+                    artwork: controller.card.artwork,
+                    mask: controller.artworkMask,
+                    maskChannel: artworkConfig.maskChannel,
+                    processedMaskBusy: controller.processedArtworkBusy,
+                    getProcessedMaskPixels: controller.getProcessedArtworkMaskPixels,
+                    processedMaskRevision: controller.processedArtworkRevision,
+                    artworkEffectsError: controller.artworkEffectsError,
+                    onRetryArtworkEffects: controller.retryArtworkEffects,
+                    onMaskChange: controller.setArtworkMask,
+                    onMaskComplete: controller.completeArtworkMask,
+                    onSelectedPinChange: setArtworkSelectedPinId,
+                    pinSize: artworkPinSize,
+                    selectedPinId: artworkSelectedPinId,
+                    tool: artworkTool,
+                  }
+                : undefined
+            }
             controller={controller}
             manifest={showExactBounds ? exactAnalysis?.manifest : undefined}
             showExactBounds={showExactBounds}

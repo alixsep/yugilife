@@ -1,6 +1,8 @@
 export { MapAssetResolver } from "./asset-resolver.js"
 export type {
   ArtworkLayer,
+  ArtworkTransform,
+  ArtworkTransformOverrides,
   AssetResolver,
   AssetSource,
   AssetSourceMap,
@@ -33,6 +35,8 @@ export type {
   LayerVisibility,
   PngCardExportOptions,
   PngExportOptions,
+  PreparedTexturePayload,
+  PreparedTextures,
   PresentationOverrides,
   RasterCardExportOptions,
   RasterExportOptions,
@@ -97,12 +101,15 @@ export type {
   TextFormat,
   TextLayer,
   TextPosition,
+  TextStroke,
   TextTypography,
   TextTypographyOverrides,
   TextTypographyPatch,
+  TexturePreparation,
+  TransformModeCondition,
   VectorRenderSegment,
 } from "./contracts/index.js"
-export { resolveCardPresentation } from "./presentation.js"
+export { matchesPresentationGate, resolveCardPresentation } from "./presentation.js"
 export {
   exportCardToImage,
   exportCardToPng,

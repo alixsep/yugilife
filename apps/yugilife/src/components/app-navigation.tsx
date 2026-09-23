@@ -1,23 +1,20 @@
 import { Archive, BookOpen, Hammer } from "lucide-react"
 import { Link, NavLink } from "react-router"
 
-import { useAccentColorContext } from "@/lib/accent-color-context"
-import { DEFAULT_ACCENT_COLOR } from "@/lib/preferences-store"
 import { useSize } from "@/lib/size-context"
+import { cn } from "@/lib/utils"
 
+import { DonateButton } from "./donate/donate-button"
 import { Button } from "./ui/button"
-import { ColorPickerPopover } from "./ui/color-picker"
 import { Tooltip } from "./ui/tooltip"
+import { AppearanceMenu } from "./appearance-menu"
 import { LogoMark } from "./logo-mark"
-import { ThemeSelector } from "./theme-selector"
 
 import type { MouseEvent, SVGProps } from "react"
 
 interface AppNavigationProps {
   onBeforeNavigate?: (() => boolean) | undefined
 }
-
-const ACCENT_SWATCHES = [DEFAULT_ACCENT_COLOR, "#6B97FF", "#D66BFF", "#FF8A65", "#F5C85B"]
 
 function GithubIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -38,10 +35,12 @@ function GithubIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 export function AppNavigation({ onBeforeNavigate }: AppNavigationProps = {}) {
-  const { accentColor, setAccentColor } = useAccentColorContext()
   const sizeClasses = useSize()
   const navClass = ({ isActive }: { isActive: boolean }) =>
-    `text-muted-foreground hover:text-foreground flex size-8 items-center justify-center transition-colors lg:h-8 lg:w-auto lg:gap-1 lg:px-2 ${isActive ? "text-foreground" : ""}`
+    cn(
+      `text-muted-foreground hover:text-(--user-accent) flex ${sizeClasses.control} aspect-square items-center justify-center transition-colors lg:aspect-auto lg:w-auto lg:gap-1 lg:px-2`,
+      isActive && "text-foreground",
+    )
   const guardNavigation = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onBeforeNavigate && !onBeforeNavigate()) event.preventDefault()
   }
@@ -50,69 +49,46 @@ export function AppNavigation({ onBeforeNavigate }: AppNavigationProps = {}) {
     <header className="relative mx-auto flex h-12 w-full max-w-[1920px] shrink-0 items-center justify-between px-3 sm:px-5">
       <Link
         to="/"
-        className="text-foreground flex items-center gap-2"
+        className={`text-foreground flex items-center ${sizeClasses.gap}`}
         aria-label="Yugilife home"
         onClick={guardNavigation}
       >
         <LogoMark className="size-5" />
-        <span className="hidden text-[13px] font-medium tracking-[0.22em] md:inline">YUGILIFE</span>
+        <span className={`${sizeClasses.body} hidden font-medium tracking-[0.22em] md:inline`}>
+          YUGILIFE
+        </span>
       </Link>
 
       <nav
-        className="absolute left-1/2 flex -translate-x-1/2 items-center gap-0.5"
+        className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1"
         aria-label="Primary navigation"
       >
         <NavLink
           to="/inventory"
           aria-label="Inventory"
-          title="Inventory"
           className={navClass}
           onClick={guardNavigation}
         >
           <Archive size={sizeClasses.icon} strokeWidth={1.5} />
-          <span className="hidden text-[12px] lg:inline">Inventory</span>
+          <span className={`${sizeClasses.caption} hidden lg:inline`}>Inventory</span>
         </NavLink>
-        <NavLink
-          to="/build"
-          aria-label="Build"
-          title="Build"
-          className={navClass}
-          onClick={guardNavigation}
-        >
+        <NavLink to="/build" aria-label="Build" className={navClass} onClick={guardNavigation}>
           <Hammer size={sizeClasses.icon} strokeWidth={1.5} />
-          <span className="hidden text-[12px] lg:inline">Build</span>
+          <span className={`${sizeClasses.caption} hidden lg:inline`}>Build</span>
         </NavLink>
-        <NavLink
-          to="/blog"
-          aria-label="Blog"
-          title="Blog"
-          className={navClass}
-          onClick={guardNavigation}
-        >
+        <NavLink to="/blog" aria-label="Blog" className={navClass} onClick={guardNavigation}>
           <BookOpen size={sizeClasses.icon} strokeWidth={1.5} />
-          <span className="hidden text-[12px] lg:inline">Blog</span>
+          <span className={`${sizeClasses.caption} hidden lg:inline`}>Blog</span>
         </NavLink>
       </nav>
 
-      <div className="flex items-center gap-1">
-        <div className="hidden items-center gap-1 sm:flex">
-          <ColorPickerPopover
-            value={accentColor}
-            onValueChange={setAccentColor}
-            defaultValue={DEFAULT_ACCENT_COLOR}
-            swatches={ACCENT_SWATCHES}
-            title="Accent color"
-            triggerLabel="Accent"
-            triggerShowValue={false}
-            size="compact"
-            triggerClassName="border-0 hover:bg-transparent"
-          />
-          <ThemeSelector />
-        </div>
+      <div className="-mr-2.5 flex items-center gap-1">
+        <DonateButton />
+        <AppearanceMenu />
         <Tooltip content="GitHub" side="bottom" sideOffset={10}>
-          <Button asChild variant="ghost" size="icon" aria-label="Open Yugilife on GitHub">
+          <Button asChild variant="text" size="icon" aria-label="Open Yugilife on GitHub">
             <a href="https://github.com/alixsep/yugilife" target="_blank" rel="noreferrer">
-              <GithubIcon className="size-5" />
+              <GithubIcon />
             </a>
           </Button>
         </Tooltip>

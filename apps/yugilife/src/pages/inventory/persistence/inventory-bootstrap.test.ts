@@ -19,7 +19,6 @@ function snapshot(id: string, title = "Starter card"): InventorySeedSnapshot {
       cardId: id,
       cardRevision: 1,
       image: new Blob(["preview"], { type: "image/png" }),
-      renderFingerprint: `${document.templateId}@${document.templateVersion}:preview-v1`,
     },
   }
 }

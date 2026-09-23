@@ -43,7 +43,11 @@ export interface InventorySeedSnapshot {
 }
 
 interface PersistedInventoryCard extends Omit<InventoryCard, "document"> {
-  document: Omit<EditorDocumentState, "card"> & {
+  document: Omit<EditorDocumentState, "artworkMask" | "card"> & {
+    artworkMask: Omit<EditorDocumentState["artworkMask"], "automaticMask" | "manualMask"> & {
+      automaticMask?: CardAssetReference
+      manualMask?: CardAssetReference
+    }
     card: Record<string, CardFieldValue | CardAssetReference>
   }
 }
@@ -100,6 +104,12 @@ function referencedAssetIds(cards: Iterable<PersistedInventoryCard>) {
     Object.values(card.document.card).forEach((value) => {
       if (isAssetReference(value)) referenced.add(value.id)
     })
+    for (const value of [
+      card.document.artworkMask?.automaticMask,
+      card.document.artworkMask?.manualMask,
+    ]) {
+      if (isAssetReference(value)) referenced.add(value.id)
+    }
   }
   return referenced
 }
@@ -191,16 +201,33 @@ function validatePersistedCard(record: unknown): record is PersistedInventoryCar
 
 function persistDocument(document: EditorDocumentState) {
   const assets: StoredCardAsset[] = []
+  const persistAsset = (value: Blob | undefined) => {
+    if (!value) return undefined
+    const id = knownAssetIds.get(value) ?? createId()
+    knownAssetIds.set(value, id)
+    assets.push({ id, value })
+    return { format: assetReferenceFormat, id } satisfies CardAssetReference
+  }
   const card = Object.fromEntries(
     Object.entries(document.card).map(([field, value]) => {
       if (!(value instanceof Blob)) return [field, value]
-      const id = knownAssetIds.get(value) ?? createId()
-      knownAssetIds.set(value, id)
-      assets.push({ id, value })
-      return [field, { format: assetReferenceFormat, id } satisfies CardAssetReference]
+      return [field, persistAsset(value)!]
     }),
   ) as PersistedInventoryCard["document"]["card"]
-  return { assets, document: { ...document, card } }
+  const artworkMask = {
+    ...(document.artworkMask.catalogSource
+      ? { catalogSource: document.artworkMask.catalogSource }
+      : {}),
+    mode: document.artworkMask.mode,
+    points: document.artworkMask.points,
+    ...(document.artworkMask.automaticMask
+      ? { automaticMask: persistAsset(document.artworkMask.automaticMask)! }
+      : {}),
+    ...(document.artworkMask.manualMask
+      ? { manualMask: persistAsset(document.artworkMask.manualMask)! }
+      : {}),
+  }
+  return { assets, document: { ...document, artworkMask, card } }
 }
 
 async function hydrateDocument(
@@ -216,7 +243,36 @@ async function hydrateDocument(
       return [field, asset] as const
     }),
   )
-  return { ...document, card: Object.fromEntries(entries) as CardData }
+  const hydrateMask = async (value: CardAssetReference | undefined) => {
+    if (!value) return undefined
+    const asset = await readAsset(value.id)
+    if (!asset) throw new Error(`Card artwork mask asset "${value.id}" is missing.`)
+    knownAssetIds.set(asset, value.id)
+    return asset
+  }
+  const [storedAutomaticMask, manualMask] = await Promise.all([
+    hydrateMask(document.artworkMask?.automaticMask),
+    hydrateMask(document.artworkMask?.manualMask),
+  ])
+  let automaticMask = storedAutomaticMask
+  const hydratedCard = Object.fromEntries(entries) as CardData
+  if (!automaticMask && !manualMask && hydratedCard.artworkOverlay instanceof Blob) {
+    automaticMask = hydratedCard.artworkOverlay
+    hydratedCard.artworkOverlay = ""
+  }
+  return {
+    ...document,
+    artworkMask: {
+      ...(document.artworkMask?.catalogSource
+        ? { catalogSource: document.artworkMask.catalogSource }
+        : {}),
+      mode: document.artworkMask?.mode ?? "automatic",
+      points: document.artworkMask?.points ?? [],
+      ...(automaticMask ? { automaticMask } : {}),
+      ...(manualMask ? { manualMask } : {}),
+    },
+    card: hydratedCard,
+  }
 }
 
 async function indexedDbAsset(id: string) {
@@ -504,15 +560,7 @@ export async function duplicateInventoryCard(id: string) {
     updatedAt: now,
   }
   const preview = await readInventoryPreview(source.id)
-  if (
-    preview &&
-    inventoryPreviewMatchesCard(preview, {
-      id: source.id,
-      revision: source.revision,
-      templateId: source.document.templateId,
-      templateVersion: source.document.templateVersion,
-    })
-  ) {
+  if (preview && inventoryPreviewMatchesCard(preview, source)) {
     await saveInventoryCardSnapshot(duplicate, {
       ...preview,
       cardId: duplicate.id,
@@ -562,22 +610,5 @@ export async function readInventoryPreview(id: string) {
   } catch {
     switchToMemoryStorage()
     return memoryPreviews.get(id)
-  }
-}
-
-export async function storeInventoryPreview(preview: InventoryCardPreview) {
-  if (storageMode === "memory") {
-    memoryPreviews.set(preview.cardId, preview)
-    return
-  }
-  try {
-    const database = await openDatabase()
-    const transaction = database.transaction(previewStore, "readwrite")
-    transaction.objectStore(previewStore).put(preview)
-    await transactionComplete(transaction)
-    memoryPreviews.set(preview.cardId, preview)
-  } catch {
-    switchToMemoryStorage()
-    memoryPreviews.set(preview.cardId, preview)
   }
 }

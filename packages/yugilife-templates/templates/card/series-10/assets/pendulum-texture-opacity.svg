@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="813" height="1185" viewBox="0 0 813 1185">
+  <defs>
+    <linearGradient
+      id="texture-opacity"
+      gradientUnits="userSpaceOnUse"
+      x1="406.5"
+      y1="312"
+      x2="406.5"
+      y2="1115"
+    >
+      <stop offset="0.69727635" stop-color="#e6e6e6" />
+      <stop offset="1" stop-color="#ffffff" />
+    </linearGradient>
+  </defs>
+  <rect width="813" height="1185" fill="#ffffff" />
+  <rect x="55" y="212" width="703" height="903" fill="url(#texture-opacity)" />
+</svg>

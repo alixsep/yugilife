@@ -40,10 +40,15 @@ Given("I open the Salamangreat card builder", async ({ page }) => {
   await page.goto("/inventory")
   await expect(page.getByRole("heading", { exact: true, name: "Inventory" })).toBeVisible()
   await page.getByRole("button", { name: /^Salamangreat Violet Chimera/ }).click()
+  // The gallery no longer repeats the card's name in its dock: the settled card says it is the
+  // selected one, and its own controls appear alongside it.
   await expect(
-    page.getByRole("heading", { exact: true, name: "Salamangreat Violet Chimera" }),
+    page.getByRole("button", { exact: true, name: "Salamangreat Violet Chimera, selected" }),
   ).toBeVisible()
-  await page.getByRole("link", { exact: true, name: "Edit card" }).click()
+  // The previous card's controls answer to "Edit" until they finish fading out.
+  const editCard = page.getByRole("link", { exact: true, name: "Edit" })
+  await expect(editCard).toHaveCount(1)
+  await editCard.click()
   await expect(page.locator('[data-template="card/series-10"] svg').first()).toBeVisible()
 })
 
@@ -76,7 +81,8 @@ Then("the inventory card {string} has a preview", async ({ page }, name: string)
 })
 
 When("I duplicate the selected inventory card", async ({ page }) => {
-  await page.getByRole("button", { name: "Duplicate" }).click()
+  await page.getByRole("button", { exact: true, name: "Duplicate" }).click()
+  await page.getByRole("button", { exact: true, name: "Duplicate card" }).click()
 })
 
 When("I change the card name to {string}", async ({ page }, value: string) => {

@@ -53,7 +53,7 @@ describe("ordered render segments", () => {
   it("applies semantic frame presentation before explicit render overrides", async () => {
     const observations: { id: string; frame: string | undefined; visible: boolean }[] = []
     const rendered = await renderCard(
-      { linkRating: 1, monsterFrame: "link", name: "Link card" },
+      { layout: "featured", name: "Featured document", priority: 1 },
       {
         layers: { frameTexture: true },
         presetOverrides: { frame: "manual-frame" },
@@ -74,31 +74,31 @@ describe("ordered render segments", () => {
             cardFields: [
               NAME_FIELD,
               {
-                defaultValue: "link",
+                defaultValue: "featured",
                 kind: "text",
-                label: "Monster frame",
-                name: "monsterFrame",
-                options: ["link"],
+                label: "Layout",
+                name: "layout",
+                options: ["featured"],
                 required: true,
               },
-              { kind: "number", label: "Link rating", max: 8, min: 1, name: "linkRating" },
+              { kind: "number", label: "Priority", max: 8, min: 1, name: "priority" },
             ],
             layers: [
               { defaultVisible: false, id: "frameTexture", kind: "observed" },
-              { defaultVisible: false, id: "linkFrame", kind: "observed" },
+              { defaultVisible: false, id: "featuredFrame", kind: "observed" },
             ],
             presentationRules: [
               {
-                id: "link-frame",
-                layerVisibility: { frameTexture: false, linkFrame: true },
+                id: "featured-frame",
+                layerVisibility: { featuredFrame: true, frameTexture: false },
                 presets: { frame: "automatic-frame" },
-                when: { equals: "link", path: "monster.frame" },
+                when: { equals: "featured", path: "document.layout" },
               },
             ],
             semanticBindings: {
               bindings: [
-                { path: "kind", source: { value: "monster" } },
-                { path: "monster.frame", source: { field: "monsterFrame" } },
+                { path: "kind", source: { value: "document" } },
+                { path: "document.layout", source: { field: "layout" } },
               ],
             },
           }),
@@ -109,14 +109,14 @@ describe("ordered render segments", () => {
     expect(rendered.presentation.presets).toStrictEqual({ frame: "automatic-frame" })
     expect(observations).toStrictEqual([
       { frame: "manual-frame", id: "frameTexture", visible: true },
-      { frame: "manual-frame", id: "linkFrame", visible: true },
+      { frame: "manual-frame", id: "featuredFrame", visible: true },
     ])
   })
 
   it("passes declarative layer asset selections to renderers", async () => {
     const observations: string[] = []
     await renderCard(
-      { monsterFrame: "xyz", name: "XYZ card" },
+      { layout: "featured", name: "Featured document" },
       {
         assets: { "base.asset": "base", "selected.asset": "selected" },
         layerRenderers: {
@@ -132,11 +132,11 @@ describe("ordered render segments", () => {
             cardFields: [
               NAME_FIELD,
               {
-                defaultValue: "xyz",
+                defaultValue: "featured",
                 kind: "text",
-                label: "Monster frame",
-                name: "monsterFrame",
-                options: ["xyz"],
+                label: "Layout",
+                name: "layout",
+                options: ["featured"],
                 required: true,
               },
             ],
@@ -151,12 +151,12 @@ describe("ordered render segments", () => {
             presentationRules: [
               {
                 assetSelections: { frameTexture: "selected.asset" },
-                id: "xyz-frame",
-                when: { equals: "xyz", path: "monster.frame" },
+                id: "featured-frame",
+                when: { equals: "featured", path: "document.layout" },
               },
             ],
             semanticBindings: {
-              bindings: [{ path: "monster.frame", source: { field: "monsterFrame" } }],
+              bindings: [{ path: "document.layout", source: { field: "layout" } }],
             },
           }),
         ),
@@ -175,7 +175,7 @@ describe("ordered render segments", () => {
       },
     }
     await renderCard(
-      { monsterFrame: "xyz", name: "XYZ card" },
+      { layout: "featured", name: "Featured document" },
       {
         assets: { "marker.asset": "marker" },
         layerRenderers: {
@@ -187,11 +187,11 @@ describe("ordered render segments", () => {
             cardFields: [
               NAME_FIELD,
               {
-                defaultValue: "xyz",
+                defaultValue: "featured",
                 kind: "text",
-                label: "Monster frame",
-                name: "monsterFrame",
-                options: ["xyz"],
+                label: "Layout",
+                name: "layout",
+                options: ["featured"],
                 required: true,
               },
             ],
@@ -205,13 +205,13 @@ describe("ordered render segments", () => {
             ],
             presentationRules: [
               {
-                id: "xyz-marker-region",
+                id: "featured-marker-region",
                 layerRegions: { marker: { height: 20, width: 30, x: 4, y: 5 } },
-                when: { equals: "xyz", path: "monster.frame" },
+                when: { equals: "featured", path: "document.layout" },
               },
             ],
             semanticBindings: {
-              bindings: [{ path: "monster.frame", source: { field: "monsterFrame" } }],
+              bindings: [{ path: "document.layout", source: { field: "layout" } }],
             },
           }),
         ),

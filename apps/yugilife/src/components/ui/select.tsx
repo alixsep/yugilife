@@ -270,7 +270,7 @@ const SelectTrigger = forwardRef<HTMLButtonElement, SelectTriggerProps>(
             triggerVariants({ variant }),
             sizeClasses.control,
             sizeClasses.text,
-            sizeClasses.px,
+            sizeClasses.pxStart,
             sizeClasses.gap,
             "w-full max-w-full min-w-0",
             shape.input,
@@ -296,11 +296,18 @@ const SelectTrigger = forwardRef<HTMLButtonElement, SelectTriggerProps>(
             />
           </span>
 
-          <ChevronDown
-            className="text-muted-foreground group-hover:text-foreground shrink-0 transition-colors duration-80"
-            size={sizeClasses.icon}
-            strokeWidth={2}
-          />
+          <span
+            className={cn(
+              "flex aspect-square shrink-0 items-center justify-center",
+              sizeClasses.control,
+            )}
+          >
+            <ChevronDown
+              className="text-muted-foreground group-hover:text-foreground transition-colors duration-80"
+              size={sizeClasses.icon}
+              strokeWidth={2}
+            />
+          </span>
         </SelectPrimitive.Trigger>
         {error && <span className={cn("text-destructive pl-3", sizeClasses.caption)}>{error}</span>}
       </div>

@@ -61,6 +61,14 @@ const suggestedField: CardFieldDefinition = {
   ],
 }
 
+const stickerField: CardFieldDefinition = {
+  defaultValue: "none",
+  kind: "text",
+  label: "Sticker",
+  name: "sticker",
+  options: ["none", "sticker-1", "sticker-2"],
+}
+
 const passcodeField: CardFieldDefinition = {
   kind: "text",
   label: "Passcode",
@@ -152,7 +160,8 @@ describe("CardFieldInput", () => {
     })
 
     expect(createObjectURL).toHaveBeenCalledWith(artwork)
-    expect(container.textContent).toContain("Stored image")
+    expect(container.querySelector('button[aria-label="Download"]')).not.toBeNull()
+    expect(container.querySelector('button[aria-label="Remove"]')).not.toBeNull()
 
     act(() => root.unmount())
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:stored-artwork")
@@ -355,6 +364,36 @@ describe("CardFieldInput", () => {
 
     expect(container.querySelector("textarea")?.maxLength).toBe(-1)
     expect(container.textContent).not.toContain("Visible characters")
+
+    act(() => root.unmount())
+  })
+  it("does not add a clearing row to a field that declares its own None option", async () => {
+    reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
+    const container = document.createElement("div")
+    document.body.append(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(<CardFieldInput field={stickerField} onChange={vi.fn()} value="none" />)
+    })
+
+    const trigger = container.querySelector("button") as HTMLButtonElement
+    trigger.hasPointerCapture = () => false
+    trigger.setPointerCapture = () => {}
+    trigger.releasePointerCapture = () => {}
+    await act(async () => {
+      trigger.dispatchEvent(
+        new MouseEvent("pointerdown", { bubbles: true, button: 0, cancelable: true }),
+      )
+      trigger.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }))
+      await Promise.resolve()
+    })
+
+    const labels = Array.from(document.querySelectorAll("[data-proximity-index]")).map((item) =>
+      item.textContent?.trim(),
+    )
+    expect(labels.filter((entry) => entry === "None")).toHaveLength(1)
+    expect(labels).toEqual(["None", "Sticker 1", "Sticker 2"])
 
     act(() => root.unmount())
   })

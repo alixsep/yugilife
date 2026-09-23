@@ -11,32 +11,57 @@ import {
   plainTextFromRichText,
   resolveCardPresentation,
   resolveRasterOutputDimensions,
+  validateCardData,
 } from "yugilife-core"
 import { DEFAULT_TEMPLATE_ID, getOfficialTemplate, TEMPLATE_CATALOG } from "yugilife-templates"
 
-import { migrateInventoryCardDocument } from "../../inventory/model/inventory-card-migration"
-import { upgradePersistedInventoryCardToCurrentTemplate } from "../../inventory/model/inventory-card-upgrade"
 import {
-  inventoryPreviewExportOptions,
-  inventoryPreviewFingerprint,
-} from "../../inventory/model/inventory-preview"
+  disposeArtworkMaskWorker,
+  hasArtworkMaskEffects,
+  processArtworkMaskBlob,
+  processArtworkMaskSource,
+} from "@/lib/pin-mask/artwork-mask-effects"
+import { isQuickSelectionWorkerAbortError } from "@/lib/pin-mask/quick-selection-worker-client"
+
+import {
+  migrateInventoryCardDocument,
+  migrateInventoryCardToCurrentTemplate,
+} from "../../inventory/model/inventory-card-migration"
+import { inventoryPreviewMatchesCard } from "../../inventory/model/inventory-preview"
+import {
+  processedInventoryMask,
+  renderInventoryPreview,
+} from "../../inventory/model/inventory-preview-render"
 import { writeActiveInventoryCardId } from "../../inventory/persistence/inventory-settings"
 import {
   createInventoryCard,
   getInventoryStorageMode,
   listInventoryCards,
   readInventoryCard,
+  readInventoryPreview,
   saveInventoryCardSnapshot,
 } from "../../inventory/persistence/inventory-storage"
+import { useCardCatalog } from "../card-catalog/model/use-card-catalog"
 import {
+  canPresentArtworkMaskFrame,
+  isArtworkMaskFrameCurrent,
+} from "../editor/model/artwork-mask-frame"
+import {
+  artworkMaskPending,
+  requireCompletedArtworkMask,
+  selectedArtworkMask as selectArtworkMask,
+} from "../editor/model/artwork-mask-state"
+import {
+  artworkEditorConfig,
   editorCardFieldsForMode,
   editorColorPresets,
   editorTemplate,
   editorTemplateVersion,
   getActivePresentationOverrides,
   isAutomaticTextFitLayer,
+  paintableTextStyles,
   presetTargetsForTemplate,
-  projectCardForEditorMode,
+  projectCardForRender,
 } from "../editor/model/editor-config"
 import {
   createInitialEditorDocument,
@@ -55,6 +80,11 @@ import {
   writeComparisonMode,
   writeReferenceOpacity,
 } from "../references/reference-settings"
+import {
+  acquirePreparedTextures,
+  preparedTexturesForBundle,
+  preparedTexturesSettled,
+} from "../templates/prepare-template-textures"
 import {
   applyTemplateSourceDocument,
   makeUserTemplateCopy,
@@ -75,16 +105,26 @@ import {
   templateBundleMatchesVersion,
 } from "../templates/template-storage"
 
+import type { ArtworkMaskFrameIdentity } from "../editor/model/artwork-mask-frame"
 import type { ActivePresentationOverride } from "../editor/model/editor-config"
 import type { EditorDocumentState } from "../editor/model/editor-document"
+import type {
+  ActivePreparedTextures,
+  TemplateActivationProgress,
+} from "../templates/prepare-template-textures"
 import type {
   OriginStorageEstimate,
   StoredTemplateRecord,
   TemplateStorageMode,
 } from "../templates/template-storage"
+import type { ProcessedArtworkMaskPixels } from "@/lib/pin-mask/artwork-mask-effects"
 import type { ChangeEvent } from "react"
-import type { CardTemplateBundle, RasterImageFormat, RasterOutputSize } from "yugilife-core"
-import type { TemplateLoadProgress } from "yugilife-templates"
+import type {
+  CardFieldValue,
+  CardTemplateBundle,
+  RasterImageFormat,
+  RasterOutputSize,
+} from "yugilife-core"
 
 export type ExportFormat = RasterImageFormat | "svg"
 export type RasterSizeChoice = "0.5" | "1" | "2" | "4" | "8" | "height" | "width"
@@ -138,6 +178,10 @@ function editorValuesEqual(left: unknown, right: unknown): boolean {
   )
 }
 
+function artworkMaskEffectsKey(effects: { antiAlias?: boolean; glow?: number } | undefined) {
+  return `${effects?.antiAlias === true ? "1" : "0"}:${effects?.glow ?? 0}`
+}
+
 export function editorDocumentsEqual(left: EditorDocumentState, right: EditorDocumentState) {
   return editorValuesEqual(left, right)
 }
@@ -145,6 +189,11 @@ export function editorDocumentsEqual(left: EditorDocumentState, right: EditorDoc
 export function useBuildController(cardId: string) {
   const navigate = useNavigate()
   const card = useEditorStore(editorSelectors.card)
+  const artworkMask = useEditorStore(editorSelectors.artworkMask)
+  const artworkMaskEffects = useEditorStore(editorSelectors.artworkMaskEffects)
+  const applyCardPatchWithArtworkMask = useEditorStore(
+    editorSelectors.applyCardPatchWithArtworkMask,
+  )
   const layers = useEditorStore(editorSelectors.layers)
   const mode = useEditorStore(editorSelectors.mode)
   const presetOverrides = useEditorStore(editorSelectors.presetOverrides)
@@ -154,6 +203,8 @@ export function useBuildController(cardId: string) {
   const clearAllPresentationOverrides = useEditorStore(
     editorSelectors.clearAllPresentationOverrides,
   )
+  const clearArtworkMaskEffects = useEditorStore(editorSelectors.clearArtworkMaskEffects)
+  const clearArtworkTransform = useEditorStore(editorSelectors.clearArtworkTransform)
   const clearLayerMaskOverride = useEditorStore(editorSelectors.clearLayerMaskOverride)
   const clearLayerOverride = useEditorStore(editorSelectors.clearLayerOverride)
   const clearPresetOverride = useEditorStore(editorSelectors.clearPresetOverride)
@@ -162,6 +213,10 @@ export function useBuildController(cardId: string) {
   const reset = useEditorStore(editorSelectors.reset)
   const replaceDocument = useEditorStore(editorSelectors.replaceDocument)
   const setAllLayers = useEditorStore(editorSelectors.setAllLayers)
+  const setArtworkMaskEffects = useEditorStore(editorSelectors.setArtworkMaskEffects)
+  const setArtworkTransform = useEditorStore(editorSelectors.setArtworkTransform)
+  const setArtworkMask = useEditorStore(editorSelectors.setArtworkMask)
+  const completeArtworkMask = useEditorStore(editorSelectors.completeArtworkMask)
   const setField = useEditorStore(editorSelectors.setField)
   const setLayer = useEditorStore(editorSelectors.setLayer)
   const setMode = useEditorStore(editorSelectors.setMode)
@@ -171,15 +226,18 @@ export function useBuildController(cardId: string) {
   const setTemplateIdentity = useEditorStore(editorSelectors.setTemplateIdentity)
   const [selectedTemplateIdOverride, setSelectedTemplateId] = useState<string>()
   const [templateBundle, setTemplateBundle] = useState<CardTemplateBundle>()
+  const [activeTextures, setActiveTextures] = useState<ActivePreparedTextures>()
+  const activeTexturesRef = useRef<ActivePreparedTextures | undefined>(undefined)
   const [templateLoadError, setTemplateLoadError] = useState<string>()
   const [templateLoadPaused, setTemplateLoadPaused] = useState(false)
-  const [templateLoadProgress, setTemplateLoadProgress] = useState<TemplateLoadProgress>()
+  const [templateLoadProgress, setTemplateLoadProgress] = useState<TemplateActivationProgress>()
   const [templateLoading, setTemplateLoading] = useState(false)
   const templateLoadController = useRef<AbortController | undefined>(undefined)
   const automaticTemplateRestore = useRef<string | undefined>(undefined)
   const [storedTemplates, setStoredTemplates] = useState<readonly StoredTemplateRecord[]>([])
   const [templateStorageReady, setTemplateStorageReady] = useState(false)
   const [originStorage, setOriginStorage] = useState<OriginStorageEstimate>({})
+  const [preparedTextureBytes, setPreparedTextureBytes] = useState(0)
   const [templateStorageMode, setTemplateStorageMode] =
     useState<TemplateStorageMode>(getTemplateStorageMode())
   const [templateStorageError, setTemplateStorageError] = useState<string>()
@@ -187,16 +245,16 @@ export function useBuildController(cardId: string) {
   const [templateDocumentError, setTemplateDocumentError] = useState<string>()
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false)
   const [templateDraft, setTemplateDraft] = useState("")
-  const [comparisonMode, setComparisonMode] = useState<"overlay" | "side-by-side">(
-    readComparisonMode,
-  )
+  const [comparisonMode, setComparisonMode] = useState(readComparisonMode)
   const [documentTransferError, setDocumentTransferError] = useState<string>()
   const [documentTransferBusy, setDocumentTransferBusy] = useState(false)
   const [exportError, setExportError] = useState<string>()
   const [exportFormat, setExportFormat] = useState<ExportFormat>("png")
   const [exporting, setExporting] = useState(false)
   const [rasterBackground, setRasterBackground] = useState("#ffffff")
-  const [rasterCustomDimension, setRasterCustomDimension] = useState("813")
+  const [rasterCustomDimension, setRasterCustomDimension] = useState(() =>
+    String(editorTemplate.dimensions.width),
+  )
   const [rasterQuality, setRasterQuality] = useState(92)
   const [rasterSizeChoice, setRasterSizeChoice] = useState<RasterSizeChoice>("1")
   const [debugLoggingEnabled, setDebugLoggingEnabled] = useState(false)
@@ -211,6 +269,24 @@ export function useBuildController(cardId: string) {
   const [newCardBusy, setNewCardBusy] = useState(false)
   const [newCardError, setNewCardError] = useState<string>()
   const inventoryCard = useRef<Awaited<ReturnType<typeof readInventoryCard>>>(undefined)
+  /**
+   * Set when an opened card still owes storage a commit: either its document was migrated in memory
+   * or its preview is missing. The commit waits for the template bundle, because the card and its
+   * rendered thumbnail are written in one transaction.
+   *
+   * This is state rather than a ref because the card load and the bundle load race: whichever
+   * finishes last must be able to start the commit, and only a render can observe both.
+   */
+  const [pendingSnapshotCardId, setPendingSnapshotCardId] = useState<string>()
+  /**
+   * The card a commit has already been started for. Clearing the trigger from inside the effect
+   * would re-run its own cleanup and cancel the write it just started, so re-entry is guarded here
+   * instead. Opening a card resets it, which is what lets a failed commit be retried.
+   */
+  const startedSnapshotCardId = useRef<string>(undefined)
+  /** Invalidates an in-flight commit, so a superseded one cannot publish or unstick the save flag. */
+  const snapshotCommitToken = useRef(0)
+  const cardCatalog = useCardCatalog()
 
   const persistedSelectedTemplateId = storedTemplateId.startsWith("user/")
     ? storedTemplateId
@@ -240,6 +316,17 @@ export function useBuildController(cardId: string) {
     }
   }, [activeEditorTemplate.dimensions, rasterCustomDimension, rasterSizeChoice])
   const activeEditorColorPresets = templateBundle?.colorPresets ?? editorColorPresets
+  const activeArtworkConfig = useMemo(
+    () => artworkEditorConfig(activeEditorTemplate),
+    [activeEditorTemplate],
+  )
+  // The Zustand document outlives the Build route. Re-entering the editor must not process that
+  // previous in-memory document before the requested inventory card and its exact template have
+  // finished hydrating, or the same persisted mask is derived once before replacement and again
+  // afterwards with a new Blob identity.
+  const artworkMaskProcessingReady =
+    !inventoryBusy &&
+    templateBundleMatchesVersion(templateBundle, storedTemplateId, storedTemplateVersion)
   const activeLayerGroups = useMemo(
     () =>
       [...collectLayerGroups(activeEditorTemplate)]
@@ -256,10 +343,199 @@ export function useBuildController(cardId: string) {
     [activeEditorColorPresets, activeEditorTemplate],
   )
   const deferredCard = useDeferredValue(card)
-  const renderCardData = useMemo(
-    () => projectCardForEditorMode(deferredCard, mode, activeEditorTemplate),
-    [activeEditorTemplate, deferredCard, mode],
+  const currentMaskSource = selectArtworkMask(artworkMask)
+  const [completedMaskSource, setCompletedMaskSource] = useState<{
+    artwork: Blob
+    source: Blob
+    channel: "alpha" | "luminance"
+    mode: "automatic" | "manual"
+  }>()
+  // Only the live preview may bridge a pending pin edit with the previous completed source.
+  // Durable operations always use selectedArtworkMask plus the completion guard.
+  const selectedArtworkMask =
+    currentMaskSource ??
+    (artworkMask.mode === "manual" &&
+    completedMaskSource?.mode === "manual" &&
+    completedMaskSource.artwork === card.artwork &&
+    completedMaskSource.channel === activeArtworkConfig.maskChannel
+      ? completedMaskSource.source
+      : undefined)
+  if (
+    currentMaskSource &&
+    card.artwork instanceof Blob &&
+    (completedMaskSource?.source !== currentMaskSource ||
+      completedMaskSource.artwork !== card.artwork ||
+      completedMaskSource.mode !== artworkMask.mode ||
+      completedMaskSource.channel !== activeArtworkConfig.maskChannel)
+  ) {
+    setCompletedMaskSource({
+      artwork: card.artwork,
+      source: currentMaskSource,
+      mode: artworkMask.mode,
+      channel: activeArtworkConfig.maskChannel,
+    })
+  } else if (
+    !currentMaskSource &&
+    (!card.artwork || artworkMask.mode === "automatic") &&
+    completedMaskSource
+  ) {
+    setCompletedMaskSource(undefined)
+  }
+  const activeArtworkMaskEffects = activeArtworkConfig.maskField
+    ? artworkMaskEffects[activeArtworkConfig.maskField]
+    : undefined
+  const [processedArtwork, setProcessedArtwork] = useState<
+    ArtworkMaskFrameIdentity & {
+      blob?: Blob
+    }
+  >()
+  // This is the last completed presentation frame. It may intentionally lag the current effects
+  // key while the worker computes a newer frame. Save/export may reuse it only after matching the
+  // source, channel, and effects exactly against their own document snapshot.
+  // Native pixels stay in the worker. The ref holds only its bounded workspace preview; React
+  // state carries the native PNG Blob and a revision, never inspectable pixel buffers.
+  const processedArtworkPixelsRef = useRef<
+    | (ArtworkMaskFrameIdentity & {
+        pixels: ProcessedArtworkMaskPixels
+      })
+    | undefined
+  >(undefined)
+  const [processedArtworkRevision, setProcessedArtworkRevision] = useState(0)
+  const [artworkEffectsError, setArtworkEffectsError] = useState<string>()
+  const [artworkEffectsRetry, setArtworkEffectsRetry] = useState(0)
+  const [failedArtworkMaskFrame, setFailedArtworkMaskFrame] = useState<ArtworkMaskFrameIdentity>()
+  const artworkEffectsKey = useMemo(
+    () => artworkMaskEffectsKey(activeArtworkMaskEffects),
+    [activeArtworkMaskEffects],
   )
+  const artworkMaskEffectsActive = hasArtworkMaskEffects(activeArtworkMaskEffects)
+  const requestedArtworkMaskFrame = useMemo<ArtworkMaskFrameIdentity | undefined>(
+    () =>
+      artworkMaskProcessingReady &&
+      artworkMaskEffectsActive &&
+      card.artwork instanceof Blob &&
+      selectedArtworkMask
+        ? {
+            artwork: card.artwork,
+            source: selectedArtworkMask,
+            mode: artworkMask.mode,
+            channel: activeArtworkConfig.maskChannel,
+            effectsKey: artworkEffectsKey,
+          }
+        : undefined,
+    [
+      artworkMaskProcessingReady,
+      artworkMaskEffectsActive,
+      card.artwork,
+      selectedArtworkMask,
+      artworkMask.mode,
+      activeArtworkConfig.maskChannel,
+      artworkEffectsKey,
+    ],
+  )
+  // Derived from intent, not a later effect/microtask: the raw-mask -> effects handoff has no
+  // render in which a replacement is pending but the workspace thinks processing is complete.
+  const processedArtworkBusy =
+    !!requestedArtworkMaskFrame &&
+    !isArtworkMaskFrameCurrent(processedArtwork, requestedArtworkMaskFrame) &&
+    !isArtworkMaskFrameCurrent(failedArtworkMaskFrame, requestedArtworkMaskFrame)
+  const processedArtworkCanPreview = canPresentArtworkMaskFrame(
+    processedArtwork,
+    requestedArtworkMaskFrame,
+  )
+  const processedArtworkMask =
+    processedArtworkCanPreview && processedArtwork ? processedArtwork.blob : undefined
+  const getProcessedArtworkMaskPixels = useCallback(() => {
+    // Keep the last completed frame visible while a newer effects request is in flight. The
+    // target effects still gate this fallback, so disabling all effects immediately returns to
+    // the source mask instead of accidentally retaining an old glow.
+    const current = processedArtworkPixelsRef.current
+    if (!current || !canPresentArtworkMaskFrame(current, requestedArtworkMaskFrame))
+      return undefined
+    return current.pixels
+  }, [requestedArtworkMaskFrame])
+  const processedMaskRequestRef = useRef(0)
+  useEffect(() => {
+    const requestId = processedMaskRequestRef.current + 1
+    processedMaskRequestRef.current = requestId
+    const source = selectedArtworkMask
+    const controller = new AbortController()
+    const effects = activeArtworkMaskEffects
+    const identity = requestedArtworkMaskFrame
+    // Keep the previous completed frame while this intent is processed. Presentation accepts it
+    // only within the same artwork/mode/channel; save/export still require exact source/effects.
+    if (!identity || !source || effects === undefined || !hasArtworkMaskEffects(effects)) {
+      return () => controller.abort()
+    }
+    if (isArtworkMaskFrameCurrent(processedArtworkPixelsRef.current, identity)) {
+      return () => controller.abort()
+    }
+    setArtworkEffectsError(undefined)
+    void processArtworkMaskSource(
+      source,
+      effects,
+      activeArtworkConfig.maskChannel,
+      controller.signal,
+    )
+      .then((processed) => {
+        if (controller.signal.aborted || processedMaskRequestRef.current !== requestId) return
+        const blob = processed.blob
+        if (!controller.signal.aborted && processedMaskRequestRef.current === requestId) {
+          processedArtworkPixelsRef.current = {
+            ...identity,
+            pixels: processed,
+          }
+          setProcessedArtwork({
+            ...identity,
+            blob,
+          })
+          setFailedArtworkMaskFrame(undefined)
+          setProcessedArtworkRevision((revision) => revision + 1)
+        }
+      })
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted && processedMaskRequestRef.current === requestId) {
+          setFailedArtworkMaskFrame(identity)
+          if (!isQuickSelectionWorkerAbortError(reason)) {
+            setArtworkEffectsError(
+              reason instanceof Error ? reason.message : "Unable to process the mask.",
+            )
+            setProcessedArtworkRevision((revision) => revision + 1)
+          }
+        }
+      })
+    return () => controller.abort()
+  }, [
+    activeArtworkConfig.maskChannel,
+    activeArtworkMaskEffects,
+    artworkMaskProcessingReady,
+    artworkMaskEffectsActive,
+    artworkEffectsKey,
+    card.artwork,
+    selectedArtworkMask,
+    requestedArtworkMaskFrame,
+    artworkEffectsRetry,
+  ])
+  useEffect(
+    () => () => {
+      processedArtworkPixelsRef.current = undefined
+      disposeArtworkMaskWorker()
+    },
+    [],
+  )
+  // Defer the complete image/mask projection together, never a new mask with an older artwork.
+  const projectedRenderCard = useMemo(
+    () =>
+      projectCardForRender(
+        card,
+        mode,
+        artworkMask,
+        activeEditorTemplate,
+        processedArtworkMask ?? selectedArtworkMask,
+      ),
+    [activeEditorTemplate, artworkMask, card, mode, processedArtworkMask, selectedArtworkMask],
+  )
+  const renderCardData = useDeferredValue(projectedRenderCard)
   const plainCardName = useMemo(
     () => plainTextFromRichText(parseRichText(deferredCard.name).document),
     [deferredCard.name],
@@ -274,6 +550,8 @@ export function useBuildController(cardId: string) {
   )
   const currentDocument = useMemo<EditorDocumentState>(
     () => ({
+      artworkMask,
+      artworkMaskEffects,
       card,
       layers,
       mode,
@@ -284,6 +562,8 @@ export function useBuildController(cardId: string) {
     }),
     [
       card,
+      artworkMask,
+      artworkMaskEffects,
       layers,
       mode,
       presentationOverrides,
@@ -306,19 +586,33 @@ export function useBuildController(cardId: string) {
       setNewCardError(undefined)
       setTemplateBundle(undefined)
       setSavedDocument(undefined)
+      setPendingSnapshotCardId(undefined)
+      startedSnapshotCardId.current = undefined
+      // A commit invalidated by this navigation never reaches its own cleanup, so the flag it
+      // raised is cleared here with the rest of the previous card's transient state.
+      setSavingCard(false)
 
       void readInventoryCard(cardId)
         .then(async (saved) => {
           if (cancelled) return
           if (!saved) throw new Error("This inventory card does not exist.")
 
-          const loaded = await upgradePersistedInventoryCardToCurrentTemplate(saved)
+          const loaded = await migrateInventoryCardToCurrentTemplate(saved)
           const document = loaded.document
+          const storedPreview = await readInventoryPreview(saved.id)
           if (cancelled) return
           inventoryCard.current = loaded
           writeActiveInventoryCardId(loaded.id)
           replaceDocument(document)
-          setSavedDocument(document)
+          // The saved baseline is what storage actually holds. A migrated document differs from it
+          // until the commit below lands, which is honest: the editor shows unsaved work, and a
+          // failed commit leaves Save available to finish the job.
+          const owesCommit =
+            loaded !== saved ||
+            !storedPreview ||
+            !inventoryPreviewMatchesCard(storedPreview, loaded)
+          setPendingSnapshotCardId(owesCommit ? loaded.id : undefined)
+          setSavedDocument(owesCommit ? saved.document : document)
           setSelectedTemplateId(document.templateId)
           setInventoryBusy(false)
           setNewCardBusy(false)
@@ -365,6 +659,7 @@ export function useBuildController(cardId: string) {
         presentation,
         activeEditorTemplate,
         activeEditorColorPresets,
+        artworkMaskEffects,
       ),
     [
       activeEditorColorPresets,
@@ -373,6 +668,7 @@ export function useBuildController(cardId: string) {
       presentation,
       presentationOverrides,
       presetOverrides,
+      artworkMaskEffects,
     ],
   )
   const fittedText = useMemo(
@@ -384,6 +680,10 @@ export function useBuildController(cardId: string) {
           typography.fitProfiles.length > 0,
       ),
     [activeEditorTemplate, presentation.text],
+  )
+  const paintableText = useMemo(
+    () => paintableTextStyles(layers, presentation, activeEditorTemplate),
+    [activeEditorTemplate, layers, presentation],
   )
   const compressibleText = useMemo(
     () =>
@@ -409,16 +709,16 @@ export function useBuildController(cardId: string) {
     selectedTemplateId,
     selectedTemplateVersion,
   )
-  const templateCacheBytes = storedTemplates.reduce(
-    (total, template) => total + template.sizeBytes,
-    0,
-  )
+  const templateCacheBytes =
+    storedTemplates.reduce((total, template) => total + template.sizeBytes, 0) +
+    preparedTextureBytes
 
   const refreshTemplateStorage = useCallback(async () => {
     try {
       const snapshot = await readTemplateStorageSnapshot()
       setStoredTemplates(snapshot.templates)
       setOriginStorage(snapshot.originStorage)
+      setPreparedTextureBytes(snapshot.preparedTextureBytes)
       setTemplateStorageMode(snapshot.storageMode)
       setTemplateStorageReady(true)
       setTemplateStorageError(undefined)
@@ -441,6 +741,7 @@ export function useBuildController(cardId: string) {
         if (cancelled) return
         setStoredTemplates(snapshot.templates)
         setOriginStorage(snapshot.originStorage)
+        setPreparedTextureBytes(snapshot.preparedTextureBytes)
         setTemplateStorageMode(snapshot.storageMode)
         setTemplateStorageReady(true)
         setTemplateStorageError(undefined)
@@ -624,6 +925,41 @@ export function useBuildController(cardId: string) {
     templateStorageReady,
   ])
 
+  /**
+   * Grades this bundle's textures once it is active, and keeps the result beside it.
+   *
+   * Activation is the right moment: the bundle is complete and validated, the card it is about to
+   * draw has not been rendered yet, and every later render — preview, export, saved thumbnail —
+   * reads the same textures. Failure is silent by design; `acquirePreparedTextures` returns nothing
+   * and the renderer grades live, so preparation can never keep a card off the screen.
+   */
+  useEffect(() => {
+    // Textures outlive a cleared bundle until the next one has prepared its own. Nothing draws them
+    // in between: `preparedTexturesForBundle` hands the renderer only the textures that belong to
+    // the bundle it is rendering.
+    if (!templateBundle) return
+    const controller = new AbortController()
+    void acquirePreparedTextures(templateBundle, {
+      onProgress: (completed, total) => {
+        if (!controller.signal.aborted)
+          setTemplateLoadProgress({ completed, phase: "preparing", total })
+      },
+      signal: controller.signal,
+    }).then((prepared) => {
+      if (controller.signal.aborted) return
+      activeTexturesRef.current = prepared
+      setActiveTextures(prepared)
+    })
+    return () => controller.abort()
+  }, [templateBundle])
+
+  const preparedTextures = useMemo(
+    () => preparedTexturesForBundle(activeTextures, templateBundle),
+    [activeTextures, templateBundle],
+  )
+  /** The card waits for this, so it is drawn once rather than redrawn when textures arrive. */
+  const templateReady = preparedTexturesSettled(activeTextures, templateBundle)
+
   function selectTemplate(templateId: string) {
     templateLoadController.current?.abort()
     setTemplateLoading(false)
@@ -693,14 +1029,46 @@ export function useBuildController(cardId: string) {
     link.remove()
   }
 
+  async function processedMaskForDocument(
+    document: EditorDocumentState,
+    template = activeEditorTemplate,
+  ) {
+    const config = artworkEditorConfig(template)
+    requireCompletedArtworkMask(document, config.field)
+    const source = selectArtworkMask(document.artworkMask)
+    if (!source) return undefined
+    const effects = config.maskField ? document.artworkMaskEffects[config.maskField] : undefined
+    // Reuse only an exact completed frame. The visible fallback may have older effects while
+    // controls are changing, so source identity alone is insufficient for save/export correctness.
+    if (
+      processedArtwork?.blob &&
+      processedArtwork.source === source &&
+      processedArtwork.channel === config.maskChannel &&
+      processedArtwork.effectsKey === artworkMaskEffectsKey(effects)
+    )
+      return processedArtwork.blob
+    // An export owns its document snapshot. It must not publish into a preview that may have
+    // advanced to different settings while this asynchronous work was running.
+    return processArtworkMaskBlob(source, effects, config.maskChannel)
+  }
+
   async function downloadExport() {
     if (!templateBundle) return
     setExporting(true)
     setExportError(undefined)
     try {
+      const processedMask = await processedMaskForDocument(currentDocument)
+      const exportCard = projectCardForRender(
+        currentDocument.card,
+        currentDocument.mode,
+        currentDocument.artworkMask,
+        activeEditorTemplate,
+        processedMask,
+      )
       if (exportFormat === "svg") {
-        const svg = await exportCardToSvg(renderCardData, {
+        const svg = await exportCardToSvg(exportCard, {
           layers,
+          preparedTextures,
           presetOverrides,
           presentationOverrides,
           templateBundle,
@@ -716,10 +1084,11 @@ export function useBuildController(cardId: string) {
       if ((rasterSizeChoice === "width" || rasterSizeChoice === "height") && !size) {
         throw new Error("Custom image size must be a positive whole number of pixels.")
       }
-      const image = await exportCardToImage(renderCardData, {
+      const image = await exportCardToImage(exportCard, {
         ...(exportFormat === "jpeg" ? { backgroundColor: rasterBackground } : {}),
         format: exportFormat,
         layers,
+        preparedTextures,
         presetOverrides,
         presentationOverrides,
         ...(exportFormat === "png" ? {} : { quality: rasterQuality / 100 }),
@@ -740,6 +1109,8 @@ export function useBuildController(cardId: string) {
     setDocumentTransferError(undefined)
     try {
       const json = await serializeEditorDocument({
+        artworkMask,
+        artworkMaskEffects,
         card,
         layers,
         mode,
@@ -933,10 +1304,19 @@ export function useBuildController(cardId: string) {
     }
   }
 
+  function applyCatalogCardPatch(
+    patch: Readonly<Record<string, CardFieldValue>>,
+    nextArtworkMask: EditorDocumentState["artworkMask"],
+  ) {
+    const nextCard = { ...card, ...patch }
+    validateCardData(nextCard, activeEditorTemplate)
+    applyCardPatchWithArtworkMask(patch, nextArtworkMask)
+  }
+
   const reference = referenceLibrary.selectedReference
 
   function changeComparisonMode(mode: string) {
-    if (mode !== "overlay" && mode !== "side-by-side") {
+    if (mode !== "off" && mode !== "overlay" && mode !== "side-by-side") {
       setSettingsStorageError("Comparison settings contain an invalid mode.")
       return
     }
@@ -959,6 +1339,12 @@ export function useBuildController(cardId: string) {
 
   function clearActiveOverride(override: ActivePresentationOverride) {
     switch (override.kind) {
+      case "artwork-transform":
+        clearArtworkTransform(override.transformId)
+        break
+      case "artwork-mask-effects":
+        clearArtworkMaskEffects(override.maskField)
+        break
       case "layer":
         clearLayerOverride(override.layerId)
         break
@@ -1007,24 +1393,16 @@ export function useBuildController(cardId: string) {
     setSavingCard(true)
     setInventorySaveError(undefined)
     try {
-      const image = await exportCardToImage(
-        projectCardForEditorMode(document.card, document.mode, activeEditorTemplate),
-        {
-          ...inventoryPreviewExportOptions,
-          layers: document.layers,
-          presentationOverrides: document.presentationOverrides,
-          presetOverrides: document.presetOverrides,
-          templateBundle,
-        },
+      const image = await renderInventoryPreview(
+        document,
+        templateBundle,
+        await processedMaskForDocument(document),
+        preparedTextures,
       )
       await saveInventoryCardSnapshot(next, {
         cardId: next.id,
         cardRevision: next.revision,
         image,
-        renderFingerprint: inventoryPreviewFingerprint(
-          document.templateId,
-          document.templateVersion,
-        ),
       })
       inventoryCard.current = next
       setSavedDocument(document)
@@ -1034,6 +1412,61 @@ export function useBuildController(cardId: string) {
       setSavingCard(false)
     }
   }
+
+  /**
+   * Commits an opened card that storage still owes a snapshot for. Opening a card is the only
+   * moment a stored document is migrated, and the migration is not persisted until its thumbnail
+   * has been rendered — so inventory never holds a document whose preview depicts a different one.
+   */
+  useEffect(() => {
+    const card = inventoryCard.current
+    if (!pendingSnapshotCardId || !card || card.id !== pendingSnapshotCardId) return
+    if (startedSnapshotCardId.current === pendingSnapshotCardId) return
+    if (
+      !templateBundle ||
+      templateBundle.manifest.id !== card.document.templateId ||
+      templateBundle.manifest.version !== card.document.templateVersion
+    ) {
+      return
+    }
+    startedSnapshotCardId.current = pendingSnapshotCardId
+    const token = (snapshotCommitToken.current += 1)
+    const active = () => snapshotCommitToken.current === token
+    const document = card.document
+    setSavingCard(true)
+    void (async () => {
+      try {
+        const image = await renderInventoryPreview(
+          document,
+          templateBundle,
+          await processedInventoryMask(document, templateBundle),
+          // Read rather than depended on: textures arriving mid-commit must not restart a write
+          // this effect has already begun, and a commit that finishes first is correct without them.
+          preparedTexturesForBundle(activeTexturesRef.current, templateBundle),
+        )
+        if (!active()) return
+        await saveInventoryCardSnapshot(card, {
+          cardId: card.id,
+          cardRevision: card.revision,
+          image,
+        })
+        if (active()) setSavedDocument(document)
+      } catch (error: unknown) {
+        // The document stays unpersisted, so the editor keeps showing unsaved changes and Save can
+        // finish what this could not.
+        if (active()) {
+          setInventorySaveError(error instanceof Error ? error.message : String(error))
+        }
+      } finally {
+        if (active()) setSavingCard(false)
+      }
+    })()
+    return () => {
+      snapshotCommitToken.current += 1
+    }
+    // The two signals that can unblock a commit: the card that owes one, and the bundle it must be
+    // rendered with. Whichever arrives last starts the write.
+  }, [pendingSnapshotCardId, templateBundle])
 
   async function createNewCard() {
     setNewCardBusy(true)
@@ -1054,7 +1487,19 @@ export function useBuildController(cardId: string) {
     activeLayerGroups,
     activeOverrides,
     activePresetTargets,
+    applyCatalogCardPatch,
     applyTemplateEdit,
+    completeArtworkMask,
+    artworkMaskPending: artworkMaskPending(currentDocument, activeArtworkConfig.field),
+    artworkEffectsError: requestedArtworkMaskFrame ? artworkEffectsError : undefined,
+    retryArtworkEffects: () => {
+      disposeArtworkMaskWorker()
+      setFailedArtworkMaskFrame(undefined)
+      setArtworkEffectsError(undefined)
+      setArtworkEffectsRetry((value) => value + 1)
+    },
+    artworkMask,
+    artworkMaskEffects,
     automaticCardFields,
     beginTemplateEditing,
     cancelTemplateEdit: () => {
@@ -1062,6 +1507,7 @@ export function useBuildController(cardId: string) {
       setTemplateDocumentError(undefined)
     },
     card,
+    cardCatalog,
     cardFields,
     changeComparisonMode,
     changeReferenceOpacity,
@@ -1082,6 +1528,7 @@ export function useBuildController(cardId: string) {
     exportTemplate,
     fittedText,
     hasUnsavedChanges,
+    paintableText,
     importJson,
     importTemplate,
     inventoryBusy,
@@ -1097,7 +1544,12 @@ export function useBuildController(cardId: string) {
     plainCardName,
     presentation,
     presentationOverrides,
+    processedArtworkMask,
+    getProcessedArtworkMaskPixels,
+    preparedTextures,
+    processedArtworkRevision,
     presetOverrides,
+    processedArtworkBusy,
     rasterBackground,
     rasterCustomDimension,
     rasterOutputDimensions,
@@ -1118,6 +1570,9 @@ export function useBuildController(cardId: string) {
     selectedTemplateName,
     selectedTemplateVersion,
     setAllLayers,
+    setArtworkMaskEffects,
+    setArtworkTransform,
+    setArtworkMask,
     setDebugLoggingEnabled,
     setExportFormat,
     setField,
@@ -1147,6 +1602,7 @@ export function useBuildController(cardId: string) {
     templateLoadPaused,
     templateLoadProgress,
     templateLoading,
+    templateReady,
     templateStorageError,
     templateStorageMode,
     templateTransferAvailable: transferTemplateBundle() !== undefined,

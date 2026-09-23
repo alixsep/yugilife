@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from "react"
 
+import { usePreferencesStore } from "@/lib/preferences-store"
 import { cn } from "@/lib/utils"
 
 import type { CSSProperties } from "react"
@@ -90,6 +91,7 @@ export function CustomCursor({
   const dotRef = useRef<SVGPathElement>(null)
   const turbulenceRef = useRef<SVGFETurbulenceElement>(null)
   const filterId = `custom-cursor-filter-${useId().replace(/:/g, "")}`
+  const cursorPreference = usePreferencesStore((state) => state.cursor)
 
   useEffect(() => {
     const cursor = cursorRef.current
@@ -99,6 +101,7 @@ export function CustomCursor({
 
     if (!cursor || !ring || !dot || !turbulence) return
 
+    if (cursorPreference === "native") return
     if (typeof window.matchMedia !== "function") return
 
     const finePointer = window.matchMedia("(pointer: fine)")
@@ -389,7 +392,9 @@ export function CustomCursor({
       window.removeEventListener("blur", hideCursor)
       delete document.documentElement.dataset.customCursor
     }
-  }, [filterId, interactiveSelector])
+  }, [cursorPreference, filterId, interactiveSelector])
+
+  if (cursorPreference === "native") return null
 
   return (
     <>

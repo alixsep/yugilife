@@ -15,6 +15,7 @@ temp/
 .temp/
 tmp/
 .tmp/
+materials/
 *.tmp
 
 # Test output

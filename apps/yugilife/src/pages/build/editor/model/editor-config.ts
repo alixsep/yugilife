@@ -11,7 +11,12 @@ import {
 } from "yugilife-core"
 import { DEFAULT_TEMPLATE } from "yugilife-templates"
 
+import { selectedArtworkMask as selectArtworkMask } from "./artwork-mask-state"
+
+import type { ArtworkMaskEditingState, ArtworkMaskEffects, EditorMode } from "./editor-document"
 import type {
+  ArtworkLayer,
+  ArtworkTransform,
   CardData,
   CardTemplate,
   ColorPresetCollection,
@@ -45,6 +50,119 @@ export function createInitialCard() {
   return createCardFromTemplate(editorTemplate)
 }
 
+export interface ArtworkEditorConfig {
+  /** The image field the template's primary artwork layer consumes. */
+  field: string
+  /** The image field used by the template's artwork overlay mask. */
+  maskField?: string
+  /** The source channel the template uses for mask coverage. */
+  maskChannel: "alpha" | "luminance"
+  /** Shared transform used by the primary artwork layer and any overlay layers. */
+  transformId: string
+  /** Whether the template explicitly permits a full-card artwork overlay. */
+  supportsFullArt: boolean
+}
+
+/** Derives artwork authoring capabilities from the active template instead of hard-coding layer IDs. */
+export function artworkEditorConfig(template = editorTemplate): ArtworkEditorConfig {
+  // The primary artwork layer is the unconditional one: overlay variants are gated behind an
+  // opaque transform mode. Its card field is the artwork source every editor control authors, so
+  // the app derives that name from the template rather than assuming one.
+  const artworkLayers: ArtworkLayer[] = []
+  walkLayers(template.layers, ({ layer }) => {
+    if (layer.kind === "artwork") artworkLayers.push(layer as ArtworkLayer)
+  })
+  const field =
+    (artworkLayers.find((layer) => layer.transformMode === undefined) ?? artworkLayers[0])?.field ??
+    "artwork"
+
+  let primaryTransformId: string | undefined
+  let maskField: string | undefined
+  let maskChannel: "alpha" | "luminance" = "luminance"
+  let supportsFullArt = false
+  walkLayers(template.layers, ({ layer }) => {
+    if (layer.kind !== "artwork" || layer.field !== field) return
+    const artworkLayer = layer as ArtworkLayer
+    primaryTransformId ??= artworkLayer.transformId ?? artworkLayer.id
+    maskField ??= artworkLayer.maskField
+    if (
+      artworkLayer.maskField &&
+      maskField === artworkLayer.maskField &&
+      artworkLayer.maskChannel
+    ) {
+      maskChannel = artworkLayer.maskChannel
+    }
+    supportsFullArt ||= artworkLayer.transformMode === "full-art"
+  })
+  return {
+    ...(maskField ? { maskField } : {}),
+    field,
+    maskChannel,
+    supportsFullArt,
+    transformId: primaryTransformId ?? field,
+  }
+}
+
+/** The default template's artwork field, for modules that are not given an active template. */
+export const editorArtworkField = artworkEditorConfig().field
+
+export function isDefaultArtworkMaskEffects(effects: ArtworkMaskEffects | undefined) {
+  return effects?.antiAlias !== true && (effects?.glow ?? 0) === 0
+}
+
+/** Presentation overrides are sparse; an identity transform is the template default. */
+export function isDefaultArtworkTransform(transform: ArtworkTransform) {
+  return (
+    transform.scale === 1 && transform.x === 0 && transform.y === 0 && transform.mode === undefined
+  )
+}
+
+/** The zoom full art opens at: the framed placement leaves too much card showing through. */
+const FULL_ART_START_SCALE = 1.5
+
+export function hasArtworkCrop(transform: ArtworkTransform) {
+  const { scale, x, y } = resetArtworkCrop(transform)
+  return transform.scale !== scale || transform.x !== x || transform.y !== y
+}
+
+/**
+ * Returns the artwork to where the layout starts it, keeping the layout mode.
+ *
+ * Zoom and pan are a crop; full art is a layout the card is built in. Clearing the crop must not
+ * decide the layout question on the author's behalf — dropping the mode here would switch the card
+ * back to a framed artwork and tear down the workspace the button lives beside. Full art has its
+ * own starting zoom, so resetting inside it lands there rather than on the framed placement.
+ */
+export function resetArtworkCrop(transform: ArtworkTransform): ArtworkTransform {
+  return {
+    mode: transform.mode,
+    scale: transform.mode === "full-art" ? FULL_ART_START_SCALE : 1,
+    x: 0,
+    y: 0,
+  }
+}
+
+/**
+ * Enables the overlay clipping mode with the useful 150% starting zoom once. Disabling full art
+ * returns the artwork to the template identity so the temporary full-art crop does not linger.
+ */
+export function toggleArtworkFullArt(transform: ArtworkTransform): ArtworkTransform {
+  if (transform.mode === "full-art") return { scale: 1, x: 0, y: 0 }
+  return {
+    ...transform,
+    mode: "full-art",
+    scale: transform.scale === 1 ? FULL_ART_START_SCALE : transform.scale,
+  }
+}
+
+/** The expensive side-by-side mask workspace exists only while full-art editing is active. */
+export function shouldRenderArtworkWorkspace(
+  artwork: unknown,
+  transform: ArtworkTransform | undefined,
+): artwork is Blob {
+  return artwork instanceof Blob && transform?.mode === "full-art"
+}
+
 /**
  * Projects the persisted card into the values used by the automatic preview/export. Advanced-only
  * fields remain persisted, but they cannot override semantic auto-derivation while automatic mode
@@ -54,7 +172,7 @@ export function createInitialCard() {
  */
 export function projectCardForEditorMode(
   card: CardData,
-  mode: "automatic" | "advanced",
+  mode: EditorMode,
   template = editorTemplate,
 ): CardData {
   if (mode === "advanced") return card
@@ -64,6 +182,26 @@ export function projectCardForEditorMode(
   return Object.fromEntries(
     Object.entries(card).filter(([fieldName]) => !advancedFieldNames.has(fieldName)),
   ) as CardData
+}
+
+/**
+ * Projects the complete editor document into the card sources consumed by preview and export.
+ * Artwork masks are editor-owned state, so they must be applied here instead of relying on the
+ * hidden legacy `card.artworkOverlay` field being synchronized by every save path.
+ */
+export function projectCardForRender(
+  card: CardData,
+  mode: EditorMode,
+  artworkMask: ArtworkMaskEditingState,
+  template = editorTemplate,
+  processedArtworkMask?: Blob,
+): CardData {
+  const projected = projectCardForEditorMode(card, mode, template)
+  const selectedMask = selectArtworkMask(artworkMask)
+  return {
+    ...projected,
+    artworkOverlay: processedArtworkMask ?? selectedMask ?? "",
+  }
 }
 
 /** Returns the template-declared card inputs that Automatic mode should expose. */
@@ -121,6 +259,20 @@ export function createInitialPresetOverrides() {
 }
 
 export type ActivePresentationOverride =
+  | {
+      id: string
+      kind: "artwork-transform"
+      label: string
+      transformId: string
+      value: string
+    }
+  | {
+      id: string
+      kind: "artwork-mask-effects"
+      label: string
+      maskField: string
+      value: string
+    }
   | {
       id: string
       kind: "layer"
@@ -193,6 +345,35 @@ function activePresentationSubjects(
   return { activeLayerIds, activePresetTargets }
 }
 
+/**
+ * Text styles that may expose generated color/outline controls: currently rendered layers whose
+ * `editorVisible` flag is not `false`. This is the same declared policy the generated layer-
+ * visibility controls already use, so a renderer-only implementation layer never grows a paint
+ * control and no Series-specific list is needed here.
+ */
+export function paintableTextStyles(
+  layers: Readonly<Record<string, boolean | undefined>>,
+  presentation: ResolvedCardPresentation,
+  template: CardTemplate = editorTemplate,
+) {
+  const { activeLayerIds } = activePresentationSubjects(layers, presentation, template)
+  const editorVisible = new Set<string>()
+  walkLayers(template.layers, ({ layer }) => {
+    if (layer.kind === "text" && layer.editorVisible !== false) editorVisible.add(layer.id)
+  })
+  return Object.values(presentation.text).filter(
+    ({ layerId }) => editorVisible.has(layerId) && activeLayerIds.has(layerId),
+  )
+}
+
+function describeStroke(value: unknown) {
+  if (value === null) return "outline: none"
+  if (typeof value !== "object" || value === null) return undefined
+  const stroke = value as { color?: unknown; width?: unknown }
+  if (typeof stroke.color !== "string" || typeof stroke.width !== "number") return undefined
+  return `outline: ${stroke.width}px ${stroke.color}`
+}
+
 function formatTypographyPatch(patch: Readonly<Record<string, unknown>>) {
   return Object.entries(patch)
     .map(([key, value]) => {
@@ -215,6 +396,11 @@ function formatTypographyPatch(patch: Readonly<Record<string, unknown>>) {
         }
       }
       if (key === "fitBlocks" && value === null) return "leading authored-line fitting: off"
+      if (key === "fill" && typeof value === "string") return `color: ${value}`
+      if (key === "stroke") {
+        const described = describeStroke(value)
+        if (described) return described
+      }
       if (value === null) return `${key}: clear`
       if (typeof value === "string") return `${key}: ${value}`
       return `${key}: ${JSON.stringify(value) ?? "undefined"}`
@@ -230,6 +416,7 @@ export function getActivePresentationOverrides(
   presentation: ResolvedCardPresentation,
   template = editorTemplate,
   colorPresets = editorColorPresets,
+  appArtworkMaskEffects: Readonly<Record<string, ArtworkMaskEffects | undefined>> = {},
 ) {
   const active: ActivePresentationOverride[] = []
   const labels = labelsForTemplate(template)
@@ -242,6 +429,32 @@ export function getActivePresentationOverrides(
     presentation,
     template,
   )
+
+  Object.entries(presentationOverrides.artworkTransforms ?? {}).forEach(([transformId, value]) => {
+    if (!value || isDefaultArtworkTransform(value)) return
+    active.push({
+      id: `artwork-transform:${transformId}`,
+      kind: "artwork-transform",
+      label: "Artwork crop and placement",
+      transformId,
+      value: `${Math.round(value.scale * 100)}% zoom, ${Math.round(value.x * 100)}% x, ${Math.round(value.y * 100)}% y${value.mode ? `, ${value.mode.replaceAll("-", " ")}` : ""}`,
+    })
+  })
+
+  Object.entries(appArtworkMaskEffects).forEach(([maskField, value]) => {
+    if (isDefaultArtworkMaskEffects(value)) return
+    const choices = [
+      value?.antiAlias === true ? "anti-aliasing" : undefined,
+      value?.glow && value.glow > 0 ? `${value.glow}px glow` : undefined,
+    ].filter((choice): choice is string => choice !== undefined)
+    active.push({
+      id: `artwork-mask-effects:${maskField}`,
+      kind: "artwork-mask-effects",
+      label: "Artwork mask edges",
+      maskField,
+      value: choices.join(", "),
+    })
+  })
 
   Object.entries(layers).forEach(([layerId, visible]) => {
     if (visible === undefined || !layerIds.has(layerId)) return
@@ -332,6 +545,7 @@ export function countActivePresentationOverrides(
   presentation: ResolvedCardPresentation,
   template = editorTemplate,
   colorPresets = editorColorPresets,
+  appArtworkMaskEffects: Readonly<Record<string, ArtworkMaskEffects | undefined>> = {},
 ) {
   return getActivePresentationOverrides(
     layers,
@@ -340,5 +554,6 @@ export function countActivePresentationOverrides(
     presentation,
     template,
     colorPresets,
+    appArtworkMaskEffects,
   ).length
 }

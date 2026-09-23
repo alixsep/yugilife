@@ -11,7 +11,6 @@ import {
   readInventoryPreview,
   saveInventoryCard,
   saveInventoryCardSnapshot,
-  storeInventoryPreview,
 } from "./inventory-storage"
 
 afterEach(async () => {
@@ -21,18 +20,23 @@ afterEach(async () => {
 describe("inventory storage", () => {
   it("stores independent card identities and preserves artwork and previews through duplication", async () => {
     const artwork = new Blob(["artwork"], { type: "image/png" })
+    const automaticMask = new Blob(["alpha"], { type: "image/png" })
     const original = await createInventoryCard(
       {
         ...createInitialEditorDocument(),
+        artworkMask: {
+          automaticMask,
+          mode: "automatic",
+          points: [{ id: 1, polarity: "keep", size: 24, x: 10, y: 12 }],
+        },
         card: { ...createInitialEditorDocument().card, artwork, name: "Original" },
       },
       "Original",
     )
-    await storeInventoryPreview({
+    await saveInventoryCardSnapshot(original, {
       cardId: original.id,
       cardRevision: original.revision,
       image: new Blob(["preview"], { type: "image/png" }),
-      renderFingerprint: `${original.document.templateId}@${original.document.templateVersion}:preview-v1`,
     })
     const duplicate = await duplicateInventoryCard(original.id)
     const duplicatePreview = await readInventoryPreview(duplicate.id)
@@ -40,10 +44,11 @@ describe("inventory storage", () => {
     expect(duplicate.id).not.toBe(original.id)
     expect(duplicate.title).toBe("Original copy")
     expect(await (duplicate.document.card.artwork as Blob).text()).toBe("artwork")
+    expect(await duplicate.document.artworkMask.automaticMask?.text()).toBe("alpha")
+    expect(duplicate.document.artworkMask.points).toHaveLength(1)
     expect(duplicatePreview).toMatchObject({
       cardId: duplicate.id,
       cardRevision: duplicate.revision,
-      renderFingerprint: `${duplicate.document.templateId}@${duplicate.document.templateVersion}:preview-v1`,
     })
     expect(await duplicatePreview?.image.text()).toBe("preview")
     expect(await listInventoryCards()).toHaveLength(2)
@@ -51,12 +56,13 @@ describe("inventory storage", () => {
 
   it("does not attach a stale source preview to a duplicate", async () => {
     const original = await createInventoryCard(createInitialEditorDocument(), "Original")
-    await storeInventoryPreview({
+    await saveInventoryCardSnapshot(original, {
       cardId: original.id,
-      cardRevision: original.revision + 1,
+      cardRevision: original.revision,
       image: new Blob(["stale-preview"], { type: "image/png" }),
-      renderFingerprint: `${original.document.templateId}@${original.document.templateVersion}:preview-v1`,
     })
+    // A document-only write advances the card past the preview that was committed with it.
+    await saveInventoryCard({ ...original, revision: original.revision + 1 })
 
     const duplicate = await duplicateInventoryCard(original.id)
 
@@ -75,11 +81,10 @@ describe("inventory storage", () => {
       title: "Updated",
       updatedAt: created.updatedAt + 1,
     })
-    await storeInventoryPreview({
+    await saveInventoryCardSnapshot(saved, {
       cardId: saved.id,
       cardRevision: saved.revision,
       image: new Blob(["preview"], { type: "image/png" }),
-      renderFingerprint: `${saved.document.templateId}@${saved.document.templateVersion}:preview-v1`,
     })
 
     expect((await readInventoryCard(saved.id))?.document.card.name).toBe("Updated")
@@ -107,7 +112,6 @@ describe("inventory storage", () => {
       cardId: snapshot.id,
       cardRevision: snapshot.revision,
       image: new Blob(["snapshot-preview"], { type: "image/png" }),
-      renderFingerprint: `${snapshot.document.templateId}@${snapshot.document.templateVersion}:preview-v1`,
     })
 
     expect((await readInventoryCard(snapshot.id))?.document.card.name).toBe("Saved snapshot")
@@ -134,7 +138,6 @@ describe("inventory storage", () => {
         cardId: created.id,
         cardRevision: created.revision + 1,
         image: new Blob(["mismatch"], { type: "image/png" }),
-        renderFingerprint: "mismatch",
       }),
     ).rejects.toThrow(/does not match/)
   })

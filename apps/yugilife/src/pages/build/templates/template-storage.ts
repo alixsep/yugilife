@@ -1,8 +1,13 @@
+import { deletePreparedTextures, preparedTextureCacheBytes } from "./prepared-texture-storage"
+import {
+  openTemplateDatabase,
+  requestResult,
+  templateStore,
+  transactionComplete,
+} from "./template-database"
+
 import type { AssetSource, CardTemplateBundle, TemplateId } from "yugilife-core"
 
-const databaseName = "yugilife-template-cache"
-const databaseVersion = 1
-const templateStore = "templates"
 const memoryTemplates = new Map<TemplateId, StoredTemplateRecord>()
 
 export type TemplateStorageMode = "indexeddb" | "memory"
@@ -50,48 +55,10 @@ export interface OriginStorageEstimate {
 
 export interface TemplateStorageSnapshot {
   originStorage: OriginStorageEstimate
+  /** Bytes held by textures graded once per template release, beside the bundles themselves. */
+  preparedTextureBytes: number
   storageMode: TemplateStorageMode
   templates: readonly StoredTemplateRecord[]
-}
-
-function requestResult<T>(request: IDBRequest<T>) {
-  return new Promise<T>((resolve, reject) => {
-    request.addEventListener("success", () => resolve(request.result))
-    request.addEventListener("error", () =>
-      reject(request.error ?? new Error("IndexedDB request failed")),
-    )
-  })
-}
-
-function transactionComplete(transaction: IDBTransaction) {
-  return new Promise<void>((resolve, reject) => {
-    transaction.addEventListener("complete", () => resolve())
-    transaction.addEventListener("abort", () =>
-      reject(transaction.error ?? new Error("IndexedDB transaction aborted")),
-    )
-    transaction.addEventListener("error", () =>
-      reject(transaction.error ?? new Error("IndexedDB transaction failed")),
-    )
-  })
-}
-
-function openTemplateDatabase() {
-  return new Promise<IDBDatabase>((resolve, reject) => {
-    if (typeof indexedDB === "undefined") {
-      reject(new Error("IndexedDB is unavailable in this browser."))
-      return
-    }
-    const request = indexedDB.open(databaseName, databaseVersion)
-    request.addEventListener("upgradeneeded", () => {
-      if (!request.result.objectStoreNames.contains(templateStore)) {
-        request.result.createObjectStore(templateStore, { keyPath: "id" })
-      }
-    })
-    request.addEventListener("success", () => resolve(request.result))
-    request.addEventListener("error", () =>
-      reject(request.error ?? new Error("Unable to open the template cache")),
-    )
-  })
 }
 
 function sourceSize(source: AssetSource) {
@@ -193,6 +160,10 @@ export async function storeTemplate(
   bundle: CardTemplateBundle,
   source: TemplateRecordSource = "official",
 ) {
+  // Whatever textures were held for this ID were graded from the bundle this one replaces. Their
+  // version cannot be trusted to have moved: editing a user template keeps its identity, and may
+  // rewrite the very color presets those textures were graded with.
+  await deletePreparedTextures(bundle.manifest.id)
   const record: StoredTemplateRecord = {
     bundle,
     id: bundle.manifest.id,
@@ -224,6 +195,8 @@ export async function storeTemplate(
 }
 
 export async function deleteStoredTemplate(id: TemplateId) {
+  // Textures are derived from the bundle being removed, so they go with it.
+  await deletePreparedTextures(id)
   if (storageMode === "memory") {
     memoryTemplates.delete(id)
     return
@@ -258,10 +231,11 @@ async function estimateOriginStorage(): Promise<OriginStorageEstimate> {
 }
 
 export async function readTemplateStorageSnapshot(): Promise<TemplateStorageSnapshot> {
-  const [templates, originStorage] = await Promise.all([
+  const [templates, originStorage, preparedTextureBytes] = await Promise.all([
     listStoredTemplates(),
     estimateOriginStorage(),
+    preparedTextureCacheBytes(),
   ])
-  return { originStorage, storageMode, templates }
+  return { originStorage, preparedTextureBytes, storageMode, templates }
 }
 import { isTemplateVersion } from "../migrations/template"

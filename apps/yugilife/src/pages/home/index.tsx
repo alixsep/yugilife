@@ -9,10 +9,18 @@ import { usePageTransitionReady } from "@/components/page-transition-ready"
 import { AnimatedHeading } from "@/components/ui/animated-heading"
 import { Button } from "@/components/ui/button"
 import { WindMotion } from "@/components/ui/wind-motion"
+import { useShape } from "@/lib/shape-context"
 
 const KuribohCanvas = lazy(() =>
   import("@/components/kuriboh-scene").then((module) => ({ default: module.KuribohCanvas })),
 )
+
+const contactLinks = [
+  { href: "mailto:alixsep@outlook.com", label: "Email" },
+  { href: "https://www.instagram.com/alixsepofficial/", label: "Instagram" },
+  { href: "https://www.deviantart.com/alixsep", label: "Deviantart" },
+  { href: "https://github.com/alixsep", label: "Github" },
+] as const
 
 function LandingCanvas({ onReady }: { onReady: () => void }) {
   const placeholder = (
@@ -26,8 +34,11 @@ function LandingCanvas({ onReady }: { onReady: () => void }) {
 }
 
 function LandingCard() {
+  const shape = useShape()
   return (
-    <div className="border-border bg-card relative aspect-[813/1185] w-full shrink-0 overflow-hidden rounded-lg border">
+    <div
+      className={`${shape.bg} border-border bg-card relative aspect-[813/1185] w-full shrink-0 overflow-hidden border`}
+    >
       <WindMotion className="absolute inset-0 touch-manipulation">
         <img
           src={cardImage}
@@ -53,54 +64,29 @@ function BuildButton() {
 }
 
 function LandingCredits() {
+  const shape = useShape()
   const currentYear = new Date().getFullYear()
 
   return (
     <footer className="text-muted-foreground w-full shrink-0 pt-2 pb-2 text-center">
-      <p className="text-foreground text-sm font-semibold sm:text-base">
+      <p className="text-subtitle text-foreground font-semibold">
         Have a question or want to say hi?
       </p>
       <ul className="mt-4 grid grid-cols-4 gap-2">
-        <li className="min-w-0">
-          <a
-            className="border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground flex aspect-square w-full items-center justify-center rounded-lg border p-1 text-[11px] font-medium transition-colors duration-80 sm:text-[12px]"
-            href="mailto:alixsep@outlook.com"
-          >
-            Email
-          </a>
-        </li>
-        <li className="min-w-0">
-          <a
-            className="border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground flex aspect-square w-full items-center justify-center rounded-lg border p-1 text-[11px] font-medium transition-colors duration-80 sm:text-[12px]"
-            href="https://www.instagram.com/alixsepofficial/"
-            rel="noreferrer"
-            target="_blank"
-          >
-            Instagram
-          </a>
-        </li>
-        <li className="min-w-0">
-          <a
-            className="border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground flex aspect-square w-full items-center justify-center rounded-lg border p-1 text-[11px] font-medium transition-colors duration-80 sm:text-[12px]"
-            href="https://www.deviantart.com/alixsep"
-            rel="noreferrer"
-            target="_blank"
-          >
-            Deviantart
-          </a>
-        </li>
-        <li className="min-w-0">
-          <a
-            className="border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground flex aspect-square w-full items-center justify-center rounded-lg border p-1 text-[11px] font-medium transition-colors duration-80 sm:text-[12px]"
-            href="https://github.com/alixsep"
-            rel="noreferrer"
-            target="_blank"
-          >
-            Github
-          </a>
-        </li>
+        {contactLinks.map(({ href, label }) => (
+          <li className="min-w-0" key={href}>
+            <a
+              className={`${shape.button} border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground text-caption flex aspect-square w-full items-center justify-center border p-1 font-medium transition-colors duration-80`}
+              href={href}
+              rel={href.startsWith("http") ? "noreferrer" : undefined}
+              target={href.startsWith("http") ? "_blank" : undefined}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
       </ul>
-      <p className="text-muted-foreground mt-4 text-[11px] leading-4">
+      <p className="text-caption text-muted-foreground mt-4 leading-4">
         © {currentYear} YUGILIFE · Developed by Alixsep
       </p>
     </footer>
@@ -108,6 +94,7 @@ function LandingCredits() {
 }
 
 export function Home({ onReady = () => undefined }: { onReady?: () => void }) {
+  const shape = useShape()
   const [canvasReady, setCanvasReady] = useState(false)
   const [cardImageReady, setCardImageReady] = useState(false)
   const landingReady = canvasReady && cardImageReady
@@ -159,7 +146,7 @@ export function Home({ onReady = () => undefined }: { onReady?: () => void }) {
           <LandingCredits />
         </div>
         <div className="landing-canvas-slot order-first flex aspect-square h-[calc(100vw_-_1.5rem)] w-full min-w-0 place-self-start sm:h-[calc(100vw_-_2rem)] lg:order-2 lg:h-[min(calc(100dvh_-_4rem),60vw,calc(1920px_-_2rem))] lg:w-[min(calc(100dvh_-_4rem),60vw,calc(1920px_-_2rem))] lg:shrink-0">
-          <div className="border-border bg-card size-full overflow-hidden rounded-lg border">
+          <div className={`${shape.bg} border-border bg-card size-full overflow-hidden border`}>
             <LandingCanvas onReady={() => setCanvasReady(true)} />
           </div>
         </div>

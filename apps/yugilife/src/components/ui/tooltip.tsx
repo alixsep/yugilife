@@ -11,7 +11,7 @@ import { useSize } from "@/lib/size-context"
 import { exitFallbackMs, spring } from "@/lib/springs"
 import { cn } from "@/lib/utils"
 
-import type { ReactElement, ReactNode } from "react"
+import type { ComponentPropsWithoutRef, ReactElement, ReactNode, Ref } from "react"
 
 // ---------------------------------------------------------------------------
 // Portal container context
@@ -82,7 +82,14 @@ function TooltipProvider({
 
 type TooltipSide = "top" | "right" | "bottom" | "left"
 
-interface TooltipProps {
+/** Anything a parent hands the Tooltip is meant for its trigger, so those props are forwarded to
+ *  the child rather than dropped. This is what lets a Tooltip sit inside an `asChild` parent such
+ *  as a DialogTrigger: without it the parent's onClick lands on the Tooltip and never reaches the
+ *  button, and the control silently does nothing. */
+interface TooltipProps extends Omit<
+  ComponentPropsWithoutRef<"button">,
+  "children" | "className" | "content"
+> {
   content: ReactNode
   children: ReactElement
   side?: TooltipSide
@@ -90,11 +97,13 @@ interface TooltipProps {
   /** Hover delay before this tooltip opens, in ms. Defaults to 200, or to the
    *  ambient TooltipProvider's delayDuration when one is present. */
   delayDuration?: number
+  /** Classes for the tooltip bubble itself, never the trigger. */
   className?: string
   /** When true, forces the tooltip open. When false, forces it closed. When undefined, uses default hover/focus behavior. */
   forceOpen?: boolean
   /** Called when the tooltip's internal open state changes (before forceOpen is applied). */
   onOpenChange?: (open: boolean) => void
+  ref?: Ref<HTMLButtonElement>
 }
 
 // ---------------------------------------------------------------------------
@@ -127,6 +136,7 @@ function Tooltip({
   className,
   forceOpen,
   onOpenChange: onOpenChangeProp,
+  ...triggerProps
 }: TooltipProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = forceOpen !== undefined ? forceOpen : internalOpen
@@ -172,7 +182,11 @@ function Tooltip({
         onOpenChangeProp?.(value)
       }}
     >
-      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+      {/* Radix's Trigger uses Slot for `asChild`, so forwarded handlers merge with the child's own
+          rather than replacing them. */}
+      <TooltipPrimitive.Trigger asChild {...triggerProps}>
+        {children}
+      </TooltipPrimitive.Trigger>
       {mounted && (
         <TooltipPrimitive.Portal forceMount {...portalProps}>
           <TooltipPrimitive.Content asChild side={side} sideOffset={sideOffset} forceMount>
@@ -181,7 +195,7 @@ function Tooltip({
                 // Trim recenters the label; the padding bump only applies
                 // where text-box is supported, keeping the same overall
                 // height (~26px) as untrimmed browsers.
-                "bg-foreground text-background px-2 py-1",
+                "bg-foreground text-background z-60 px-2 py-1",
                 sizeClasses.caption,
                 "[text-box:trim-both_cap_alphabetic] supports-[text-box:trim-both]:py-2",
                 shape.bg,

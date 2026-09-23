@@ -18,5 +18,4 @@ export interface InventoryCardPreview {
   cardId: string
   cardRevision: number
   image: Blob
-  renderFingerprint: string
 }

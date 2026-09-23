@@ -39,6 +39,8 @@ interface OutlinedTextStyle {
   fontFamily: string
   fontSize: number
   opacity: string
+  /** Preserved so outlined paths paint an outer stroke in the same order as `<text>` mode. */
+  paintOrder: string
   stroke: string
   strokeLinecap: string
   strokeLinejoin: string
@@ -369,6 +371,11 @@ function paintAttributes(style: OutlinedTextStyle, fill: string) {
     fill,
     ...(style.fillOpacity === "1" ? {} : { "fill-opacity": style.fillOpacity }),
     ...(style.opacity === "1" ? {} : { opacity: style.opacity }),
+    // Carried through verbatim: an outer stroke is a double-width stroke painted under the fill, so
+    // dropping the order here would silently thin every outlined glyph relative to `<text>` mode.
+    ...(stroke && style.paintOrder && style.paintOrder !== "normal"
+      ? { "paint-order": style.paintOrder }
+      : {}),
     ...stroke,
   } satisfies Readonly<Record<string, string | number>>
 }
@@ -412,6 +419,7 @@ async function outlinedStyle(
     fontFamily,
     fontSize,
     opacity: computed.opacity,
+    paintOrder: computed.getPropertyValue("paint-order"),
     stroke: computed.stroke,
     strokeLinecap: computed.strokeLinecap,
     strokeLinejoin: computed.strokeLinejoin,

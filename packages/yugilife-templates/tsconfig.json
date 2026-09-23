@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "paths": {
-      "yugilife-core": ["../yugilife-core/src/index.ts"]
+      "yugilife-core": ["../yugilife-core/src/index.ts"],
+      "yugilife-core/color-grading": ["../yugilife-core/src/public/color-grading.ts"]
     },
     "types": ["node", "vite/client"]
   },

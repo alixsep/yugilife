@@ -21,12 +21,27 @@ change printings while retaining the same screenshot name. Card fields are copie
 Series 10 contract; `language` is intentionally absent because Series 10 has no standalone language
 rendering input.
 
+Every case renders into one page per Playwright worker rather than reloading the harness for each
+of them. A reload re-fetched the template, re-registered its fonts and re-graded its textures to
+change nothing but the card data, which is why the suite spent most of its time on setup instead of
+rendering. Cases stay independent because a render depends only on the card it is given; the shared
+page is set up once and then draws card after card, exactly as the application does. The baselines
+are rendered with prepared textures for the same reason — that is what the application draws with
+once a template is active. `?prepared=false` keeps the live grading path reachable, and one case
+uses it so that path cannot rot.
+
+`Series 10 prepared textures hold exactly the graded pixels` compares each prepared texture against
+grading the same region in the browser then and there. The screenshots cannot make that claim on
+their own, because a texture is mostly covered by the layers drawn over it; this case is what keeps
+the stored form honest.
+
 The comparison is pixel-exact: `maxDiffPixels` and Playwright's per-pixel color `threshold` are
 both set to `0`. Baselines use Playwright 1.62.0's lossless WebP snapshot support. Any pixel
 inconsistency fails the test. Because this is intentionally strict, authoritative comparisons
 must use the pinned Chromium-on-Linux environment described above.
 Visual cases run fully parallel with four Playwright workers by default, including snapshot-update
-runs; individual tests use isolated browser contexts while sharing the read-only Vite fixture server.
+runs; each worker owns one browser context and one loaded fixture page, and they share the read-only
+Vite fixture server.
 
 Regenerate the committed baseline deliberately with:
 

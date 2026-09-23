@@ -14,10 +14,13 @@ import { LinkArrowSelector } from "@/components/ui/link-arrow-selector"
 import { NumberInput } from "@/components/ui/number-input"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { Toggle } from "@/components/ui/toggle"
+import { inspectImageInput } from "@/lib/image-input"
 
+import type { ReactNode } from "react"
 import type { CardFieldDefinition, CardFieldValue } from "yugilife-core"
 
 interface CardFieldInputProps {
+  attachedFooter?: ReactNode
   field: CardFieldDefinition
   value: CardFieldValue
   onChange: (name: string, value: CardFieldValue) => void
@@ -45,6 +48,11 @@ function optionLabel(option: string) {
   return option.replaceAll("-", " ").replace(/\b\w/g, (character) => character.toUpperCase())
 }
 
+/** Whether an option is the field's own way of saying "not set". */
+function isNeutralOption(option: string) {
+  return option.toLocaleLowerCase() === "none"
+}
+
 function textListValues(value: CardFieldValue) {
   if (Array.isArray(value)) {
     const entries = value.map(String)
@@ -70,6 +78,7 @@ function TextWarnings({ value }: { value: CardFieldValue }) {
 }
 
 export const CardFieldInput = memo(function CardFieldInput({
+  attachedFooter,
   field,
   onChange,
   value,
@@ -276,8 +285,18 @@ export const CardFieldInput = memo(function CardFieldInput({
       <Field>
         <FieldLabel>{label}</FieldLabel>
         <ImageDropzone
+          undoRemoval
+          confirmReplacement={
+            field.name === "artwork"
+              ? "Replacing the artwork clears its image mask, dot mask, pins, and database association. Card text and presentation settings stay unchanged."
+              : undefined
+          }
+          validateFile={async (file) => {
+            await inspectImageInput(file)
+          }}
+          actionsOverlay={field.name === "artwork"}
+          attachedFooter={field.name === "artwork" ? attachedFooter : undefined}
           accept="image/*"
-          removeButtonSize="icon"
           value={value instanceof Blob ? value : null}
           onValueChange={(file) => onChange(field.name, file ?? undefined)}
         />
@@ -286,6 +305,10 @@ export const CardFieldInput = memo(function CardFieldInput({
   }
 
   if (field.options) {
+    // An optional field normally gets a synthetic row for clearing it. A field that declares its own
+    // neutral member already offers that choice, and rendering both leaves two "None" entries in the
+    // menu that do the same thing.
+    const clearable = !field.required && !field.options.some(isNeutralOption)
     return (
       <Field>
         <FieldLabel>{label}</FieldLabel>
@@ -296,13 +319,13 @@ export const CardFieldInput = memo(function CardFieldInput({
         >
           <SelectTrigger className="w-full" placeholder="Choose an option" />
           <SelectContent>
-            {!field.required && (
+            {clearable && (
               <SelectItem index={0} value="">
                 None
               </SelectItem>
             )}
             {field.options.map((option, index) => (
-              <SelectItem index={index + (field.required ? 0 : 1)} key={option} value={option}>
+              <SelectItem index={index + (clearable ? 1 : 0)} key={option} value={option}>
                 {optionLabel(option)}
               </SelectItem>
             ))}

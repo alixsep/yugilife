@@ -216,7 +216,7 @@ function EditorControlsShowcase() {
   )
   const [level, setLevel] = useState<number | null>(4)
   const [monsterType, setMonsterType] = useState<string | null>("dragon")
-  const [artwork, setArtwork] = useState<File | null>(null)
+  const [artwork, setArtwork] = useState<Blob | null>(null)
 
   return (
     <section className="grid gap-4" aria-labelledby="editor-controls-heading">

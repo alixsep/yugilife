@@ -1,0 +1,25 @@
+{
+  "format": "yugilife/card-catalog",
+  "schemaVersion": 2,
+  "source": {
+    "name": "YGOPRODeck API v7",
+    "sha256": "7565d765d90f029a73008ae7a9d14b66d7d747bebfe0799bfda6cda2e9892aa5",
+    "recordCount": 14522
+  },
+  "artworkSource": {
+    "name": "YugiLife audited artwork mapping",
+    "sha256": "e70105e454ec5b9b25139d6b008763387f2a8b2a569f0f1827cb8d26d493a225",
+    "recordCount": 13720,
+    "includedCount": 13702
+  },
+  "catalog": {
+    "file": "catalog-4bc4c264a7b27270.bin",
+    "encoding": "br",
+    "artifactSha256": "4bc4c264a7b27270bf322cdec536ef7260640a774863f9c8a811f9a79ee492d9",
+    "compressedBytes": 772731,
+    "sha256": "7cbac3a240ed5aa5660fabcd461545a7e9c67ed34e4be40b0b5b6e9c3ef568d1",
+    "recordCount": 14398,
+    "uncompressedBytes": 5633848
+  },
+  "rejectedCount": 124
+}

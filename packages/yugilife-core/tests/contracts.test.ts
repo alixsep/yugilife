@@ -5,6 +5,7 @@ import {
   renderCard,
   validateCardData,
   validateCardTemplate,
+  validatePresentationOverrides,
   validateTemplateManifest,
 } from "../src"
 import { applyColorPreset } from "../src/public/color-grading"
@@ -75,11 +76,11 @@ describe("generic template contracts", () => {
     expect(validateCardTemplate({ ...template, schemaVersion: 1 }).schemaVersion).toBe(1)
   })
 
-  it("rejects obsolete card-specific keys instead of interpreting an older schema", () => {
+  it("rejects an obsolete semantic-binding shape instead of guessing its meaning", () => {
     expect(() =>
       validateCardTemplate({
         ...testTemplate(),
-        semanticBindings: { kind: "monster" },
+        semanticBindings: { kind: "document" },
       }),
     ).toThrow(/semanticBindings has unsupported fields: kind/)
   })
@@ -150,7 +151,7 @@ describe("generic template contracts", () => {
     const template = validateCardTemplate(
       testTemplate({
         semanticBindings: {
-          bindings: [{ path: "label", source: { value: "SPELL CARD" } }],
+          bindings: [{ path: "label", source: { value: "DOCUMENT" } }],
         },
         layers: [
           {
@@ -275,6 +276,47 @@ describe("generic template contracts", () => {
         }),
       ),
     ).toThrow(/layers\[0\]\.field must reference an image field/)
+  })
+
+  it("validates shared artwork placement, mask fields, and bounded transforms", () => {
+    const template = validateCardTemplate(
+      testTemplate({
+        cardFields: [
+          NAME_FIELD,
+          { kind: "image", label: "Artwork", name: "artwork" },
+          { kind: "image", label: "Alpha", name: "alpha" },
+        ],
+        layers: [
+          {
+            field: "artwork",
+            id: "cutout",
+            kind: "artwork",
+            maskChannel: "luminance",
+            maskField: "alpha",
+            placementRegion: { height: 80, width: 80, x: 10, y: 10 },
+            region: { height: 100, width: 100, x: 0, y: 0 },
+            transformId: "shared-artwork",
+          },
+        ],
+      }),
+    )
+
+    expect(() =>
+      validatePresentationOverrides(
+        {
+          artworkTransforms: {
+            "shared-artwork": { mode: "expanded", scale: 2, x: 0.25, y: -0.25 },
+          },
+        },
+        template,
+      ),
+    ).not.toThrow()
+    expect(() =>
+      validatePresentationOverrides(
+        { artworkTransforms: { "shared-artwork": { scale: 0.5, x: 0, y: 0 } } },
+        template,
+      ),
+    ).toThrow(/scale must be between 1 and 8/)
   })
 
   it("rejects incompatible semantic transform and fallback kinds", () => {

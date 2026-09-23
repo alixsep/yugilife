@@ -677,7 +677,13 @@ function addInstanceOpacityAttribute(
     if (useInstanceEmissive) {
       shader.fragmentShader = shader.fragmentShader.replace(
         "vec3 totalEmissiveRadiance = emissive;",
-        "vec3 totalEmissiveRadiance = emissive * vInstanceEmissive;",
+        [
+          "vec3 totalEmissiveRadiance = emissive * vInstanceEmissive;",
+          // Merged batches keep a neutral emissive and carry their tint per instance.
+          "#ifdef USE_INSTANCING_COLOR",
+          "  totalEmissiveRadiance *= vColor;",
+          "#endif",
+        ].join("\n"),
       )
     }
   }
@@ -687,17 +693,33 @@ function addInstanceOpacityAttribute(
   return attribute
 }
 
-function createInstancedFxBatch(source: THREE.Mesh, count: number, useInstanceEmissive = false) {
+function createInstancedFxBatch(
+  source: THREE.Mesh,
+  count: number,
+  useInstanceEmissive = false,
+  perInstanceColor = false,
+) {
   const material = source.material as THREE.Material & {
     opacity?: number
     emissiveIntensity?: number
+    color?: THREE.Color
+    emissive?: THREE.Color
   }
   if (material.opacity !== undefined) material.opacity = 1
   if (useInstanceEmissive && material.emissiveIntensity !== undefined) {
     material.emissiveIntensity = 1
   }
+  // A batch shared by differently tinted effects keeps the material neutral and multiplies the
+  // instance colour back in, so one draw call covers what used to be one per colour.
+  if (perInstanceColor) {
+    material.color?.setRGB(1, 1, 1)
+    material.emissive?.setRGB(1, 1, 1)
+  }
   const mesh = new THREE.InstancedMesh(source.geometry, material, count)
   mesh.frustumCulled = false
+  if (perInstanceColor) {
+    mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3).fill(1), 3)
+  }
   const opacity = addInstanceOpacityAttribute(
     source.geometry as THREE.InstancedBufferGeometry,
     material,
@@ -713,14 +735,19 @@ function createInstancedFxBatch(source: THREE.Mesh, count: number, useInstanceEm
   return { mesh, opacity, emissive }
 }
 
-function createDashedStar3D(scale: number, color = 0x99ff72) {
-  const group = new THREE.Group()
+/**
+ * Every star draws the same dash ring, and that ring never changes shape. Its local matrices and
+ * the two depth orders the runtime can ask for are derived once here so all stars can share one
+ * instanced mesh instead of owning a mesh, a material, and a per-frame sort each.
+ */
+function createStarDashTemplate() {
   const points = Array.from({ length: 10 }, (_, index) => {
     const angle = (index * Math.PI) / 5 - Math.PI / 2
     const radius = index % 2 === 0 ? 1 : 0.42
     return new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0)
   })
-  const dashData = []
+  const locals: THREE.Matrix4[] = []
+  const centerX: number[] = []
   for (let index = 0; index < 10; index += 1) {
     const start = points[index]
     const end = points[(index + 1) % 10]
@@ -736,225 +763,226 @@ function createDashedStar3D(scale: number, color = 0x99ff72) {
         new THREE.Vector3(0, 1, 0),
         direction.clone().normalize(),
       )
-      dashData.push({
-        center: a.clone().add(b).multiplyScalar(0.5),
-        quaternion,
-        scale: new THREE.Vector3(1, direction.length(), 1),
-      })
+      const center = a.clone().add(b).multiplyScalar(0.5)
+      locals.push(
+        new THREE.Matrix4().compose(
+          center,
+          quaternion,
+          new THREE.Vector3(1, direction.length(), 1),
+        ),
+      )
+      centerX.push(center.x)
     }
   }
-  const dashGeometry = new THREE.CylinderGeometry(0.03, 0.03, 1, 8)
-  const dashMaterial = new THREE.MeshStandardMaterial({
-    color,
-    emissive: color,
-    emissiveIntensity: 2.2,
-    roughness: 0.3,
-    transparent: true,
-    opacity: 0.92,
-  })
-  const dashMesh = new THREE.InstancedMesh(dashGeometry, dashMaterial, dashData.length)
-  const dashOpacity = addInstanceOpacityAttribute(dashGeometry, dashMaterial, dashData.length)
-  const dashOrder = dashData.map((_, index) => index)
-  const dashMatrix = new THREE.Matrix4()
-  dashData.forEach((data: any, index: number) => {
-    dashMatrix.compose(data.center, data.quaternion, data.scale)
-    dashMesh.setMatrixAt(index, dashMatrix)
-  })
-  dashMesh.instanceMatrix.needsUpdate = true
-  dashMesh.computeBoundingSphere()
-  group.add(dashMesh)
-  const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(0.82, 18, 16),
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.055,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  )
-  group.add(glow)
-  const light = new THREE.PointLight(color, 0.16, 2.6, 2)
-  group.add(light)
-  group.scale.setScalar(scale)
+  const indices = locals.map((_, index) => index)
+  // The per-frame comparator only ever flipped with the sign of the star's yaw, so the two orders
+  // it could produce are resolved up front and selected by that sign instead of re-sorted.
   return {
-    group,
-    dashMesh,
-    dashMaterial,
-    dashOpacity,
-    dashData,
-    dashOrder,
-    dashMatrix,
-    glow,
-    light,
+    locals,
+    ascending: [...indices].sort((left, right) => centerX[left] - centerX[right]),
+    descending: [...indices].sort((left, right) => centerX[right] - centerX[left]),
   }
 }
 
-function createGlitterShard(scale: number, color = 0xfff2a6) {
-  const group = new THREE.Group()
-  const core = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.1),
-    new THREE.MeshStandardMaterial({
-      color,
-      emissive: color,
-      emissiveIntensity: 2.4,
-      roughness: 0.2,
-      transparent: true,
-      opacity: 0.95,
-    }),
+function createStarDashBatch(count: number, color = 0x99ff72) {
+  return createInstancedFxBatch(
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 1, 8),
+      new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: 2.2,
+        roughness: 0.3,
+        transparent: true,
+        opacity: 0.92,
+      }),
+    ),
+    count,
+    true,
   )
-  core.scale.set(0.65, 1.55, 0.65)
-  group.add(core)
-  const halo = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 12, 10),
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.1,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    }),
-  )
-  group.add(halo)
-  group.scale.setScalar(scale)
-  return { group, core, halo }
 }
 
-function createGlowOrb(scale: number, opacity: number, color = 0xffdd83) {
-  const group = new THREE.Group()
-  const core = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 18, 16),
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: opacity * 0.9,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    }),
+function createStarGlowBatch(count: number, color = 0x99ff72) {
+  return createInstancedFxBatch(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(0.82, 18, 16),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.055,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    ),
+    count,
   )
-  const shell = new THREE.Mesh(
-    new THREE.SphereGeometry(0.34, 20, 18),
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: opacity * 0.3,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  )
-  const outer = new THREE.Mesh(
-    new THREE.SphereGeometry(0.58, 20, 18),
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: opacity * 0.1,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  )
-  const light = new THREE.PointLight(color, 0.16, 2.8, 2)
-  group.add(core, shell, outer)
-  group.scale.setScalar(scale)
-  return { group, core, shell, outer, light }
 }
 
-function createVolumetricSpark(scale: number, opacity: number, variant = 0) {
-  const group = new THREE.Group()
-  const palettes = [
-    { core: 0xfffbef, emissive: 0xffd567, shell: 0xffd36b, outer: 0xffefb8, ring: 0xffe4a0 },
-    { core: 0xe6fff0, emissive: 0x8fffa5, shell: 0xb5ff75, outer: 0xe9ffd2, ring: 0xc8ff87 },
-    { core: 0xffffff, emissive: 0xffef9c, shell: 0xffe08a, outer: 0xfff6d5, ring: 0xfff1bc },
-  ]
-  const palette = palettes[variant % palettes.length]
+/**
+ * The orbs only ever differed by tint, so one batch per shell carries every orb and the colour
+ * travels as an instance attribute.
+ */
+function createGlowOrbBatches(count: number) {
+  const layer = (radius: number, segments: number, rings: number, doubleSided: boolean) =>
+    new THREE.Mesh(
+      new THREE.SphereGeometry(radius, segments, rings),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 1,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        ...(doubleSided ? { side: THREE.DoubleSide } : {}),
+      }),
+    )
+  return {
+    core: createInstancedFxBatch(layer(0.16, 18, 16, false), count, false, true),
+    shell: createInstancedFxBatch(layer(0.34, 20, 18, true), count, false, true),
+    outer: createInstancedFxBatch(layer(0.58, 20, 18, true), count, false, true),
+  }
+}
+
+function createGlitterBatches(count: number) {
+  const core = createInstancedFxBatch(
+    new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.1),
+      new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffffff,
+        emissiveIntensity: 2.4,
+        roughness: 0.2,
+        transparent: true,
+        opacity: 1,
+      }),
+    ),
+    count,
+    true,
+    true,
+  )
+  // The shard kept its authored emissive gain and drove only the pulse per instance, so restore
+  // the gain that the shared-batch helper neutralises.
+  ;(core.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 2.4
+  const halo = createInstancedFxBatch(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 12, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 1,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    ),
+    count,
+    false,
+    true,
+  )
+  return { core, halo }
+}
+
+const sparkPalettes = [
+  { core: 0xfffbef, emissive: 0xffd567, shell: 0xffd36b, outer: 0xffefb8, ring: 0xffe4a0 },
+  { core: 0xe6fff0, emissive: 0x8fffa5, shell: 0xb5ff75, outer: 0xe9ffd2, ring: 0xc8ff87 },
+  { core: 0xffffff, emissive: 0xffef9c, shell: 0xffe08a, outer: 0xfff6d5, ring: 0xfff1bc },
+]
+
+/** Fixed offsets each spark component keeps inside its group, applied to the instance matrix. */
+const sparkLocals = {
+  core: new THREE.Matrix4().makeScale(0.95, 1.35, 0.95),
+  spikeX: new THREE.Matrix4().makeScale(2.8, 0.26, 0.26),
+  spikeY: new THREE.Matrix4().makeScale(0.24, 3.2, 0.24),
+  spikeZ: new THREE.Matrix4().makeScale(0.22, 0.22, 2),
+}
+
+function createSparkCoreBatch(variant: number, count: number) {
+  const palette = sparkPalettes[variant % sparkPalettes.length]
   const geometries = [
     new THREE.OctahedronGeometry(0.17),
     new THREE.TetrahedronGeometry(0.19),
     new THREE.IcosahedronGeometry(0.15),
   ]
-  const core = new THREE.Mesh(
-    geometries[variant % 3],
-    new THREE.MeshStandardMaterial({
-      color: palette.core,
-      emissive: palette.emissive,
-      emissiveIntensity: 2.5,
-      roughness: 0.18,
-    }),
+  return createInstancedFxBatch(
+    new THREE.Mesh(
+      geometries[variant % 3],
+      new THREE.MeshStandardMaterial({
+        color: palette.core,
+        emissive: palette.emissive,
+        emissiveIntensity: 2.5,
+        roughness: 0.18,
+      }),
+    ),
+    count,
+    true,
   )
-  core.scale.set(0.95, 1.35, 0.95)
-  const inner = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.09),
-    new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.95,
-      depthWrite: false,
-    }),
-  )
-  const spike = (
-    axis: "x" | "y" | "z",
-    length: number,
-    radius: number,
-    color: number,
-    opacityValue: number,
-  ) => {
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.17, 18, 14),
+}
+
+/**
+ * Only the spark core's geometry varies between variants. Every other shell is the same mesh in a
+ * different tint, so all sparks share one batch per shell and the three spikes share a single
+ * batch keyed by their fixed local scales.
+ */
+function createSparkSharedBatches(count: number) {
+  const additive = (geometry: THREE.BufferGeometry, doubleSided = false) =>
+    new THREE.Mesh(
+      geometry,
       new THREE.MeshBasicMaterial({
-        color,
+        color: 0xffffff,
         transparent: true,
-        opacity: opacityValue,
+        opacity: 1,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
+        ...(doubleSided ? { side: THREE.DoubleSide } : {}),
       }),
     )
-    if (axis === "x") mesh.scale.set(length, radius, radius)
-    if (axis === "y") mesh.scale.set(radius, length, radius)
-    if (axis === "z") mesh.scale.set(radius, radius, length)
-    return mesh
+  return {
+    inner: createInstancedFxBatch(
+      new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.09),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 1,
+          depthWrite: false,
+        }),
+      ),
+      count,
+    ),
+    spikes: createInstancedFxBatch(
+      additive(new THREE.SphereGeometry(0.17, 18, 14)),
+      count * 3,
+      false,
+      true,
+    ),
+    shell: createInstancedFxBatch(
+      additive(new THREE.SphereGeometry(0.34, 18, 16), true),
+      count,
+      false,
+      true,
+    ),
+    outerShell: createInstancedFxBatch(
+      additive(new THREE.SphereGeometry(0.52, 18, 16), true),
+      count,
+      false,
+      true,
+    ),
+    ring: createInstancedFxBatch(
+      additive(new THREE.TorusGeometry(0.26, 0.03, 10, 30)),
+      count,
+      false,
+      true,
+    ),
   }
-  const spikeX = spike("x", 2.8, 0.26, palette.shell, opacity * 0.34)
-  const spikeY = spike("y", 3.2, 0.24, palette.shell, opacity * 0.42)
-  const spikeZ = spike("z", 2, 0.22, palette.outer, opacity * 0.18)
-  const shell = new THREE.Mesh(
-    new THREE.SphereGeometry(0.34, 18, 16),
-    new THREE.MeshBasicMaterial({
-      color: palette.shell,
-      transparent: true,
-      opacity: opacity * 0.46,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  )
-  const outerShell = new THREE.Mesh(
-    new THREE.SphereGeometry(0.52, 18, 16),
-    new THREE.MeshBasicMaterial({
-      color: palette.outer,
-      transparent: true,
-      opacity: opacity * 0.22,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  )
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.26, 0.03, 10, 30),
-    new THREE.MeshBasicMaterial({
-      color: palette.ring,
-      transparent: true,
-      opacity: opacity * 0.28,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }),
-  )
-  ring.rotation.x = Math.PI * 0.5
-  const light = new THREE.PointLight(palette.emissive, 0.4, 3.6, 2)
-  group.add(core, inner, spikeX, spikeY, spikeZ, shell, outerShell, ring)
-  group.scale.setScalar(scale)
-  return { group, core, inner, spikeX, spikeY, spikeZ, shell, outerShell, ring, light }
+}
+
+function markBatchUpdated(batch: {
+  mesh: THREE.InstancedMesh
+  opacity: THREE.InstancedBufferAttribute
+  emissive?: THREE.InstancedBufferAttribute
+}) {
+  batch.mesh.instanceMatrix.needsUpdate = true
+  batch.opacity.needsUpdate = true
+  if (batch.emissive) batch.emissive.needsUpdate = true
 }
 
 function createKuribohWorld(renderer: THREE.WebGLRenderer) {
@@ -1191,6 +1219,7 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
   updateParts()
 
   const atmosphere: any = { glows: [], stars: [], glitter: [], sparks: [] }
+  const instanceTint = new THREE.Color()
   const glowData = [
     [-3.6, 2.5, -1.1, 1.9, 0.16, 0xb8ff8e],
     [-2, 2.8, -0.6, 1.4, 0.12, 0xc5ff9f],
@@ -1211,26 +1240,17 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
     pulse: 0.28 + Math.random() * 0.28,
     drift: 0.24 + Math.random() * 0.28,
   }))
-  const glowBatches = new Map<number, any>()
-  for (const color of new Set(glowItems.map((item) => item.color))) {
-    const count = glowItems.filter((item) => item.color === color).length
-    const source = createGlowOrb(1, 1, color)
-    const batch = {
-      core: createInstancedFxBatch(source.core, count),
-      shell: createInstancedFxBatch(source.shell, count),
-      outer: createInstancedFxBatch(source.outer, count),
-      nextIndex: 0,
-    }
-    fxGroup.add(batch.core.mesh, batch.shell.mesh, batch.outer.mesh)
-    glowBatches.set(color, batch)
-  }
-  glowItems.forEach((item) => {
-    const batch = glowBatches.get(item.color)
-    item.batch = batch
-    item.index = batch.nextIndex
-    batch.nextIndex += 1
+  const glowBatch = createGlowOrbBatches(glowItems.length)
+  fxGroup.add(glowBatch.core.mesh, glowBatch.shell.mesh, glowBatch.outer.mesh)
+  glowItems.forEach((item: any, index: number) => {
+    item.index = index
+    instanceTint.setHex(item.color)
+    glowBatch.core.mesh.setColorAt(index, instanceTint)
+    glowBatch.shell.mesh.setColorAt(index, instanceTint)
+    glowBatch.outer.mesh.setColorAt(index, instanceTint)
     atmosphere.glows.push(item)
   })
+
   const starData = [
     [-3.6, 2.5, 0.2, 0.6],
     [-2.5, 2.9, -0.6, 0.44],
@@ -1244,13 +1264,16 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
     [0, 2.85, 0.4, 0.42],
     [0.4, -1.8, 0.7, 0.36],
   ]
-  starData.forEach(([x, y, z, scale]) => {
-    const fx = createDashedStar3D(scale)
-    fx.group.position.set(x, y, z)
-    fxGroup.add(fx.group)
+  const starDashTemplate = createStarDashTemplate()
+  const starDashCount = starDashTemplate.locals.length
+  const starDashWave = new Float32Array(starDashCount)
+  const starDashBatch = createStarDashBatch(starData.length * starDashCount)
+  const starGlowBatch = createStarGlowBatch(starData.length)
+  fxGroup.add(starDashBatch.mesh, starGlowBatch.mesh)
+  starData.forEach(([x, y, z, scale], index) => {
     atmosphere.stars.push({
-      fx,
-      basePos: fx.group.position.clone(),
+      index,
+      basePos: new THREE.Vector3(x, y, z),
       baseScale: scale,
       seed: Math.random() * 100,
       pulse: 0.42 + Math.random() * 0.38,
@@ -1258,42 +1281,11 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
       rot: Math.random() * Math.PI * 2,
     })
   })
+
   const glitterColors = [0xfff0a0, 0xffffff, 0xc6ff9a, 0xffd96a]
   const glitterCount = 70
-  const glitterBatches = new Map<number, any>()
-  const glitterIndices = new Map<number, number>()
-  for (const color of glitterColors) {
-    const count = Math.ceil(glitterCount / glitterColors.length)
-    const coreMaterial = new THREE.MeshStandardMaterial({
-      color,
-      emissive: color,
-      emissiveIntensity: 2.4,
-      roughness: 0.2,
-      transparent: true,
-      opacity: 1,
-    })
-    const haloMaterial = new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 1,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
-    const coreMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.1), coreMaterial, count)
-    const haloMesh = new THREE.InstancedMesh(
-      new THREE.SphereGeometry(0.22, 12, 10),
-      haloMaterial,
-      count,
-    )
-    const coreEmissive = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(2.4), 1)
-    coreEmissive.setUsage(THREE.DynamicDrawUsage)
-    coreMesh.geometry.setAttribute("instanceEmissive", coreEmissive)
-    const coreOpacity = addInstanceOpacityAttribute(coreMesh.geometry, coreMaterial, count, true)
-    const haloOpacity = addInstanceOpacityAttribute(haloMesh.geometry, haloMaterial, count)
-    fxGroup.add(coreMesh, haloMesh)
-    glitterBatches.set(color, { coreMesh, haloMesh, coreOpacity, coreEmissive, haloOpacity })
-    glitterIndices.set(color, 0)
-  }
+  const glitterBatch = createGlitterBatches(glitterCount)
+  fxGroup.add(glitterBatch.core.mesh, glitterBatch.halo.mesh)
   const glitterMatrix = new THREE.Matrix4()
   const glitterQuaternion = new THREE.Quaternion()
   const glitterEuler = new THREE.Euler()
@@ -1301,28 +1293,27 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
   const glitterScale = new THREE.Vector3()
   for (let index = 0; index < glitterCount; index += 1) {
     const color = glitterColors[index % glitterColors.length]
-    const batch = glitterBatches.get(color)
-    const batchIndex = glitterIndices.get(color) ?? 0
-    glitterIndices.set(color, batchIndex + 1)
     const baseScale = THREE.MathUtils.randFloat(0.18, 0.42)
     const basePos = new THREE.Vector3(
       THREE.MathUtils.randFloat(-3.8, 3.8),
       THREE.MathUtils.randFloat(-2.2, 3.2),
       THREE.MathUtils.randFloat(-1.4, 1.4),
     )
+    instanceTint.setHex(color)
+    glitterBatch.core.mesh.setColorAt(index, instanceTint)
+    glitterBatch.halo.mesh.setColorAt(index, instanceTint)
     glitterPosition.copy(basePos)
     glitterScale.set(0.65 * baseScale, 1.55 * baseScale, 0.65 * baseScale)
     glitterMatrix.compose(glitterPosition, glitterQuaternion, glitterScale)
-    batch.coreMesh.setMatrixAt(batchIndex, glitterMatrix)
+    glitterBatch.core.mesh.setMatrixAt(index, glitterMatrix)
     glitterScale.set(baseScale, baseScale, baseScale)
     glitterMatrix.compose(glitterPosition, glitterQuaternion, glitterScale)
-    batch.haloMesh.setMatrixAt(batchIndex, glitterMatrix)
-    batch.coreOpacity.array[batchIndex] = 0.95
-    batch.coreEmissive.array[batchIndex] = 2.4
-    batch.haloOpacity.array[batchIndex] = 0.1
+    glitterBatch.halo.mesh.setMatrixAt(index, glitterMatrix)
+    glitterBatch.core.opacity.array[index] = 0.95
+    glitterBatch.core.emissive!.array[index] = 2.4
+    glitterBatch.halo.opacity.array[index] = 0.1
     atmosphere.glitter.push({
-      batch,
-      index: batchIndex,
+      index,
       basePos,
       baseScale,
       seed: Math.random() * 100,
@@ -1331,15 +1322,9 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
       rot: Math.random() * Math.PI * 2,
     })
   }
-  for (const batch of glitterBatches.values()) {
-    batch.coreMesh.instanceMatrix.needsUpdate = true
-    batch.haloMesh.instanceMatrix.needsUpdate = true
-    batch.coreOpacity.needsUpdate = true
-    batch.coreEmissive.needsUpdate = true
-    batch.haloOpacity.needsUpdate = true
-    batch.coreMesh.computeBoundingSphere()
-    batch.haloMesh.computeBoundingSphere()
-  }
+  markBatchUpdated(glitterBatch.core)
+  markBatchUpdated(glitterBatch.halo)
+
   const sparkData = [
     [-3, 2.1, 0.3, 0.26],
     [-2.1, 1.1, -0.2, 0.28],
@@ -1368,48 +1353,37 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
     drift: 0.18 + Math.random() * 0.22,
     rot: Math.random() * Math.PI * 2,
   }))
-  const sparkBatches = new Map<number, any>()
+  const sparkShared = createSparkSharedBatches(sparkItems.length)
+  const sparkCoreBatches = new Map<number, any>()
   for (let variant = 0; variant < 3; variant += 1) {
     const count = sparkItems.filter((item) => item.variant === variant).length
-    const source = createVolumetricSpark(1, 1, variant)
-    source.group.updateMatrixWorld(true)
-    const batches = {
-      core: createInstancedFxBatch(source.core, count, true),
-      inner: createInstancedFxBatch(source.inner, count),
-      spikeX: createInstancedFxBatch(source.spikeX, count),
-      spikeY: createInstancedFxBatch(source.spikeY, count),
-      spikeZ: createInstancedFxBatch(source.spikeZ, count),
-      shell: createInstancedFxBatch(source.shell, count),
-      outerShell: createInstancedFxBatch(source.outerShell, count),
-      ring: createInstancedFxBatch(source.ring, count),
-      locals: {
-        core: source.core.matrix.clone(),
-        inner: source.inner.matrix.clone(),
-        spikeX: source.spikeX.matrix.clone(),
-        spikeY: source.spikeY.matrix.clone(),
-        spikeZ: source.spikeZ.matrix.clone(),
-        shell: source.shell.matrix.clone(),
-        outerShell: source.outerShell.matrix.clone(),
-      },
-      nextIndex: 0,
-    }
-    fxGroup.add(
-      batches.core.mesh,
-      batches.inner.mesh,
-      batches.spikeX.mesh,
-      batches.spikeY.mesh,
-      batches.spikeZ.mesh,
-      batches.shell.mesh,
-      batches.outerShell.mesh,
-      batches.ring.mesh,
-    )
-    sparkBatches.set(variant, batches)
+    const batch = createSparkCoreBatch(variant, count)
+    fxGroup.add(batch.mesh)
+    sparkCoreBatches.set(variant, { batch, nextIndex: 0 })
   }
-  sparkItems.forEach((item) => {
-    const batch = sparkBatches.get(item.variant)
-    item.batch = batch
-    item.index = batch.nextIndex
-    batch.nextIndex += 1
+  fxGroup.add(
+    sparkShared.inner.mesh,
+    sparkShared.spikes.mesh,
+    sparkShared.shell.mesh,
+    sparkShared.outerShell.mesh,
+    sparkShared.ring.mesh,
+  )
+  sparkItems.forEach((item: any, index: number) => {
+    const holder = sparkCoreBatches.get(item.variant)
+    item.index = index
+    item.coreBatch = holder.batch
+    item.coreIndex = holder.nextIndex
+    holder.nextIndex += 1
+    const palette = sparkPalettes[item.variant % sparkPalettes.length]
+    instanceTint.setHex(palette.shell)
+    sparkShared.spikes.mesh.setColorAt(index * 3, instanceTint)
+    sparkShared.spikes.mesh.setColorAt(index * 3 + 1, instanceTint)
+    sparkShared.shell.mesh.setColorAt(index, instanceTint)
+    instanceTint.setHex(palette.outer)
+    sparkShared.spikes.mesh.setColorAt(index * 3 + 2, instanceTint)
+    sparkShared.outerShell.mesh.setColorAt(index, instanceTint)
+    instanceTint.setHex(palette.ring)
+    sparkShared.ring.mesh.setColorAt(index, instanceTint)
     atmosphere.sparks.push(item)
   })
 
@@ -1424,6 +1398,12 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
   const sparkRingScale = new THREE.Vector3()
   const sparkRingMatrix = new THREE.Matrix4()
   const sparkOrigin = new THREE.Vector3()
+  const starMatrix = new THREE.Matrix4()
+  const starDashMatrix = new THREE.Matrix4()
+  const starPosition = new THREE.Vector3()
+  const starScale = new THREE.Vector3()
+  const starEuler = new THREE.Euler()
+  const starQuaternion = new THREE.Quaternion()
   const glowMatrix = new THREE.Matrix4()
   const glowPosition = new THREE.Vector3()
   const glowQuaternion = new THREE.Quaternion()
@@ -1467,109 +1447,103 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
       tipStarOutline.position.copy(tipStar.position)
       tipStarOutline.rotation.copy(tipStar.rotation)
       tipStarOutline.scale.copy(tipStar.scale).multiplyScalar(1.08)
+      const flares = settings.fx.flares
+      const bokeh = settings.fx.bokeh
+      const motion = settings.fx.motion
+      const sparkSize = settings.fx.sparkSize
+      const sparkSpeed = settings.fx.sparkSpeed
+      const sparkIntensity = settings.fx.sparkIntensity
+
       atmosphere.glows.forEach((item: any) => {
-        const phase = 0.5 + 0.5 * Math.sin(time * (item.pulse * settings.fx.sparkSpeed) + item.seed)
+        const phase = 0.5 + 0.5 * Math.sin(time * (item.pulse * sparkSpeed) + item.seed)
         const fade = phase * phase * (3 - 2 * phase)
-        const batch = item.batch
         const index = item.index
-        glowScale.setScalar(item.baseScale * (0.84 + 0.28 * fade) * settings.fx.sparkSize)
+        glowScale.setScalar(item.baseScale * (0.84 + 0.28 * fade) * sparkSize)
         glowPosition.set(
-          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.18 * settings.fx.motion,
-          item.basePos.y +
-            Math.cos(time * item.drift * 1.3 + item.seed) * 0.16 * settings.fx.motion,
-          item.basePos.z +
-            Math.sin(time * item.drift * 0.9 + item.seed) * 0.12 * settings.fx.motion,
+          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.18 * motion,
+          item.basePos.y + Math.cos(time * item.drift * 1.3 + item.seed) * 0.16 * motion,
+          item.basePos.z + Math.sin(time * item.drift * 0.9 + item.seed) * 0.12 * motion,
         )
         glowMatrix.compose(glowPosition, glowQuaternion, glowScale)
-        batch.core.mesh.setMatrixAt(index, glowMatrix)
-        batch.shell.mesh.setMatrixAt(index, glowMatrix)
-        batch.outer.mesh.setMatrixAt(index, glowMatrix)
-        batch.core.opacity.array[index] =
-          item.baseOpacity * (0.25 + 0.95 * fade) * settings.fx.bokeh
-        batch.shell.opacity.array[index] =
-          item.baseOpacity * (0.06 + 0.38 * fade) * settings.fx.bokeh
-        batch.outer.opacity.array[index] =
-          item.baseOpacity * (0.015 + 0.16 * fade) * settings.fx.bokeh
+        glowBatch.core.mesh.setMatrixAt(index, glowMatrix)
+        glowBatch.shell.mesh.setMatrixAt(index, glowMatrix)
+        glowBatch.outer.mesh.setMatrixAt(index, glowMatrix)
+        glowBatch.core.opacity.array[index] = item.baseOpacity * (0.25 + 0.95 * fade) * bokeh
+        glowBatch.shell.opacity.array[index] = item.baseOpacity * (0.06 + 0.38 * fade) * bokeh
+        glowBatch.outer.opacity.array[index] = item.baseOpacity * (0.015 + 0.16 * fade) * bokeh
       })
-      for (const batch of glowBatches.values()) {
-        batch.core.mesh.instanceMatrix.needsUpdate = true
-        batch.shell.mesh.instanceMatrix.needsUpdate = true
-        batch.outer.mesh.instanceMatrix.needsUpdate = true
-        batch.core.opacity.needsUpdate = true
-        batch.shell.opacity.needsUpdate = true
-        batch.outer.opacity.needsUpdate = true
+      markBatchUpdated(glowBatch.core)
+      markBatchUpdated(glowBatch.shell)
+      markBatchUpdated(glowBatch.outer)
+
+      // Every star samples the same dash shimmer, so the wave is tabulated once per frame.
+      for (let index = 0; index < starDashCount; index += 1) {
+        starDashWave[index] = Math.sin(time * 2 + index)
       }
       atmosphere.stars.forEach((item: any) => {
-        const phase = 0.5 + 0.5 * Math.sin(time * item.pulse * settings.fx.sparkSpeed + item.seed)
+        const phase = 0.5 + 0.5 * Math.sin(time * item.pulse * sparkSpeed + item.seed)
         const flash = phase ** 2.8
-        item.fx.group.scale.setScalar(
-          item.baseScale * (0.78 + 0.85 * flash) * settings.fx.sparkSize,
+        const yaw = Math.sin(time * 0.32 + item.rot) * 0.35
+        starPosition.set(
+          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.1 * motion,
+          item.basePos.y + Math.cos(time * item.drift * 1.2 + item.seed) * 0.1 * motion,
+          item.basePos.z,
         )
-        item.fx.group.position.x =
-          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.1 * settings.fx.motion
-        item.fx.group.position.y =
-          item.basePos.y + Math.cos(time * item.drift * 1.2 + item.seed) * 0.1 * settings.fx.motion
-        item.fx.group.rotation.y = Math.sin(time * 0.32 + item.rot) * 0.35
-        item.fx.group.rotation.z = item.rot + time * 0.16
-        const dashOrder = item.fx.dashOrder
-        dashOrder.sort(
-          (left: number, right: number) =>
-            -Math.sin(item.fx.group.rotation.y) * item.fx.dashData[left].center.x -
-            -Math.sin(item.fx.group.rotation.y) * item.fx.dashData[right].center.x,
-        )
-        dashOrder.forEach((dashIndex: number, index: number) => {
-          const dash = item.fx.dashData[dashIndex]
-          item.fx.dashMatrix.compose(dash.center, dash.quaternion, dash.scale)
-          item.fx.dashMesh.setMatrixAt(index, item.fx.dashMatrix)
-          item.fx.dashOpacity.array[index] =
-            (0.12 + 0.88 * flash * (0.86 + 0.14 * Math.sin(time * 2 + dashIndex))) *
-            settings.fx.flares
-        })
-        item.fx.dashMesh.instanceMatrix.needsUpdate = true
-        item.fx.dashOpacity.needsUpdate = true
-        item.fx.dashMaterial.emissiveIntensity = (0.4 + 3 * flash) * settings.fx.sparkIntensity
-        item.fx.glow.material.opacity = (0.01 + 0.12 * flash) * settings.fx.flares
-        item.fx.light.intensity = (0.01 + 0.32 * flash) * settings.fx.sparkLight
+        starEuler.set(0, yaw, item.rot + time * 0.16)
+        starQuaternion.setFromEuler(starEuler)
+        starScale.setScalar(item.baseScale * (0.78 + 0.85 * flash) * sparkSize)
+        starMatrix.compose(starPosition, starQuaternion, starScale)
+        starGlowBatch.mesh.setMatrixAt(item.index, starMatrix)
+        starGlowBatch.opacity.array[item.index] = (0.01 + 0.12 * flash) * flares
+        const order = yaw >= 0 ? starDashTemplate.descending : starDashTemplate.ascending
+        const emissive = (0.4 + 3 * flash) * sparkIntensity
+        const base = item.index * starDashCount
+        for (let slot = 0; slot < starDashCount; slot += 1) {
+          const dashIndex = order[slot]
+          starDashMatrix.multiplyMatrices(starMatrix, starDashTemplate.locals[dashIndex])
+          starDashBatch.mesh.setMatrixAt(base + slot, starDashMatrix)
+          starDashBatch.opacity.array[base + slot] =
+            (0.12 + 0.88 * flash * (0.86 + 0.14 * starDashWave[dashIndex])) * flares
+          starDashBatch.emissive!.array[base + slot] = emissive
+        }
       })
+      markBatchUpdated(starDashBatch)
+      markBatchUpdated(starGlowBatch)
+
       atmosphere.glitter.forEach((item: any) => {
-        const phase = 0.5 + 0.5 * Math.sin(time * item.pulse * settings.fx.sparkSpeed + item.seed)
+        const phase = 0.5 + 0.5 * Math.sin(time * item.pulse * sparkSpeed + item.seed)
         const flash = phase ** 4
-        const scale = item.baseScale * (0.25 + 1.35 * flash) * settings.fx.sparkSize
+        const scale = item.baseScale * (0.25 + 1.35 * flash) * sparkSize
+        const index = item.index
         glitterPosition.set(
-          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.05 * settings.fx.motion,
-          item.basePos.y +
-            Math.cos(time * item.drift * 1.4 + item.seed) * 0.06 * settings.fx.motion,
+          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.05 * motion,
+          item.basePos.y + Math.cos(time * item.drift * 1.4 + item.seed) * 0.06 * motion,
           item.basePos.z,
         )
         glitterEuler.set(time * 0.5 + item.rot, time * 0.7 + item.rot * 0.6, 0)
         glitterQuaternion.setFromEuler(glitterEuler)
         glitterScale.set(0.65 * scale, 1.55 * scale, 0.65 * scale)
         glitterMatrix.compose(glitterPosition, glitterQuaternion, glitterScale)
-        item.batch.coreMesh.setMatrixAt(item.index, glitterMatrix)
+        glitterBatch.core.mesh.setMatrixAt(index, glitterMatrix)
         glitterScale.set(scale, scale, scale)
         glitterMatrix.compose(glitterPosition, glitterQuaternion, glitterScale)
-        item.batch.haloMesh.setMatrixAt(item.index, glitterMatrix)
-        item.batch.coreOpacity.array[item.index] = (0.03 + 0.97 * flash) * settings.fx.flares
-        item.batch.coreEmissive.array[item.index] = (0.3 + 5 * flash) * settings.fx.sparkIntensity
-        item.batch.haloOpacity.array[item.index] = (0.005 + 0.16 * flash) * settings.fx.flares
+        glitterBatch.halo.mesh.setMatrixAt(index, glitterMatrix)
+        glitterBatch.core.opacity.array[index] = (0.03 + 0.97 * flash) * flares
+        glitterBatch.core.emissive!.array[index] = (0.3 + 5 * flash) * sparkIntensity
+        glitterBatch.halo.opacity.array[index] = (0.005 + 0.16 * flash) * flares
       })
-      for (const batch of glitterBatches.values()) {
-        batch.coreMesh.instanceMatrix.needsUpdate = true
-        batch.haloMesh.instanceMatrix.needsUpdate = true
-        batch.coreOpacity.needsUpdate = true
-        batch.coreEmissive.needsUpdate = true
-        batch.haloOpacity.needsUpdate = true
-      }
+      markBatchUpdated(glitterBatch.core)
+      markBatchUpdated(glitterBatch.halo)
+
       atmosphere.sparks.forEach((item: any) => {
-        const phase = 0.5 + 0.5 * Math.sin(time * item.pulse * settings.fx.sparkSpeed + item.seed)
+        const phase = 0.5 + 0.5 * Math.sin(time * item.pulse * sparkSpeed + item.seed)
         const flash = phase ** 4.8
-        const grow = (0.68 + 1.7 * flash) * settings.fx.sparkSize
+        const grow = (0.68 + 1.7 * flash) * sparkSize
+        const index = item.index
         sparkPosition.set(
-          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.1 * settings.fx.motion,
-          item.basePos.y +
-            Math.cos(time * item.drift * 1.5 + item.seed) * 0.12 * settings.fx.motion,
-          item.basePos.z +
-            Math.sin(time * item.drift * 1.1 + item.seed) * 0.08 * settings.fx.motion,
+          item.basePos.x + Math.sin(time * item.drift + item.seed) * 0.1 * motion,
+          item.basePos.y + Math.cos(time * item.drift * 1.5 + item.seed) * 0.12 * motion,
+          item.basePos.z + Math.sin(time * item.drift * 1.1 + item.seed) * 0.08 * motion,
         )
         sparkEuler.set(
           Math.sin(time * 0.8 + item.rot) * 0.6,
@@ -1580,19 +1554,34 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
         sparkScale.setScalar(item.baseScale * grow)
         sparkGroupMatrix.compose(sparkPosition, sparkQuaternion, sparkScale)
 
-        const batch = item.batch
-        const index = item.index
-        const setComponentMatrix = (name: string, component: any) => {
-          sparkComponentMatrix.copy(sparkGroupMatrix).multiply(batch.locals[name])
-          component.mesh.setMatrixAt(index, sparkComponentMatrix)
-        }
-        setComponentMatrix("core", batch.core)
-        setComponentMatrix("inner", batch.inner)
-        setComponentMatrix("spikeX", batch.spikeX)
-        setComponentMatrix("spikeY", batch.spikeY)
-        setComponentMatrix("spikeZ", batch.spikeZ)
-        setComponentMatrix("shell", batch.shell)
-        setComponentMatrix("outerShell", batch.outerShell)
+        sparkComponentMatrix.multiplyMatrices(sparkGroupMatrix, sparkLocals.core)
+        item.coreBatch.mesh.setMatrixAt(item.coreIndex, sparkComponentMatrix)
+        item.coreBatch.opacity.array[item.coreIndex] = 1
+        item.coreBatch.emissive.array[item.coreIndex] = (0.7 + 5.8 * flash) * sparkIntensity
+
+        // The inner bead and both shells sit at the group origin, so they reuse its matrix.
+        sparkShared.inner.mesh.setMatrixAt(index, sparkGroupMatrix)
+        sparkShared.shell.mesh.setMatrixAt(index, sparkGroupMatrix)
+        sparkShared.outerShell.mesh.setMatrixAt(index, sparkGroupMatrix)
+        sparkShared.inner.opacity.array[index] = 0.08 + 0.92 * flash * sparkIntensity
+        sparkShared.shell.opacity.array[index] =
+          item.baseOpacity * (0.04 + 1.25 * flash) * sparkIntensity
+        sparkShared.outerShell.opacity.array[index] =
+          item.baseOpacity * (0.02 + 0.78 * flash) * sparkIntensity
+
+        const spike = index * 3
+        sparkComponentMatrix.multiplyMatrices(sparkGroupMatrix, sparkLocals.spikeX)
+        sparkShared.spikes.mesh.setMatrixAt(spike, sparkComponentMatrix)
+        sparkComponentMatrix.multiplyMatrices(sparkGroupMatrix, sparkLocals.spikeY)
+        sparkShared.spikes.mesh.setMatrixAt(spike + 1, sparkComponentMatrix)
+        sparkComponentMatrix.multiplyMatrices(sparkGroupMatrix, sparkLocals.spikeZ)
+        sparkShared.spikes.mesh.setMatrixAt(spike + 2, sparkComponentMatrix)
+        sparkShared.spikes.opacity.array[spike] =
+          item.baseOpacity * (0.06 + 1.15 * flash) * sparkIntensity
+        sparkShared.spikes.opacity.array[spike + 1] =
+          item.baseOpacity * (0.08 + 1.35 * flash) * sparkIntensity
+        sparkShared.spikes.opacity.array[spike + 2] =
+          item.baseOpacity * (0.03 + 0.65 * flash) * sparkIntensity
 
         sparkRingEuler.set(
           Math.PI * 0.5 + 0.55 * Math.sin(time * 0.9 + item.rot),
@@ -1602,42 +1591,18 @@ function createKuribohWorld(renderer: THREE.WebGLRenderer) {
         sparkRingQuaternion.setFromEuler(sparkRingEuler)
         sparkRingScale.setScalar(0.85 + 0.65 * flash)
         sparkRingMatrix.compose(sparkOrigin, sparkRingQuaternion, sparkRingScale)
-        sparkComponentMatrix.copy(sparkGroupMatrix).multiply(sparkRingMatrix)
-        batch.ring.mesh.setMatrixAt(index, sparkComponentMatrix)
-
-        batch.core.opacity.array[index] = 1
-        batch.core.emissive.array[index] = (0.7 + 5.8 * flash) * settings.fx.sparkIntensity
-        batch.inner.opacity.array[index] = 0.08 + 0.92 * flash * settings.fx.sparkIntensity
-        batch.spikeX.opacity.array[index] =
-          item.baseOpacity * (0.06 + 1.15 * flash) * settings.fx.sparkIntensity
-        batch.spikeY.opacity.array[index] =
-          item.baseOpacity * (0.08 + 1.35 * flash) * settings.fx.sparkIntensity
-        batch.spikeZ.opacity.array[index] =
-          item.baseOpacity * (0.03 + 0.65 * flash) * settings.fx.sparkIntensity
-        batch.shell.opacity.array[index] =
-          item.baseOpacity * (0.04 + 1.25 * flash) * settings.fx.sparkIntensity
-        batch.outerShell.opacity.array[index] =
-          item.baseOpacity * (0.02 + 0.78 * flash) * settings.fx.sparkIntensity
-        batch.ring.opacity.array[index] =
-          item.baseOpacity * (0.01 + 0.7 * flash) * settings.fx.sparkIntensity
+        sparkComponentMatrix.multiplyMatrices(sparkGroupMatrix, sparkRingMatrix)
+        sparkShared.ring.mesh.setMatrixAt(index, sparkComponentMatrix)
+        sparkShared.ring.opacity.array[index] =
+          item.baseOpacity * (0.01 + 0.7 * flash) * sparkIntensity
       })
-      for (const batch of sparkBatches.values()) {
-        batch.core.mesh.instanceMatrix.needsUpdate = true
-        batch.inner.mesh.instanceMatrix.needsUpdate = true
-        batch.spikeX.mesh.instanceMatrix.needsUpdate = true
-        batch.spikeY.mesh.instanceMatrix.needsUpdate = true
-        batch.spikeZ.mesh.instanceMatrix.needsUpdate = true
-        batch.shell.mesh.instanceMatrix.needsUpdate = true
-        batch.outerShell.mesh.instanceMatrix.needsUpdate = true
-        batch.ring.mesh.instanceMatrix.needsUpdate = true
-        batch.core.emissive.needsUpdate = true
-        batch.inner.opacity.needsUpdate = true
-        batch.spikeX.opacity.needsUpdate = true
-        batch.spikeY.opacity.needsUpdate = true
-        batch.spikeZ.opacity.needsUpdate = true
-        batch.shell.opacity.needsUpdate = true
-        batch.outerShell.opacity.needsUpdate = true
-        batch.ring.opacity.needsUpdate = true
+      markBatchUpdated(sparkShared.inner)
+      markBatchUpdated(sparkShared.spikes)
+      markBatchUpdated(sparkShared.shell)
+      markBatchUpdated(sparkShared.outerShell)
+      markBatchUpdated(sparkShared.ring)
+      for (const holder of sparkCoreBatches.values()) {
+        markBatchUpdated(holder.batch)
       }
     },
   }
@@ -1754,13 +1719,99 @@ function SceneReady({ onReady }: { onReady?: () => void }) {
   return null
 }
 
+/**
+ * The canvas draws nothing on its own; this decides every frame it takes. While the scene keeps up
+ * it advances once per animation frame, the same cadence R3F would run by itself. If frames start
+ * landing late *and* the renderer is what is eating them, the device cannot sustain that rate, so
+ * it advances every second frame instead: a steady half rate reads far better than a stuttering
+ * full one and costs half the CPU. Requiring both signals keeps a slow display, or jank from
+ * elsewhere on the page, from being mistaken for a scene this device cannot afford. Nothing is
+ * drawn at all while the canvas is scrolled out of view or the tab is hidden.
+ */
+// A frame later than this missed a 60Hz refresh; no display in common use paces slower.
+const lateFrameMs = 22
+// Renderer time that makes this scene a meaningful share of the frame rather than a bystander.
+const costlyFrameMs = 4
+// A device that drops every other frame alternates between late and on-time, so strain has to
+// accumulate faster than it drains or that steady half-rate would never register as one.
+const strainWeight = 1
+const recoveryWeight = 0.5
+const strainBeforeHalving = 60
+
+// R3F writes this timestamp straight into the scene clock when the frameloop is driven manually,
+// and that clock is read in seconds, so animation-frame milliseconds have to be converted.
+const millisecondsPerSecond = 1000
+
+function FrameGovernor() {
+  const advance = useThree((state) => state.advance)
+  const gl = useThree((state) => state.gl)
+
+  useEffect(() => {
+    const element = gl.domElement
+    const render = gl.render.bind(gl)
+    // Post-processing puts the scene and every bloom pass through this same call, so the
+    // accumulated time is the frame's renderer cost on the main thread.
+    let cost = 0
+    gl.render = (scene: THREE.Object3D, camera: THREE.Camera) => {
+      const start = performance.now()
+      render(scene, camera)
+      cost += performance.now() - start
+    }
+
+    let request = 0
+    let previous = 0
+    let frame = 0
+    let interval = 1
+    let strained = 0
+    let visible = true
+
+    const observer = new IntersectionObserver((entries) => {
+      visible = entries.some((entry) => entry.isIntersecting)
+    })
+    observer.observe(element)
+
+    const tick = (now: number) => {
+      request = requestAnimationFrame(tick)
+      const elapsed = previous === 0 ? 0 : now - previous
+      previous = now
+      if (interval === 1 && elapsed > 0) {
+        strained =
+          elapsed > lateFrameMs && cost > costlyFrameMs
+            ? strained + strainWeight
+            : Math.max(0, strained - recoveryWeight)
+        // Seconds of sustained strain, so a passing hiccup never costs a healthy device its rate.
+        if (strained > strainBeforeHalving) interval = 2
+      }
+      cost = 0
+      if (!visible || document.hidden) return
+      frame += 1
+      if (frame % interval === 0) advance(now / millisecondsPerSecond)
+    }
+
+    // Draw the opening frame during this commit, the way a self-driven loop would, so the page
+    // sees the scene appear at the same moment it always has.
+    advance(performance.now() / millisecondsPerSecond)
+    request = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(request)
+      observer.disconnect()
+      gl.render = render
+    }
+  }, [gl, advance])
+
+  return null
+}
+
 export function KuribohCanvas({ onReady }: { onReady?: () => void }) {
   return (
     <Canvas
       camera={{ fov: settings.scene.fov, near: 0.1, far: 100, position: [0, 0.85, 8.2] }}
       dpr={[1, 1.5]}
+      frameloop="never"
       gl={{
-        antialias: true,
+        // The post-processing composer renders the scene into its own multisampled target, so
+        // multisampling the default framebuffer as well only costs memory and bandwidth.
+        antialias: false,
         powerPreference: "high-performance",
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: settings.scene.exposure,
@@ -1775,6 +1826,7 @@ export function KuribohCanvas({ onReady }: { onReady?: () => void }) {
     >
       <color attach="background" args={["#2b3923"]} />
       <KuribohWorld />
+      <FrameGovernor />
       <SceneReady onReady={onReady} />
       <EffectComposer>
         <Bloom

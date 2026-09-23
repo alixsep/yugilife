@@ -1,5 +1,9 @@
 import type { CardFieldDefinition, CardFieldName } from "./card.js"
-import type { CanvasMask, SemanticPresentationRule } from "./presentation.js"
+import type {
+  CanvasMask,
+  SemanticPresentationRule,
+  TransformModeCondition,
+} from "./presentation.js"
 import type { CardSemanticBindings } from "./semantics.js"
 import type { SemanticCondition, SemanticPath } from "./semantics.js"
 import type { CardDimensions, Region, SemanticAssetId } from "./template.js"
@@ -36,6 +40,16 @@ export interface ArtworkLayer extends LayerBase {
   field: CardFieldName
   /** Defaults to stretching the source into the declared region. */
   fit?: "stretch" | "width" | undefined
+  /** Optional image field whose alpha channel clips this artwork layer. */
+  maskField?: CardFieldName | undefined
+  /** Mask channel; defaults to luminance for standalone grayscale alpha images. */
+  maskChannel?: "alpha" | "luminance" | undefined
+  /** Image placement before `region` clips the result. Defaults to `region`. */
+  placementRegion?: Region | undefined
+  /** Stable key used to share one authored transform between multiple artwork layers. */
+  transformId?: string | undefined
+  /** Emits this layer only when the shared artwork transform selects this opaque mode. */
+  transformMode?: string | undefined
   region: Region
 }
 
@@ -98,10 +112,30 @@ export type TextFitBlocks = LeadingAuthoredLineFitBlocks
 /** Expands inter-word spacing on non-final soft-wrapped multiline lines. */
 export type TextAlign = "justify"
 
+/**
+ * Paint applied around glyph geometry. Stroke is painted, never measured: it never changes glyph
+ * advances, line boxes, wrapping, or automatic fit-profile selection, so widening a stroke cannot
+ * feed back into the size of the text it outlines.
+ */
+export interface TextStroke {
+  color: string
+  /** Visible stroke width in template pixels, measured outward for the default `outer` alignment. */
+  width: number
+  /**
+   * `outer` keeps glyph interiors at their authored weight, matching printed card-title outlines.
+   * `center` is SVG's own behavior, where the stroke straddles the outline and visibly thins glyphs.
+   */
+  align?: "center" | "outer" | undefined
+  linejoin?: "bevel" | "miter" | "round" | undefined
+  opacity?: number | undefined
+}
+
 export interface TextTypography {
   /** Floors automatically derived horizontal scales to this positive increment. */
   autoScaleXQuantifier?: number | undefined
   fill: string
+  /** Outline painted around the resolved glyphs. Omitted means no outline. */
+  stroke?: TextStroke | undefined
   fit?: "font-size" | "scale-x"
   fitBlocks?: TextFitBlocks | undefined
   /** Named template profile set expanded during template validation. */
@@ -143,7 +177,10 @@ export interface SemanticTextStyle {
   typography?: TextTypographyPatch | undefined
   /** Named template typography patch applied before the style's inline typography. */
   typographyPreset?: string | undefined
-  when: SemanticCondition
+  /** Card-data condition. At least one of `when` or `whenTransforms` must be declared. */
+  when?: SemanticCondition | undefined
+  /** Presentation-only gate on resolved artwork transform modes, required alongside `when`. */
+  whenTransforms?: TransformModeCondition | undefined
 }
 
 export interface TextLayer extends LayerBase {

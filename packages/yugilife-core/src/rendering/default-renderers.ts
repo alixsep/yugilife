@@ -1,8 +1,10 @@
 import { TextureCache } from "../color-grading.js"
+import { preparedTextureKey } from "../prepared-textures.js"
 import { graphemeCount } from "../rich-text.js"
 
-import { isAssetSource, loadDrawable } from "./assets.js"
+import { isAssetSource, loadDrawable, throwIfAborted } from "./assets.js"
 import { childLayers } from "./layer-tree.js"
+import { acquireScratchCanvas, releaseScratchCanvas } from "./scratch-canvas.js"
 import { createTextElement } from "./vector.js"
 
 import type {
@@ -19,6 +21,16 @@ import type {
 } from "../contracts/index.js"
 
 const textureCaches = new WeakMap<object, TextureCache>()
+
+function normalizeMaskLuminance(pixels: Uint8ClampedArray) {
+  if (pixels.length % 4 !== 0) throw new Error("Artwork mask pixels have an invalid length.")
+  for (let index = 0; index < pixels.length; index += 4) {
+    const luminance =
+      pixels[index]! * 0.2126 + pixels[index + 1]! * 0.7152 + pixels[index + 2]! * 0.0722
+    pixels[index + 3] = Math.round((luminance * pixels[index + 3]!) / 255)
+  }
+  return pixels
+}
 
 function textureCache(source: ConstructorParameters<typeof TextureCache>[0]) {
   let cache = textureCaches.get(source)
@@ -152,19 +164,13 @@ async function renderColorTexture(renderContext: RenderLayerContext, layer: Rast
     colorPresets,
     context,
     coverageContext,
+    preparedTextures,
     presetOverrides,
     signal,
   } = renderContext
   const assetId = assetSelections[layer.id] ?? layer.assetId
   if (!assetId) {
     throw new Error(`Color-texture layer "${layer.id}" requires assetId.`)
-  }
-  const drawable = await loadDrawable(assets.resolve(assetId), signal)
-  const source = layer.sourceRegion ?? {
-    x: 0,
-    y: 0,
-    width: drawable.width,
-    height: drawable.height,
   }
   const presetName =
     presetOverrides[layer.id] ??
@@ -174,15 +180,43 @@ async function renderColorTexture(renderContext: RenderLayerContext, layer: Rast
   if (presetName && !preset) {
     throw new Error(`Layer "${layer.id}" requested unknown color preset "${presetName}".`)
   }
+  const { x, y, width, height } = layer.region
+  const draw = (processed: CanvasImageSource) => {
+    context.drawImage(processed, x, y, width, height)
+    coverageContext?.drawImage(processed, x, y, width, height)
+  }
+
+  // A prepared texture already holds the graded pixels, so this layer needs neither the source
+  // asset nor the grading pass.
+  if (preparedTextures && presetName) {
+    const prepared = await preparedTextures.get(
+      preparedTextureKey({
+        assetId,
+        presetName,
+        ...(layer.sourceRegion ? { region: layer.sourceRegion } : {}),
+      }),
+    )
+    throwIfAborted(signal)
+    if (prepared) {
+      draw(prepared)
+      return
+    }
+  }
+
+  const drawable = await loadDrawable(assets.resolve(assetId), signal)
+  const source = layer.sourceRegion ?? {
+    x: 0,
+    y: 0,
+    width: drawable.width,
+    height: drawable.height,
+  }
   const processed = textureCache(drawable).get(
     texturePresetKey(presetName ?? "", preset),
     preset,
     source,
   )
   if (!processed) throw new Error(`Layer "${layer.id}" could not prepare its texture.`)
-  const { x, y, width, height } = layer.region
-  context.drawImage(processed, x, y, width, height)
-  coverageContext?.drawImage(processed, x, y, width, height)
+  draw(processed)
 }
 
 export function createDefaultLayerRenderers(): LayerRendererMap {
@@ -238,8 +272,20 @@ export function createDefaultLayerRenderers(): LayerRendererMap {
     },
     artwork: {
       output: "raster",
-      async render({ card, context, coverageContext, signal }, layer) {
+      async render({ card, context, coverageContext, presentation, signal, template }, layer) {
         const artworkLayer = layer as ArtworkLayer
+        const transform = presentation.artworkTransforms[
+          artworkLayer.transformId ?? artworkLayer.id
+        ] ?? {
+          scale: 1,
+          x: 0,
+          y: 0,
+        }
+        if (
+          artworkLayer.transformMode !== undefined &&
+          transform.mode !== artworkLayer.transformMode
+        )
+          return false
         const source = card[artworkLayer.field]
         if (source === undefined || source === "") return false
         if (!isAssetSource(source)) {
@@ -248,24 +294,63 @@ export function createDefaultLayerRenderers(): LayerRendererMap {
           )
         }
         const drawable = await loadDrawable(source, signal)
-        const { x, y, width, height } = artworkLayer.region
-        if (artworkLayer.fit === "width") {
-          const naturalHeight = (width * drawable.height) / drawable.width
-          context.save()
-          context.beginPath()
-          context.rect(x, y, width, height)
-          context.clip()
-          context.drawImage(drawable, x, y, width, naturalHeight)
-          coverageContext?.save()
-          coverageContext?.beginPath()
-          coverageContext?.rect(x, y, width, height)
-          coverageContext?.clip()
-          coverageContext?.drawImage(drawable, x, y, width, naturalHeight)
-          coverageContext?.restore()
-          context.restore()
-        } else {
-          context.drawImage(drawable, x, y, width, height)
-          coverageContext?.drawImage(drawable, x, y, width, height)
+        const placement = artworkLayer.placementRegion ?? artworkLayer.region
+        const baseHeight =
+          artworkLayer.fit === "width"
+            ? (placement.width * drawable.height) / drawable.width
+            : placement.height
+        const width = placement.width * transform.scale
+        const height = baseHeight * transform.scale
+        const x = placement.x - (width - placement.width) / 2 + transform.x * placement.width
+        const y = placement.y - (height - baseHeight) / 2 + transform.y * placement.height
+        const clipRegion = artworkLayer.region
+        const drawClipped = (target: CanvasRenderingContext2D, image: CanvasImageSource) => {
+          target.save()
+          target.beginPath()
+          target.rect(clipRegion.x, clipRegion.y, clipRegion.width, clipRegion.height)
+          target.clip()
+          target.drawImage(image, x, y, width, height)
+          target.restore()
+        }
+
+        if (!artworkLayer.maskField) {
+          drawClipped(context, drawable)
+          if (coverageContext) drawClipped(coverageContext, drawable)
+          return true
+        }
+        const maskSource = card[artworkLayer.maskField]
+        if (maskSource === undefined || maskSource === "") return false
+        if (!isAssetSource(maskSource)) {
+          throw new Error(
+            `Artwork layer "${layer.id}" requires mask field "${artworkLayer.maskField}" to contain an AssetSource.`,
+          )
+        }
+        const maskDrawable = await loadDrawable(maskSource, signal)
+        const { width: cardWidth, height: cardHeight } = template.dimensions
+        // Both surfaces are needed only until the composed result reaches the destination context,
+        // so they are borrowed instead of allocated: this runs on every interactive preview frame.
+        // Only the mask surface is read back, and the readback hint costs drawing speed.
+        const masked = acquireScratchCanvas(cardWidth, cardHeight)
+        try {
+          drawClipped(masked.context, drawable)
+          const mask = acquireScratchCanvas(cardWidth, cardHeight, true)
+          try {
+            drawClipped(mask.context, maskDrawable)
+            if ((artworkLayer.maskChannel ?? "luminance") === "luminance") {
+              const pixels = mask.context.getImageData(0, 0, cardWidth, cardHeight)
+              normalizeMaskLuminance(pixels.data)
+              mask.context.putImageData(pixels, 0, 0)
+            }
+            masked.context.globalCompositeOperation = "destination-in"
+            masked.context.drawImage(mask.canvas, 0, 0)
+            masked.context.globalCompositeOperation = "source-over"
+          } finally {
+            releaseScratchCanvas(mask)
+          }
+          context.drawImage(masked.canvas, 0, 0)
+          coverageContext?.drawImage(masked.canvas, 0, 0)
+        } finally {
+          releaseScratchCanvas(masked)
         }
         return true
       },

@@ -94,6 +94,17 @@ Templates may use separate frame and border images, one combined
 frame-and-border image, or a different decomposition. Custom raster or canvas
 renderer names may be implemented through `RenderOptions.layerRenderers`.
 
+Canvas masks may declare `coverageLayerId` to scope only their attenuation to
+the rendered alpha of an earlier raster layer. An opaque source pixel receives
+the authored mask value, a transparent source pixel leaves the target fully
+opaque, and partial source alpha interpolates between them. This supports
+artwork-aware material translucency without duplicating texture layers.
+
+Artwork transforms contain only geometry plus an optional opaque `mode` string. An artwork layer
+may declare a matching `transformMode`; core gates the layer by string equality but assigns no
+meaning to either value. Product concepts such as full-art editing belong to the template and app,
+which select a mode and give each mode-gated layer its own clipping region.
+
 Text layers can wrap serialized field or semantic values with rich-text source
 fragments. `prefix` is prepended and `suffix` is appended before parsing, which
 allows dynamic values to use tags such as `<scale>`:

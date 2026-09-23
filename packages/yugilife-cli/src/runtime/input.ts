@@ -14,6 +14,7 @@ import type {
 interface RawRenderInput {
   readonly card: Readonly<Record<string, unknown>>
   readonly files?: Readonly<Record<string, unknown>>
+  readonly presentationOverrides?: Readonly<Record<string, unknown>>
   readonly template?: string
 }
 
@@ -102,9 +103,15 @@ function parseInput(value: unknown, inputPath: string): RawRenderInput {
   if (value.files !== undefined && !isRecord(value.files)) {
     throw invalidInput(`Input "${inputPath}" field "files" must be an object.`)
   }
+  if (value.presentationOverrides !== undefined && !isRecord(value.presentationOverrides)) {
+    throw invalidInput(`Input "${inputPath}" field "presentationOverrides" must be an object.`)
+  }
   return {
     card: value.card,
     ...(value.files === undefined ? {} : { files: value.files }),
+    ...(value.presentationOverrides === undefined
+      ? {}
+      : { presentationOverrides: value.presentationOverrides }),
     ...(value.template === undefined ? {} : { template: value.template }),
   }
 }
@@ -276,6 +283,9 @@ export async function loadRenderRequest(
     files,
     format,
     ...(resolvedRasterOptions === undefined ? {} : { rasterOptions: resolvedRasterOptions }),
+    ...(input.presentationOverrides === undefined
+      ? {}
+      : { presentationOverrides: input.presentationOverrides }),
     templateBundle,
     ...(options.textMode === undefined ? {} : { textMode: options.textMode }),
     ...(options.title === undefined ? {} : { title: options.title }),

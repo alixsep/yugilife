@@ -6,12 +6,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build:pin-mask": "node scripts/build-pin-mask.mjs",
+    "generate:card-catalog": "node scripts/card-catalog.mjs generate",
+    "check:generated": "node scripts/card-catalog.mjs check",
     "build": "tsc -b && vite build && node ../../packages/yugilife-core/scripts/build-fontkit-runtime.mjs dist/assets/fontkit-runtime.js",
     "build:pages": "tsc -b && vite build --mode pages && node ../../packages/yugilife-core/scripts/build-fontkit-runtime.mjs dist/assets/fontkit-runtime.js",
     "preview": "vite preview",
     "preview:pages": "vite preview --base /yugilife/",
     "test": "vitest run",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run && node --test scripts/*.test.mjs",
+    "test:mask-worker": "pnpm build && node scripts/check-artwork-mask-worker.mjs",
     "typecheck": "tsc -b"
   },
   "dependencies": {
@@ -32,6 +36,7 @@
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "@react-three/postprocessing": "^3.0.5",
+    "brotli-wasm": "3.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.0",

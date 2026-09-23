@@ -44,9 +44,6 @@ describe("starter inventory", () => {
       expect(card.document.card.artwork).toBeInstanceOf(Blob)
       expect(preview).toMatchObject({ cardId: card.id, cardRevision: card.revision })
       expect(preview.image.type).toBe("image/webp")
-      expect(preview.renderFingerprint).toBe(
-        `${card.document.templateId}@${card.document.templateVersion}:preview-v2`,
-      )
     })
   })
 })

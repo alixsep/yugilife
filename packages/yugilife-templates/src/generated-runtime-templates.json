@@ -146,21 +146,38 @@
         "invert": true
       },
       {
-        "id": "link-arrows",
-        "assetId": "card.series-10.link-arrows-mask"
+        "id": "full-art-coverage",
+        "assetId": "card.series-10.full-art-coverage"
+      },
+      {
+        "id": "full-art-coverage-pendulum-small",
+        "assetId": "card.series-10.full-art-coverage.pendulum-small"
+      },
+      {
+        "id": "full-art-coverage-pendulum-medium",
+        "assetId": "card.series-10.full-art-coverage.pendulum-medium"
+      },
+      {
+        "id": "full-art-coverage-pendulum-large",
+        "assetId": "card.series-10.full-art-coverage.pendulum-large"
       },
       {
         "id": "pendulum-artwork-mask",
         "assetId": "card.series-10.pendulum-artwork-mask"
       },
       {
-        "id": "pendulum-artwork-cutout",
+        "id": "pendulum-frame-clip",
         "assetId": "card.series-10.pendulum-artwork-mask",
         "invert": true
       },
       {
-        "id": "pendulum-frame-spell",
-        "assetId": "card.series-10.pendulum-frame-mask.spell"
+        "id": "pendulum-frame-transition",
+        "assetId": "card.series-10.pendulum-frame-transition"
+      },
+      {
+        "id": "pendulum-texture-opacity",
+        "assetId": "card.series-10.pendulum-texture-opacity",
+        "coverageLayerId": "pendulumArtwork"
       },
       {
         "id": "pendulum-effect-box-small",
@@ -590,7 +607,8 @@
       {
         "name": "artworkOverlay",
         "kind": "image",
-        "label": "Artwork overlay"
+        "label": "Artwork alpha mask",
+        "advancedOnly": true
       },
       {
         "name": "sticker",
@@ -1076,6 +1094,7 @@
         "label": "Artwork",
         "group": "Artwork and frames",
         "field": "artwork",
+        "transformId": "artwork",
         "region": {
           "x": 100,
           "y": 219,
@@ -1091,6 +1110,7 @@
         "defaultVisible": false,
         "field": "artwork",
         "fit": "width",
+        "transformId": "artwork",
         "region": {
           "x": 55,
           "y": 212,
@@ -1114,83 +1134,92 @@
         "presetTarget": "frame"
       },
       {
-        "id": "pendulumMonsterFrameTexture",
-        "kind": "raster",
-        "label": "Pendulum monster frame texture",
+        "id": "pendulumFrameTextures",
+        "kind": "group",
+        "label": "Pendulum frame textures",
         "group": "Artwork and frames",
-        "defaultVisible": false,
         "editorVisible": false,
-        "renderer": "color-texture-bevel",
-        "assetId": "card.series-10.frame-texture",
-        "region": {
-          "x": 28,
-          "y": 28,
-          "width": 757,
-          "height": 1128
-        },
-        "presetTarget": "frame",
-        "options": {
-          "thickness": {
-            "top": 3,
-            "right": 3,
-            "bottom": 3,
-            "left": 3
+        "layers": [
+          {
+            "id": "pendulumMonsterFrameTexture",
+            "kind": "raster",
+            "label": "Pendulum monster frame texture",
+            "group": "Artwork and frames",
+            "defaultVisible": false,
+            "editorVisible": false,
+            "renderer": "color-texture-bevel",
+            "assetId": "card.series-10.frame-texture",
+            "region": {
+              "x": 28,
+              "y": 28,
+              "width": 757,
+              "height": 1128
+            },
+            "presetTarget": "frame",
+            "options": {
+              "thickness": {
+                "top": 3,
+                "right": 3,
+                "bottom": 3,
+                "left": 3
+              },
+              "highlightColor": "#ffffff52",
+              "shadowColor": "#0000005e"
+            }
           },
-          "highlightColor": "#ffffff52",
-          "shadowColor": "#0000005e"
-        }
-      },
-      {
-        "id": "pendulumXyzFrameTexture",
-        "kind": "raster",
-        "label": "Pendulum XYZ frame texture",
-        "group": "Artwork and frames",
-        "defaultVisible": false,
-        "editorVisible": false,
-        "renderer": "color-texture-bevel",
-        "assetId": "card.series-10.xyz-texture",
-        "region": {
-          "x": 28,
-          "y": 28,
-          "width": 757,
-          "height": 1128
-        },
-        "options": {
-          "thickness": {
-            "top": 3,
-            "right": 3,
-            "bottom": 3,
-            "left": 3
+          {
+            "id": "pendulumXyzFrameTexture",
+            "kind": "raster",
+            "label": "Pendulum XYZ frame texture",
+            "group": "Artwork and frames",
+            "defaultVisible": false,
+            "editorVisible": false,
+            "renderer": "color-texture-bevel",
+            "assetId": "card.series-10.xyz-texture",
+            "region": {
+              "x": 28,
+              "y": 28,
+              "width": 757,
+              "height": 1128
+            },
+            "options": {
+              "thickness": {
+                "top": 3,
+                "right": 3,
+                "bottom": 3,
+                "left": 3
+              },
+              "highlightColor": "#efdfdf52",
+              "shadowColor": "#5a47475e"
+            }
           },
-          "highlightColor": "#efdfdf52",
-          "shadowColor": "#5a47475e"
-        }
-      },
-      {
-        "id": "pendulumSpellFrameTexture",
-        "kind": "raster",
-        "label": "Pendulum Spell frame texture",
-        "group": "Artwork and frames",
-        "defaultVisible": false,
-        "renderer": "color-texture-bevel",
-        "assetId": "card.series-10.frame-texture",
-        "region": {
-          "x": 28,
-          "y": 28,
-          "width": 757,
-          "height": 1128
-        },
-        "defaultPreset": "spell-frame-s10",
-        "options": {
-          "thickness": {
-            "top": 3,
-            "right": 3,
-            "bottom": 3,
-            "left": 3
-          },
-          "highlightColor": "#ffffff52",
-          "shadowColor": "#0000005e"
-        }
+          {
+            "id": "pendulumSpellFrameTexture",
+            "kind": "raster",
+            "label": "Pendulum Spell frame texture",
+            "group": "Artwork and frames",
+            "defaultVisible": false,
+            "renderer": "color-texture-bevel",
+            "assetId": "card.series-10.frame-texture",
+            "region": {
+              "x": 28,
+              "y": 28,
+              "width": 757,
+              "height": 1128
+            },
+            "defaultPreset": "spell-frame-s10",
+            "options": {
+              "thickness": {
+                "top": 3,
+                "right": 3,
+                "bottom": 3,
+                "left": 3
+              },
+              "highlightColor": "#ffffff52",
+              "shadowColor": "#0000005e"
+            }
+          }
+        ]
       },
       {
         "id": "linkFrame",
@@ -1221,172 +1250,272 @@
         }
       },
       {
+        "id": "artworkBoxShadow",
+        "kind": "image",
+        "label": "Artwork box shadow",
+        "group": "Artwork and frames",
+        "editorVisible": false,
+        "assetId": "card.series-10.artwork-box-shadow",
+        "region": {
+          "x": 66,
+          "y": 185,
+          "width": 681,
+          "height": 681
+        }
+      },
+      {
         "id": "artworkBox",
         "kind": "image",
         "label": "Artwork box",
         "group": "Artwork and frames",
         "assetId": "card.series-10.artwork-box",
         "region": {
-          "x": 0,
-          "y": 0,
-          "width": 813,
-          "height": 1185
+          "x": 86,
+          "y": 205,
+          "width": 641,
+          "height": 641
         }
       },
       {
-        "id": "artworkOverlay",
-        "kind": "artwork",
-        "label": "Artwork overlay",
-        "group": "Artwork and frames",
-        "field": "artworkOverlay",
-        "region": {
-          "x": 0,
-          "y": 0,
-          "width": 813,
-          "height": 1185
-        }
-      },
-      {
-        "id": "effectBoxTexture",
-        "kind": "raster",
-        "label": "Effect box texture",
-        "group": "Artwork and frames",
-        "renderer": "color-texture",
-        "assetId": "card.series-10.frame-texture",
-        "region": {
-          "x": 52,
-          "y": 882,
-          "width": 709,
-          "height": 237
-        },
-        "sourceRegion": {
-          "x": 24,
-          "y": 854,
-          "width": 709,
-          "height": 237
-        },
-        "presetTarget": "effect-box",
-        "defaultPreset": "effect-box-s10"
-      },
-      {
-        "id": "xyzEffectBoxOverlay",
-        "kind": "svg",
-        "label": "XYZ effect box overlay",
+        "id": "linkArrowShadows",
+        "kind": "group",
+        "label": "Link arrow shadows",
         "group": "Artwork and frames",
         "defaultVisible": false,
         "editorVisible": false,
-        "element": {
-          "tag": "rect",
-          "attributes": {
-            "x": 52,
-            "y": 882,
-            "width": 709,
-            "height": 237,
-            "fill": "#fffbfc",
-            "opacity": 0.89
+        "layers": [
+          {
+            "id": "linkArrowShadowTopCenter",
+            "kind": "image",
+            "label": "Top-center Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.top-center",
+            "region": {
+              "x": 326,
+              "y": 166,
+              "width": 161,
+              "height": 61
+            }
+          },
+          {
+            "id": "linkArrowShadowTopRight",
+            "kind": "image",
+            "label": "Top-right Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.top-right",
+            "region": {
+              "x": 663,
+              "y": 179,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "linkArrowShadowRightCenter",
+            "kind": "image",
+            "label": "Right-center Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.right-center",
+            "region": {
+              "x": 706,
+              "y": 446,
+              "width": 61,
+              "height": 158
+            }
+          },
+          {
+            "id": "linkArrowShadowBottomRight",
+            "kind": "image",
+            "label": "Bottom-right Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.bottom-right",
+            "region": {
+              "x": 663,
+              "y": 782,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "linkArrowShadowBottomCenter",
+            "kind": "image",
+            "label": "Bottom-center Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.bottom-center",
+            "region": {
+              "x": 329,
+              "y": 824,
+              "width": 158,
+              "height": 61
+            }
+          },
+          {
+            "id": "linkArrowShadowBottomLeft",
+            "kind": "image",
+            "label": "Bottom-left Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.bottom-left",
+            "region": {
+              "x": 61,
+              "y": 782,
+              "width": 90,
+              "height": 90
+            }
+          },
+          {
+            "id": "linkArrowShadowLeftCenter",
+            "kind": "image",
+            "label": "Left-center Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.left-center",
+            "region": {
+              "x": 48,
+              "y": 446,
+              "width": 61,
+              "height": 157
+            }
+          },
+          {
+            "id": "linkArrowShadowTopLeft",
+            "kind": "image",
+            "label": "Top-left Link Arrow shadow",
+            "group": "Link arrow shadows",
+            "editorVisible": false,
+            "assetId": "card.series-10.link-arrow.shadow.top-left",
+            "region": {
+              "x": 61,
+              "y": 179,
+              "width": 90,
+              "height": 90
+            }
           }
-        }
+        ]
       },
       {
-        "id": "pendulumEffectTexture",
-        "kind": "raster",
-        "label": "Pendulum Spell effect texture",
-        "group": "Artwork and frames",
-        "defaultVisible": false,
-        "renderer": "color-texture",
-        "assetId": "card.series-10.frame-texture",
-        "region": {
-          "x": 52,
-          "y": 645,
-          "width": 709,
-          "height": 237
-        },
-        "sourceRegion": {
-          "x": 24,
-          "y": 854,
-          "width": 709,
-          "height": 237
-        },
-        "defaultPreset": "spell-effect-box-s10"
-      },
-      {
-        "id": "pendulumEffectTextureLarge",
-        "kind": "raster",
-        "label": "Large Pendulum effect box texture",
-        "group": "Artwork and frames",
-        "defaultVisible": false,
-        "renderer": "color-texture",
-        "assetId": "card.series-10.frame-texture",
-        "region": {
-          "x": 52,
-          "y": 676,
-          "width": 709,
-          "height": 237
-        },
-        "sourceRegion": {
-          "x": 24,
-          "y": 854,
-          "width": 709,
-          "height": 237
-        },
-        "defaultPreset": "spell-effect-box-s10"
-      },
-      {
-        "id": "effectBorder",
-        "kind": "image",
-        "label": "Effect border",
-        "group": "Artwork and frames",
-        "assetId": "card.series-10.effects-border",
-        "region": {
-          "x": 0,
-          "y": 0,
-          "width": 813,
-          "height": 1185
-        }
-      },
-      {
-        "id": "pendulumBorder",
-        "kind": "image",
-        "label": "Pendulum border",
-        "group": "Artwork and frames",
-        "defaultVisible": false,
-        "assetId": "card.series-10.pendulum-border.medium",
-        "region": {
-          "x": 0,
-          "y": 0,
-          "width": 813,
-          "height": 1185
-        }
-      },
-      {
-        "id": "pendulumScaleMarkerLeft",
-        "kind": "image",
-        "label": "Left Pendulum scale marker",
-        "group": "Card symbols",
-        "defaultVisible": false,
-        "editorVisible": false,
-        "assetId": "card.series-10.pendulum-scale.left",
-        "region": {
-          "x": 59,
-          "y": 769,
-          "width": 51,
-          "height": 39
-        }
-      },
-      {
-        "id": "pendulumScaleMarkerRight",
-        "kind": "image",
-        "label": "Right Pendulum scale marker",
-        "group": "Card symbols",
-        "defaultVisible": false,
-        "editorVisible": false,
-        "assetId": "card.series-10.pendulum-scale.right",
-        "region": {
-          "x": 704,
-          "y": 769,
-          "width": 51,
-          "height": 39
-        }
+        "id": "inactiveLinkArrowLayers",
+        "kind": "group",
+        "label": "Inactive Link arrows",
+        "layers": [
+          {
+            "id": "inactiveLinkArrowTopCenter",
+            "kind": "image",
+            "label": "Inactive top-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.top-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 334,
+              "y": 173,
+              "width": 145,
+              "height": 46
+            }
+          },
+          {
+            "id": "inactiveLinkArrowTopRight",
+            "kind": "image",
+            "label": "Inactive top-right Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.top-right",
+            "defaultVisible": false,
+            "region": {
+              "x": 671,
+              "y": 187,
+              "width": 74,
+              "height": 74
+            }
+          },
+          {
+            "id": "inactiveLinkArrowRightCenter",
+            "kind": "image",
+            "label": "Inactive right-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.right-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 714,
+              "y": 454,
+              "width": 45,
+              "height": 142
+            }
+          },
+          {
+            "id": "inactiveLinkArrowBottomRight",
+            "kind": "image",
+            "label": "Inactive bottom-right Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.bottom-right",
+            "defaultVisible": false,
+            "region": {
+              "x": 671,
+              "y": 790,
+              "width": 74,
+              "height": 74
+            }
+          },
+          {
+            "id": "inactiveLinkArrowBottomCenter",
+            "kind": "image",
+            "label": "Inactive bottom-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.bottom-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 337,
+              "y": 832,
+              "width": 142,
+              "height": 45
+            }
+          },
+          {
+            "id": "inactiveLinkArrowBottomLeft",
+            "kind": "image",
+            "label": "Inactive bottom-left Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.bottom-left",
+            "defaultVisible": false,
+            "region": {
+              "x": 69,
+              "y": 790,
+              "width": 74,
+              "height": 74
+            }
+          },
+          {
+            "id": "inactiveLinkArrowLeftCenter",
+            "kind": "image",
+            "label": "Inactive left-center Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.left-center",
+            "defaultVisible": false,
+            "region": {
+              "x": 56,
+              "y": 454,
+              "width": 45,
+              "height": 141
+            }
+          },
+          {
+            "id": "inactiveLinkArrowTopLeft",
+            "kind": "image",
+            "label": "Inactive top-left Link Arrow",
+            "group": "Inactive Link arrows",
+            "assetId": "card.series-10.link-arrow.inactive.top-left",
+            "defaultVisible": false,
+            "region": {
+              "x": 69,
+              "y": 187,
+              "width": 74,
+              "height": 74
+            }
+          }
+        ]
       },
       {
         "id": "outerBevel",
@@ -1435,6 +1564,259 @@
         }
       },
       {
+        "id": "effectBoxTextures",
+        "kind": "group",
+        "label": "Effect box textures",
+        "group": "Artwork and frames",
+        "editorVisible": false,
+        "layers": [
+          {
+            "id": "effectBoxTexture",
+            "kind": "raster",
+            "label": "Effect box texture",
+            "group": "Artwork and frames",
+            "renderer": "color-texture",
+            "assetId": "card.series-10.frame-texture",
+            "region": {
+              "x": 52,
+              "y": 882,
+              "width": 709,
+              "height": 237
+            },
+            "sourceRegion": {
+              "x": 24,
+              "y": 854,
+              "width": 709,
+              "height": 237
+            },
+            "presetTarget": "effect-box",
+            "defaultPreset": "effect-box-s10"
+          }
+        ]
+      },
+      {
+        "id": "pendulumEffectBoxTextures",
+        "kind": "group",
+        "label": "Pendulum effect box textures",
+        "group": "Artwork and frames",
+        "editorVisible": false,
+        "layers": [
+          {
+            "id": "pendulumEffectTexture",
+            "kind": "raster",
+            "label": "Pendulum Spell effect texture",
+            "group": "Artwork and frames",
+            "defaultVisible": false,
+            "renderer": "color-texture",
+            "assetId": "card.series-10.frame-texture",
+            "region": {
+              "x": 52,
+              "y": 645,
+              "width": 709,
+              "height": 237
+            },
+            "sourceRegion": {
+              "x": 24,
+              "y": 854,
+              "width": 709,
+              "height": 237
+            },
+            "defaultPreset": "spell-effect-box-s10"
+          },
+          {
+            "id": "pendulumEffectTextureLarge",
+            "kind": "raster",
+            "label": "Large Pendulum effect box texture",
+            "group": "Artwork and frames",
+            "defaultVisible": false,
+            "renderer": "color-texture",
+            "assetId": "card.series-10.frame-texture",
+            "region": {
+              "x": 52,
+              "y": 676,
+              "width": 709,
+              "height": 237
+            },
+            "sourceRegion": {
+              "x": 24,
+              "y": 854,
+              "width": 709,
+              "height": 237
+            },
+            "defaultPreset": "spell-effect-box-s10"
+          }
+        ]
+      },
+      {
+        "id": "pendulumUnifiedShadow",
+        "kind": "image",
+        "label": "Pendulum unified box shadow",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "assetId": "card.series-10.pendulum.unified-shadow.medium",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "pendulumArtworkBox",
+        "kind": "image",
+        "label": "Pendulum artwork box",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "assetId": "card.series-10.pendulum.artwork-box.medium",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "xyzEffectBoxOverlay",
+        "kind": "svg",
+        "label": "XYZ effect box overlay",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "element": {
+          "tag": "rect",
+          "attributes": {
+            "x": 52,
+            "y": 882,
+            "width": 709,
+            "height": 237,
+            "fill": "#fffbfc",
+            "opacity": 0.89
+          }
+        }
+      },
+      {
+        "id": "effectBorderShadow",
+        "kind": "image",
+        "label": "Effect border shadow",
+        "group": "Artwork and frames",
+        "editorVisible": false,
+        "assetId": "card.series-10.effects-border-shadow",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "artworkOverlay",
+        "kind": "artwork",
+        "label": "Masked artwork over frame",
+        "group": "Artwork and frames",
+        "field": "artwork",
+        "maskField": "artworkOverlay",
+        "maskChannel": "luminance",
+        "placementRegion": {
+          "x": 100,
+          "y": 219,
+          "width": 613,
+          "height": 613
+        },
+        "transformId": "artwork",
+        "transformMode": "full-art",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "pendulumArtworkOverlay",
+        "kind": "artwork",
+        "label": "Masked pendulum artwork over frame",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "field": "artwork",
+        "fit": "width",
+        "maskField": "artworkOverlay",
+        "maskChannel": "luminance",
+        "placementRegion": {
+          "x": 55,
+          "y": 212,
+          "width": 703,
+          "height": 903
+        },
+        "transformId": "artwork",
+        "transformMode": "full-art",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "effectBorder",
+        "kind": "image",
+        "label": "Effect border",
+        "group": "Artwork and frames",
+        "assetId": "card.series-10.effects-border",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "pendulumEffectBox",
+        "kind": "image",
+        "label": "Pendulum effect box",
+        "group": "Artwork and frames",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "assetId": "card.series-10.pendulum.effect-box.medium",
+        "region": {
+          "x": 0,
+          "y": 0,
+          "width": 813,
+          "height": 1185
+        }
+      },
+      {
+        "id": "pendulumScaleMarkerLeft",
+        "kind": "image",
+        "label": "Left Pendulum scale marker",
+        "group": "Card symbols",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "assetId": "card.series-10.pendulum-scale.left",
+        "region": {
+          "x": 59,
+          "y": 769,
+          "width": 51,
+          "height": 39
+        }
+      },
+      {
+        "id": "pendulumScaleMarkerRight",
+        "kind": "image",
+        "label": "Right Pendulum scale marker",
+        "group": "Card symbols",
+        "defaultVisible": false,
+        "editorVisible": false,
+        "assetId": "card.series-10.pendulum-scale.right",
+        "region": {
+          "x": 704,
+          "y": 769,
+          "width": 51,
+          "height": 39
+        }
+      },
+      {
         "id": "levelStar",
         "kind": "repeated-image",
         "label": "Level star",
@@ -1478,118 +1860,6 @@
         "label": "Link arrows",
         "layers": [
           {
-            "id": "inactiveLinkArrowTopCenter",
-            "kind": "image",
-            "label": "Inactive top-center Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.top-center",
-            "defaultVisible": false,
-            "region": {
-              "x": 326,
-              "y": 166,
-              "width": 161,
-              "height": 61
-            }
-          },
-          {
-            "id": "inactiveLinkArrowTopRight",
-            "kind": "image",
-            "label": "Inactive top-right Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.top-right",
-            "defaultVisible": false,
-            "region": {
-              "x": 663,
-              "y": 179,
-              "width": 90,
-              "height": 90
-            }
-          },
-          {
-            "id": "inactiveLinkArrowRightCenter",
-            "kind": "image",
-            "label": "Inactive right-center Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.right-center",
-            "defaultVisible": false,
-            "region": {
-              "x": 706,
-              "y": 446,
-              "width": 61,
-              "height": 158
-            }
-          },
-          {
-            "id": "inactiveLinkArrowBottomRight",
-            "kind": "image",
-            "label": "Inactive bottom-right Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.bottom-right",
-            "defaultVisible": false,
-            "region": {
-              "x": 663,
-              "y": 782,
-              "width": 90,
-              "height": 90
-            }
-          },
-          {
-            "id": "inactiveLinkArrowBottomCenter",
-            "kind": "image",
-            "label": "Inactive bottom-center Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.bottom-center",
-            "defaultVisible": false,
-            "region": {
-              "x": 329,
-              "y": 824,
-              "width": 158,
-              "height": 61
-            }
-          },
-          {
-            "id": "inactiveLinkArrowBottomLeft",
-            "kind": "image",
-            "label": "Inactive bottom-left Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.bottom-left",
-            "defaultVisible": false,
-            "region": {
-              "x": 61,
-              "y": 782,
-              "width": 90,
-              "height": 90
-            }
-          },
-          {
-            "id": "inactiveLinkArrowLeftCenter",
-            "kind": "image",
-            "label": "Inactive left-center Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.left-center",
-            "defaultVisible": false,
-            "region": {
-              "x": 48,
-              "y": 446,
-              "width": 61,
-              "height": 157
-            }
-          },
-          {
-            "id": "inactiveLinkArrowTopLeft",
-            "kind": "image",
-            "label": "Inactive top-left Link Arrow",
-            "group": "Inactive Link arrows",
-            "assetId": "card.series-10.link-arrow.inactive.top-left",
-            "defaultVisible": false,
-            "region": {
-              "x": 61,
-              "y": 179,
-              "width": 90,
-              "height": 90
-            }
-          },
-          {
             "id": "activeLinkArrowTopCenter",
             "kind": "image",
             "label": "Active top-center Link Arrow",
@@ -1597,10 +1867,10 @@
             "assetId": "card.series-10.link-arrow.active.top-center",
             "defaultVisible": false,
             "region": {
-              "x": 326,
-              "y": 166,
-              "width": 161,
-              "height": 61
+              "x": 334,
+              "y": 173,
+              "width": 145,
+              "height": 46
             }
           },
           {
@@ -1611,10 +1881,10 @@
             "assetId": "card.series-10.link-arrow.active.top-right",
             "defaultVisible": false,
             "region": {
-              "x": 663,
-              "y": 179,
-              "width": 90,
-              "height": 90
+              "x": 671,
+              "y": 187,
+              "width": 74,
+              "height": 74
             }
           },
           {
@@ -1625,10 +1895,10 @@
             "assetId": "card.series-10.link-arrow.active.right-center",
             "defaultVisible": false,
             "region": {
-              "x": 706,
-              "y": 446,
-              "width": 61,
-              "height": 158
+              "x": 714,
+              "y": 454,
+              "width": 45,
+              "height": 142
             }
           },
           {
@@ -1639,10 +1909,10 @@
             "assetId": "card.series-10.link-arrow.active.bottom-right",
             "defaultVisible": false,
             "region": {
-              "x": 663,
-              "y": 782,
-              "width": 90,
-              "height": 90
+              "x": 671,
+              "y": 790,
+              "width": 74,
+              "height": 74
             }
           },
           {
@@ -1653,10 +1923,10 @@
             "assetId": "card.series-10.link-arrow.active.bottom-center",
             "defaultVisible": false,
             "region": {
-              "x": 329,
-              "y": 824,
-              "width": 158,
-              "height": 61
+              "x": 337,
+              "y": 832,
+              "width": 142,
+              "height": 45
             }
           },
           {
@@ -1667,10 +1937,10 @@
             "assetId": "card.series-10.link-arrow.active.bottom-left",
             "defaultVisible": false,
             "region": {
-              "x": 61,
-              "y": 782,
-              "width": 90,
-              "height": 90
+              "x": 69,
+              "y": 790,
+              "width": 74,
+              "height": 74
             }
           },
           {
@@ -1681,10 +1951,10 @@
             "assetId": "card.series-10.link-arrow.active.left-center",
             "defaultVisible": false,
             "region": {
-              "x": 48,
-              "y": 446,
-              "width": 61,
-              "height": 157
+              "x": 56,
+              "y": 454,
+              "width": 45,
+              "height": 141
             }
           },
           {
@@ -1695,10 +1965,10 @@
             "assetId": "card.series-10.link-arrow.active.top-left",
             "defaultVisible": false,
             "region": {
-              "x": 61,
-              "y": 179,
-              "width": 90,
-              "height": 90
+              "x": 69,
+              "y": 187,
+              "width": 74,
+              "height": 74
             }
           }
         ]
@@ -2069,6 +2339,25 @@
             },
             "typography": {
               "fill": "#ffffff"
+            },
+            "whenTransforms": {
+              "artwork": null
+            }
+          },
+          {
+            "id": "fullArt",
+            "label": "Full-art card title",
+            "whenTransforms": {
+              "artwork": "full-art"
+            },
+            "typography": {
+              "fill": "#ffffff",
+              "stroke": {
+                "color": "#111111",
+                "width": 1.5,
+                "align": "outer",
+                "linejoin": "round"
+              }
             }
           }
         ]
@@ -3407,6 +3696,20 @@
     ],
     "presentationRules": [
       {
+        "id": "full-art-coverage",
+        "when": {
+          "path": "kind",
+          "in": [
+            "monster",
+            "spell",
+            "trap"
+          ]
+        },
+        "maskSelections": {
+          "artworkOverlay": "full-art-coverage"
+        }
+      },
+      {
         "id": "sticker-00",
         "when": {
           "path": "sticker",
@@ -3843,10 +4146,11 @@
           ]
         },
         "maskSelections": {
-          "pendulumMonsterFrameTexture": "pendulum-artwork-cutout",
-          "pendulumSpellFrameTexture": "pendulum-frame-spell",
-          "pendulumXyzFrameTexture": "pendulum-artwork-cutout",
-          "pendulumArtwork": "pendulum-artwork-mask"
+          "effectBoxTextures": "pendulum-texture-opacity",
+          "pendulumEffectBoxTextures": "pendulum-texture-opacity",
+          "pendulumArtwork": "pendulum-artwork-mask",
+          "pendulumFrameTextures": "pendulum-frame-clip",
+          "pendulumSpellFrameTexture": "pendulum-frame-transition"
         },
         "textPositions": {
           "cardCode": {
@@ -3858,12 +4162,19 @@
           "frameTexture": false,
           "linkFrame": false,
           "artwork": false,
+          "artworkOverlay": false,
           "artworkBox": false,
+          "artworkBoxShadow": false,
+          "effectBorderShadow": false,
           "effectBorder": false,
           "outerBevel": false,
           "pendulumSpellFrameTexture": true,
           "pendulumArtwork": true,
-          "pendulumBorder": true,
+          "pendulumArtworkOverlay": true,
+          "pendulumUnifiedShadow": true,
+          "pendulumArtworkBox": true,
+          "pendulumEffectBoxTextures": true,
+          "pendulumEffectBox": true,
           "pendulumEffect": true,
           "pendulumScaleMarkerLeft": true,
           "pendulumScaleMarkerRight": true,
@@ -4103,9 +4414,12 @@
           ]
         },
         "assetSelections": {
-          "pendulumBorder": "card.series-10.pendulum-border.small"
+          "pendulumUnifiedShadow": "card.series-10.pendulum.unified-shadow.small",
+          "pendulumArtworkBox": "card.series-10.pendulum.artwork-box.small",
+          "pendulumEffectBox": "card.series-10.pendulum.effect-box.small"
         },
         "maskSelections": {
+          "pendulumArtworkOverlay": "full-art-coverage-pendulum-small",
           "pendulumEffectTexture": "pendulum-effect-box-small"
         },
         "layerVisibility": {
@@ -4169,9 +4483,12 @@
           ]
         },
         "assetSelections": {
-          "pendulumBorder": "card.series-10.pendulum-border.medium"
+          "pendulumUnifiedShadow": "card.series-10.pendulum.unified-shadow.medium",
+          "pendulumArtworkBox": "card.series-10.pendulum.artwork-box.medium",
+          "pendulumEffectBox": "card.series-10.pendulum.effect-box.medium"
         },
         "maskSelections": {
+          "pendulumArtworkOverlay": "full-art-coverage-pendulum-medium",
           "pendulumEffectTexture": "pendulum-effect-box-medium"
         },
         "layerVisibility": {
@@ -4235,10 +4552,13 @@
           ]
         },
         "assetSelections": {
-          "pendulumBorder": "card.series-10.pendulum-border.large"
+          "pendulumUnifiedShadow": "card.series-10.pendulum.unified-shadow.large",
+          "pendulumArtworkBox": "card.series-10.pendulum.artwork-box.large",
+          "pendulumEffectBox": "card.series-10.pendulum.effect-box.large"
         },
         "maskSelections": {
           "effectBoxTexture": "pendulum-effect-box-large-lower",
+          "pendulumArtworkOverlay": "full-art-coverage-pendulum-large",
           "pendulumEffectTextureLarge": "pendulum-effect-box-large"
         },
         "layerVisibility": {
@@ -4541,7 +4861,7 @@
         },
         "maskSelections": {
           "linkFrame": "artwork-mask",
-          "linkArrowLayers": "link-arrows"
+          "linkArrowShadows": "artwork-mask"
         },
         "layerVisibility": {
           "atk": true,
@@ -4549,6 +4869,7 @@
           "def": false,
           "defLabel": false,
           "frameTexture": false,
+          "linkArrowShadows": true,
           "levelStar": false,
           "link": true,
           "linkLabel": true,

@@ -15,11 +15,15 @@ import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "
 
 import { fontWeights } from "@/lib/font-weight"
 import { useShape } from "@/lib/shape-context"
-import { useSizeVariant } from "@/lib/size-context"
+import { useSize, useSizeVariant } from "@/lib/size-context"
+import { linearSliderScale } from "@/lib/slider-scale"
 import { spring } from "@/lib/springs"
 import { cn } from "@/lib/utils"
 
+import { Tooltip } from "./tooltip"
+
 import type { SizeVariant } from "@/lib/size-context"
+import type { SliderScale } from "@/lib/slider-scale"
 import type { MotionStyle, MotionValue } from "framer-motion"
 import type { CSSProperties, HTMLAttributes } from "react"
 
@@ -65,6 +69,8 @@ interface SliderEngineProps extends Omit<
   hideFill?: boolean
   thumbColor?: string
   thumbBorderColor?: string
+  /** Optional monotonic value/position mapping; linear when omitted. */
+  scale?: SliderScale
 }
 
 // ---------------------------------------------------------------------------
@@ -83,10 +89,20 @@ const TRACK_INSET = (THUMB_SIZE - TRACK_BG_HEIGHT) / 2
 // Helpers
 // ---------------------------------------------------------------------------
 
-function valueToPixel(v: number, min: number, max: number, trackWidth: number): number {
+function clampSliderPosition(position: number): number {
+  return Math.max(0, Math.min(1, position))
+}
+
+function valueToPixel(
+  v: number,
+  min: number,
+  max: number,
+  trackWidth: number,
+  scale: SliderScale = linearSliderScale,
+): number {
   if (max === min) return 0
   const usable = trackWidth - THUMB_SIZE
-  return ((v - min) / (max - min)) * usable
+  return clampSliderPosition(scale.valueToPosition(v, min, max)) * usable
 }
 
 function at<T>(values: readonly T[], index: number): T {
@@ -130,10 +146,11 @@ function pixelToValue(
   step: number,
   trackWidth: number,
   stepValues: NonEmptyNumberArray | null = null,
+  scale: SliderScale = linearSliderScale,
 ): number {
   const usable = trackWidth - THUMB_SIZE
   if (usable <= 0) return min
-  const raw = (px / usable) * (max - min) + min
+  const raw = scale.positionToValue(clampSliderPosition(px / usable), min, max)
   if (stepValues) return at(stepValues, nearestStepIndex(raw, stepValues))
   const snapped = Math.round((raw - min) / step) * step + min
   return Math.max(min, Math.min(max, snapped))
@@ -212,6 +229,7 @@ function EditableValue({
   formatValue,
   shapeClassName,
 }: EditableValueProps) {
+  const sizeClasses = useSize("compact")
   const [inputValue, setInputValue] = useState(initialValue)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -234,7 +252,7 @@ function EditableValue({
   }, [index, inputValue, max, min, onCancelEdit, onCommitEdit, step, stepValues])
 
   return (
-    <span className="inline-grid text-[13px]">
+    <span className={cn("inline-grid", sizeClasses.body)}>
       {/* Ghost for layout stability — widest possible value */}
       <span
         className="invisible col-start-1 row-start-1"
@@ -287,6 +305,7 @@ function ValueDisplay({
   isInteracting,
 }: ValueDisplayProps) {
   const shape = useShape()
+  const sizeClasses = useSize("compact")
 
   const renderValue = (index: number) => {
     if (editingIndex === index) {
@@ -323,7 +342,8 @@ function ValueDisplay({
   return (
     <span
       className={cn(
-        "text-muted-foreground inline-grid shrink-0 text-[13px] leading-none transition-[font-variation-settings] duration-100",
+        "text-muted-foreground inline-grid shrink-0 leading-none transition-[font-variation-settings] duration-100",
+        sizeClasses.body,
         "tabular-nums",
       )}
       style={{
@@ -365,30 +385,21 @@ interface TooltipValueProps {
 }
 
 function TooltipValue({ value, formatValue, motionX }: TooltipValueProps) {
-  const shape = useShape()
   const tooltipX = useTransform(motionX, (x) => x + THUMB_SIZE / 2)
   return (
-    <motion.div
-      className="pointer-events-none absolute z-20 -translate-x-1/2"
-      style={{
-        x: tooltipX,
-        top: -16,
-      }}
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 4, transition: spring.fast.exit }}
-      transition={spring.fast}
+    <Tooltip
+      content={<span className="tabular-nums">{formatValue(value)}</span>}
+      delayDuration={0}
+      forceOpen
+      side="top"
+      sideOffset={4}
     >
-      <span
-        className={cn(
-          "text-background bg-foreground px-2 py-1 text-[12px] whitespace-nowrap tabular-nums",
-          shape.bg,
-        )}
-        style={{ fontVariationSettings: fontWeights.medium }}
-      >
-        {formatValue(value)}
-      </span>
-    </motion.div>
+      <motion.span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-4 size-0"
+        style={{ x: tooltipX }}
+      />
+    </Tooltip>
   )
 }
 
@@ -418,6 +429,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       hideFill = false,
       thumbColor,
       thumbBorderColor,
+      scale = linearSliderScale,
       className,
       style: containerStyle,
       ...props
@@ -426,8 +438,6 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
   ) => {
     const isRange = Array.isArray(value)
     const values = toRadixValue(value)
-    const shape = useShape()
-
     // Non-uniform step mode: sorted, deduped list of allowed values. Keyed on
     // the joined string so inline array literals don't recompute every render.
     const stepsKey = steps ? steps.join(",") : ""
@@ -517,11 +527,11 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         const usable = trackWidth - THUMB_SIZE
         const rawPx = cursorX - THUMB_SIZE / 2
         const clampedPx = Math.max(0, Math.min(usable, rawPx))
-        const rawVal = usable > 0 ? (clampedPx / usable) * (max - min) + min : min
+        const rawVal = usable > 0 ? scale.positionToValue(clampedPx / usable, min, max) : min
         const snappedVal = stepValues
           ? at(stepValues, nearestStepIndex(rawVal, stepValues))
           : Math.max(min, Math.min(max, Math.round((rawVal - min) / step) * step + min))
-        const snappedPercent = max === min ? 0 : (snappedVal - min) / (max - min)
+        const snappedPercent = clampSliderPosition(scale.valueToPosition(snappedVal, min, max))
         const snappedX = THUMB_SIZE / 2 + snappedPercent * usable
 
         // Find nearest thumb center
@@ -540,7 +550,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         const width = Math.abs(edgeX - nearest)
         setHoverPreview({ left, width, snappedValue: snappedVal, cursorX: snappedX })
       },
-      [min, max, step, stepValues, isRange, motionX0, motionX1],
+      [min, max, scale, step, stepValues, isRange, motionX0, motionX1],
     )
 
     // --- Initial sync (before paint) ---
@@ -551,15 +561,15 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       if (!el || initialSyncDone.current) return
       const w = el.offsetWidth
       trackWidthRef.current = w
-      const px0 = valueToPixel(values[0], min, max, w)
+      const px0 = valueToPixel(values[0], min, max, w, scale)
       motionX0.set(px0)
       if (isRange && values[1] !== undefined) {
-        const px1 = valueToPixel(values[1], min, max, w)
+        const px1 = valueToPixel(values[1], min, max, w, scale)
         motionX1.set(px1)
       }
       initialSyncDone.current = true
       setReady(true)
-    }, [isRange, max, min, motionX0, motionX1, values])
+    }, [isRange, max, min, motionX0, motionX1, scale, values])
 
     // --- Track width measurement (resize only) ---
     useEffect(() => {
@@ -573,17 +583,17 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
           const v = valuesRef.current
           const mn = minRef.current
           const mx = maxRef.current
-          const px0 = valueToPixel(v[0], mn, mx, w)
+          const px0 = valueToPixel(v[0], mn, mx, w, scale)
           animate(motionX0, px0, spring.moderate)
           if (isRange && v[1] !== undefined) {
-            const px1 = valueToPixel(v[1], mn, mx, w)
+            const px1 = valueToPixel(v[1], mn, mx, w, scale)
             animate(motionX1, px1, spring.moderate)
           }
         }
       })
       ro.observe(el)
       return () => ro.disconnect()
-    }, [isRange, motionX0, motionX1])
+    }, [isRange, motionX0, motionX1, scale])
 
     // --- Sync motion values on value change (keyboard, programmatic) ---
     // Depend on a primitive key rather than the `values` array — its identity
@@ -596,13 +606,13 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       const tw = trackWidthRef.current
       if (tw <= 0) return
       const v = valuesRef.current
-      const px0 = valueToPixel(v[0], min, max, tw)
+      const px0 = valueToPixel(v[0], min, max, tw, scale)
       animate(motionX0, px0, spring.moderate)
       if (isRange && v[1] !== undefined) {
-        const px1 = valueToPixel(v[1], min, max, tw)
+        const px1 = valueToPixel(v[1], min, max, tw, scale)
         animate(motionX1, px1, spring.moderate)
       }
-    }, [valuesKey, min, max, isRange, motionX0, motionX1])
+    }, [valuesKey, min, max, isRange, motionX0, motionX1, scale])
 
     // --- Range crossing prevention ---
     const clampForRange = useCallback(
@@ -646,8 +656,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         if (layoutWidth <= 0 || trackRect.width <= 0) return
         // Normalize cursor to layout space so it matches motionX (which is
         // rendered as a CSS-pixel transform), even under ancestor CSS scale.
-        const scale = trackRect.width / layoutWidth
-        const localX = (e.clientX - trackRect.left) / scale - THUMB_SIZE / 2
+        const visualScale = trackRect.width / layoutWidth
+        const localX = (e.clientX - trackRect.left) / visualScale - THUMB_SIZE / 2
         const clamped = Math.max(0, Math.min(layoutWidth - THUMB_SIZE, localX))
 
         // Determine which thumb to drag
@@ -665,8 +675,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         const motionX = activeDragThumb.current === 0 ? motionX0 : motionX1
 
         // Snap to step grid immediately
-        const snappedValue = pixelToValue(clamped, min, max, step, layoutWidth, stepValues)
-        const snappedPx = valueToPixel(snappedValue, min, max, layoutWidth)
+        const snappedValue = pixelToValue(clamped, min, max, step, layoutWidth, stepValues, scale)
+        const snappedPx = valueToPixel(snappedValue, min, max, layoutWidth, scale)
 
         // Clamp for range crossing
         const finalPx = clampForRange(snappedPx, activeDragThumb.current)
@@ -674,7 +684,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         animate(motionX, finalPx, spring.moderate)
 
         // Update value
-        const finalValue = pixelToValue(finalPx, min, max, step, layoutWidth, stepValues)
+        const finalValue = pixelToValue(finalPx, min, max, step, layoutWidth, stepValues, scale)
         emitChange(activeDragThumb.current, finalValue)
 
         ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -684,6 +694,7 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         isRange,
         min,
         max,
+        scale,
         step,
         stepValues,
         motionX0,
@@ -702,22 +713,22 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
         const trackRect = trackEl.getBoundingClientRect()
         const layoutWidth = trackEl.offsetWidth
         if (layoutWidth <= 0 || trackRect.width <= 0) return
-        const scale = trackRect.width / layoutWidth
-        const localX = (e.clientX - trackRect.left) / scale - THUMB_SIZE / 2
+        const visualScale = trackRect.width / layoutWidth
+        const localX = (e.clientX - trackRect.left) / visualScale - THUMB_SIZE / 2
         const clamped = Math.max(0, Math.min(layoutWidth - THUMB_SIZE, localX))
 
         const motionX = activeDragThumb.current === 0 ? motionX0 : motionX1
 
         // Snap to step grid during drag
-        const snappedValue = pixelToValue(clamped, min, max, step, layoutWidth, stepValues)
-        const snappedPx = valueToPixel(snappedValue, min, max, layoutWidth)
+        const snappedValue = pixelToValue(clamped, min, max, step, layoutWidth, stepValues, scale)
+        const snappedPx = valueToPixel(snappedValue, min, max, layoutWidth, scale)
         const finalPx = clampForRange(snappedPx, activeDragThumb.current)
         motionX.set(finalPx)
 
-        const finalValue = pixelToValue(finalPx, min, max, step, layoutWidth, stepValues)
+        const finalValue = pixelToValue(finalPx, min, max, step, layoutWidth, stepValues, scale)
         emitChange(activeDragThumb.current, finalValue)
       },
-      [min, max, step, stepValues, motionX0, motionX1, clampForRange, emitChange],
+      [min, max, scale, step, stepValues, motionX0, motionX1, clampForRange, emitChange],
     )
 
     const handlePointerUp = useCallback(() => {
@@ -730,10 +741,10 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
       const tw = trackWidthRef.current
       const motionX = activeDragThumb.current === 0 ? motionX0 : motionX1
       const currentPx = motionX.get()
-      const snapped = pixelToValue(currentPx, min, max, step, tw, stepValues)
-      const snappedPx = valueToPixel(snapped, min, max, tw)
+      const snapped = pixelToValue(currentPx, min, max, step, tw, stepValues, scale)
+      const snappedPx = valueToPixel(snapped, min, max, tw, scale)
       animate(motionX, snappedPx, spring.moderate)
-    }, [min, max, step, stepValues, motionX0, motionX1])
+    }, [min, max, scale, step, stepValues, motionX0, motionX1])
 
     // --- Radix keyboard handler ---
     // In steps mode the primitive runs on indices (0..len-1, step 1) so arrow
@@ -775,15 +786,15 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
           ? stepValues
             ? stepValues.map((v) => ({
                 value: v,
-                percent: max === min ? 0 : (v - min) / (max - min),
+                percent: clampSliderPosition(scale.valueToPosition(v, min, max)),
               }))
             : Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => {
                 const v = min + i * step
-                const percent = (v - min) / (max - min)
+                const percent = clampSliderPosition(scale.valueToPosition(v, min, max))
                 return { value: v, percent }
               })
           : [],
-      [showSteps, min, max, step, stepValues],
+      [showSteps, min, max, scale, step, stepValues],
     )
 
     // --- Interaction state for tooltip ---
@@ -909,8 +920,8 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
             // Normalize to layout space so the formula's THUMB_SIZE / TRACK_INSET
             // constants (layout px) match the cursor's coordinate space, even
             // when an ancestor applies a CSS scale transform (e.g. /demo).
-            const scale = trackRect.width / layoutWidth
-            const layoutX = (e.clientX - trackRect.left) / scale
+            const visualScale = trackRect.width / layoutWidth
+            const layoutX = (e.clientX - trackRect.left) / visualScale
             const clamped = Math.max(0, Math.min(layoutWidth, layoutX))
             computeHoverPreview(clamped, layoutWidth)
           }}
@@ -995,32 +1006,23 @@ const CompactSlider = forwardRef<HTMLDivElement, SliderEngineProps>(
               onPointerCancel={handlePointerUp}
             />
             {/* Hover value tooltip */}
-            <AnimatePresence>
-              {hoverPreview && showHoverTooltip && !isPressed && valuePosition !== "tooltip" && (
-                <motion.div
-                  key="hover-tooltip"
-                  className="pointer-events-none absolute z-20 -translate-x-1/2"
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4, transition: spring.fast.exit }}
-                  transition={spring.fast}
-                  style={{
-                    left: hoverPreview.cursorX,
-                    top: -20,
-                  }}
-                >
-                  <span
-                    className={cn(
-                      "text-background bg-foreground px-2 py-1 text-[12px] whitespace-nowrap tabular-nums",
-                      shape.bg,
-                    )}
-                    style={{ fontVariationSettings: fontWeights.medium }}
-                  >
-                    {formatValue(hoverPreview.snappedValue)}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {hoverPreview && showHoverTooltip && !isPressed && valuePosition !== "tooltip" && (
+              <Tooltip
+                content={
+                  <span className="tabular-nums">{formatValue(hoverPreview.snappedValue)}</span>
+                }
+                delayDuration={0}
+                forceOpen
+                side="top"
+                sideOffset={4}
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-2 size-0"
+                  style={{ left: hoverPreview.cursorX }}
+                />
+              </Tooltip>
+            )}
 
             {/* Track background */}
             <motion.div
@@ -1151,6 +1153,7 @@ interface SliderComfortableProps extends Omit<
   label?: string
   formatValue?: (v: number) => string
   disabled?: boolean
+  scale?: SliderScale
 }
 
 const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
@@ -1165,6 +1168,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
       label,
       formatValue = String,
       disabled = false,
+      scale = linearSliderScale,
       className,
       style: containerStyle,
       ...props
@@ -1186,6 +1190,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
     const [showHoverTooltip, setShowHoverTooltip] = useState(false)
     const hoverDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const shape = useShape()
+    const sizeClasses = useSize("default")
 
     // Show hover tooltip after 100ms delay
     useEffect(() => {
@@ -1216,7 +1221,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
 
     // Fill motion value
     const fillPercent = useMotionValue(
-      max === min ? 0 : Math.max(0, Math.min(1, (value - min) / (max - min))),
+      max === min ? 0 : clampSliderPosition(scale.valueToPosition(value, min, max)),
     )
     // Small offset when value is at min so the handle line stays visible
     const zeroTarget = variant === "pips" ? 8 : 17
@@ -1261,10 +1266,10 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         // Normalize cursor to layout space so it matches `w` (layout, padding
         // box). offsetWidth is the layout border-box; the difference vs `w` is
         // the horizontal border contribution split across both sides.
-        const scale = rect.width / el.offsetWidth
+        const visualScale = rect.width / el.offsetWidth
         const borderLeftLayout = (el.offsetWidth - w) / 2
         const visualX = clientX - rect.left
-        const layoutX = visualX / scale - borderLeftLayout
+        const layoutX = visualX / visualScale - borderLeftLayout
         const clamped = Math.max(0, Math.min(w, layoutX))
 
         // Snap to nearest step value
@@ -1277,10 +1282,15 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           )
           snappedVal = at(pipSteps, index)
         } else {
-          const raw = min + (clamped / w) * (max - min)
+          const raw = scale.positionToValue(clamped / w, min, max)
           snappedVal = Math.max(min, Math.min(max, Math.round((raw - min) / step) * step + min))
         }
-        const snappedPercent = max === min ? 0 : (snappedVal - min) / (max - min)
+        const snappedPercent =
+          variant === "scrubber"
+            ? clampSliderPosition(scale.valueToPosition(snappedVal, min, max))
+            : max === min
+              ? 0
+              : (snappedVal - min) / (max - min)
         const snappedX = snappedPercent * w
 
         // Current handle position — for pips, match the visual fill edge offset
@@ -1299,16 +1309,16 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         const width = Math.abs(edgeX - handleX)
         setHoverPreview({ left, width, snappedValue: snappedVal, cursorX: snappedX })
       },
-      [variant, pipSteps, pipCount, min, max, step, fillPercent, zeroOffset],
+      [variant, pipSteps, pipCount, min, max, step, scale, fillPercent, zeroOffset],
     )
 
     // Sync fill on programmatic value change
     useEffect(() => {
       if (dragging.current || handleDragging.current) return
-      const percent = max === min ? 0 : Math.max(0, Math.min(1, (value - min) / (max - min)))
+      const percent = max === min ? 0 : clampSliderPosition(scale.valueToPosition(value, min, max))
       animate(fillPercent, percent, spring.fast)
       animate(zeroOffset, value === min ? zeroTarget : 0, spring.fast)
-    }, [value, min, max, variant, fillPercent, zeroOffset, zeroTarget])
+    }, [value, min, max, variant, scale, fillPercent, zeroOffset, zeroTarget])
 
     const getValueFromX = useCallback(
       (clientX: number) => {
@@ -1324,12 +1334,12 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           )
           return at(pipSteps, index)
         } else {
-          const raw = min + (clamped / rect.width) * (max - min)
+          const raw = scale.positionToValue(clamped / rect.width, min, max)
           const snapped = Math.round((raw - min) / step) * step + min
           return Math.max(min, Math.min(max, snapped))
         }
       },
-      [variant, pipSteps, pipCount, min, max, step],
+      [variant, pipSteps, pipCount, min, max, step, scale],
     )
 
     const handlePointerDown = useCallback(
@@ -1341,12 +1351,13 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         setIsPressed(true)
         const newVal = getValueFromX(e.clientX)
         onChange(newVal)
-        const newPercent = Math.max(0, Math.min(1, (newVal - min) / (max - min)))
+        const newPercent =
+          max === min ? 0 : clampSliderPosition(scale.valueToPosition(newVal, min, max))
         animate(fillPercent, newPercent, spring.fast)
         animate(zeroOffset, newVal === min ? zeroTarget : 0, spring.fast)
         ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
       },
-      [disabled, getValueFromX, onChange, fillPercent, zeroOffset, zeroTarget, min, max],
+      [disabled, getValueFromX, onChange, fillPercent, zeroOffset, zeroTarget, min, max, scale],
     )
 
     const handlePointerMove = useCallback(
@@ -1354,7 +1365,8 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         if (!dragging.current) return
         const newVal = getValueFromX(e.clientX)
         onChange(newVal)
-        const newPercent = Math.max(0, Math.min(1, (newVal - min) / (max - min)))
+        const newPercent =
+          max === min ? 0 : clampSliderPosition(scale.valueToPosition(newVal, min, max))
         if (variant === "scrubber") {
           fillPercent.set(newPercent)
         } else {
@@ -1362,7 +1374,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         }
         animate(zeroOffset, newVal === min ? zeroTarget : 0, spring.fast)
       },
-      [getValueFromX, onChange, variant, fillPercent, zeroOffset, zeroTarget, min, max],
+      [getValueFromX, onChange, variant, fillPercent, zeroOffset, zeroTarget, min, max, scale],
     )
 
     const handlePointerUp = useCallback(() => {
@@ -1382,11 +1394,13 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         setIsPressed(true)
         const newVal = getValueFromX(e.clientX)
         onChange(newVal)
-        fillPercent.set(Math.max(0, Math.min(1, (newVal - min) / (max - min))))
+        fillPercent.set(
+          max === min ? 0 : clampSliderPosition(scale.valueToPosition(newVal, min, max)),
+        )
         animate(zeroOffset, newVal === min ? zeroTarget : 0, spring.fast)
         ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
       },
-      [disabled, getValueFromX, onChange, fillPercent, zeroOffset, zeroTarget, min, max],
+      [disabled, getValueFromX, onChange, fillPercent, zeroOffset, zeroTarget, min, max, scale],
     )
 
     const handleResizePointerMove = useCallback(
@@ -1394,10 +1408,12 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
         if (!handleDragging.current) return
         const newVal = getValueFromX(e.clientX)
         onChange(newVal)
-        fillPercent.set(Math.max(0, Math.min(1, (newVal - min) / (max - min))))
+        fillPercent.set(
+          max === min ? 0 : clampSliderPosition(scale.valueToPosition(newVal, min, max)),
+        )
         animate(zeroOffset, newVal === min ? zeroTarget : 0, spring.fast)
       },
-      [getValueFromX, onChange, fillPercent, zeroOffset, zeroTarget, min, max],
+      [getValueFromX, onChange, fillPercent, zeroOffset, zeroTarget, min, max, scale],
     )
 
     const handleResizePointerUp = useCallback(() => {
@@ -1443,37 +1459,29 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           onPointerCancel={handlePointerUp}
         />
         {/* Hover value tooltip — outside overflow-hidden container */}
-        <AnimatePresence>
-          {hoverPreview && showHoverTooltip && !isPressed && (
-            <motion.div
-              key="hover-tooltip"
-              className="pointer-events-none absolute z-20 -translate-x-1/2"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4, transition: spring.fast.exit }}
-              transition={spring.fast}
-              style={{
-                left: hoverPreview.cursorX,
-                top: -30,
-              }}
-            >
-              <span
-                className={cn(
-                  "text-background bg-foreground px-2 py-1 text-[12px] whitespace-nowrap tabular-nums",
-                  shape.bg,
-                )}
-                style={{ fontVariationSettings: fontWeights.medium }}
-              >
-                {formatValue(hoverPreview.snappedValue)}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {hoverPreview && showHoverTooltip && !isPressed && (
+          <Tooltip
+            content={<span className="tabular-nums">{formatValue(hoverPreview.snappedValue)}</span>}
+            delayDuration={0}
+            forceOpen
+            side="top"
+            sideOffset={4}
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute top-0 size-0"
+              style={{ left: hoverPreview.cursorX }}
+            />
+          </Tooltip>
+        )}
 
         <motion.div
           ref={mergedRef}
           className={cn(
-            "border-border relative h-8 w-full touch-none overflow-hidden border outline-offset-2 select-none",
+            // The track is a bounded control, so it stands on the size ladder with the inputs and
+            // selects it shares a column with rather than on a height of its own.
+            "border-border relative w-full touch-none overflow-hidden border outline-offset-2 select-none",
+            sizeClasses.control,
             variant === "scrubber"
               ? "flex cursor-ew-resize items-center gap-3 px-4"
               : "cursor-ew-resize",
@@ -1535,16 +1543,24 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           {/* Pips: dots layer — z-[1] */}
           {variant === "pips" && (
             <motion.div
-              className="pointer-events-none absolute inset-0 z-1 flex items-center justify-between px-3"
+              className="pointer-events-none absolute inset-0 z-1"
               style={{ WebkitMaskImage: pipsMaskStyle, maskImage: pipsMaskStyle }}
             >
               {pipSteps.map((pipValue) => {
                 const isActivePip = pipValue === value
+                const pipPercent =
+                  max === min ? 0 : clampSliderPosition(scale.valueToPosition(pipValue, min, max))
                 return (
                   <div
                     key={pipValue}
-                    className="relative flex items-center justify-center"
-                    style={{ width: PIP_SIZE, height: PIP_SIZE }}
+                    className="absolute flex items-center justify-center"
+                    style={{
+                      left: `calc(12px + ${pipPercent} * (100% - ${24 + PIP_SIZE}px))`,
+                      top: "50%",
+                      width: PIP_SIZE,
+                      height: PIP_SIZE,
+                      transform: "translateY(-50%)",
+                    }}
                   >
                     <motion.div
                       className="rounded-full"
@@ -1571,12 +1587,20 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
               aria-hidden
             >
               {label && (
-                <span className="bg-background px-2 text-[13px] text-transparent select-none">
+                <span
+                  className={cn(
+                    "bg-background px-2 text-transparent select-none",
+                    sizeClasses.body,
+                  )}
+                >
                   {label}
                 </span>
               )}
               <span
-                className="bg-background ml-auto px-2 text-[13px] text-transparent tabular-nums select-none"
+                className={cn(
+                  "bg-background ml-auto px-2 text-transparent tabular-nums select-none",
+                  sizeClasses.body,
+                )}
                 style={{ minWidth: `${String(formatValue(max)).length}ch` }}
               >
                 {formatValue(value)}
@@ -1622,7 +1646,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
             <div className="pointer-events-none absolute inset-0 z-4 flex items-center px-2">
               {label && (
                 <motion.span
-                  className="px-2 text-[13px]"
+                  className={cn("px-2", sizeClasses.body)}
                   initial={false}
                   animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
                   transition={spring.fast}
@@ -1631,7 +1655,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
                 </motion.span>
               )}
               <motion.span
-                className="ml-auto px-2 text-[13px] tabular-nums"
+                className={cn("ml-auto px-2 tabular-nums", sizeClasses.body)}
                 initial={false}
                 animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
                 transition={spring.fast}
@@ -1678,7 +1702,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
           {/* Scrubber: label */}
           {variant === "scrubber" && label && (
             <motion.span
-              className="z-10 shrink-0 text-[13px]"
+              className={cn("z-10 shrink-0", sizeClasses.body)}
               initial={false}
               animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
               transition={spring.fast}
@@ -1692,7 +1716,7 @@ const ComfortableSlider = forwardRef<HTMLDivElement, SliderComfortableProps>(
             <>
               <div className="flex-1" />
               <motion.span
-                className="z-10 shrink-0 text-right text-[13px] tabular-nums"
+                className={cn("z-10 shrink-0 text-right tabular-nums", sizeClasses.body)}
                 initial={false}
                 animate={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
                 transition={spring.fast}

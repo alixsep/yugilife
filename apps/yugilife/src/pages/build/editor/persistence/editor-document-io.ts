@@ -2,11 +2,14 @@ import {
   currentEditorDocumentVersion,
   migrateEditorDocumentSchema,
 } from "../../migrations/document"
-import { migrateEditorTemplateVersion } from "../../migrations/template"
+import { isTemplateVersion, migrateEditorTemplateVersion } from "../../migrations/template"
+import { requireCompletedArtworkMask } from "../model/artwork-mask-state"
 import {
   createInitialCard,
+  editorArtworkField,
   editorDefaultLayerVisibility,
   editorPresetTargets,
+  editorTemplate,
   editorTemplateId,
   editorTemplateVersion,
 } from "../model/editor-config"
@@ -29,6 +32,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const editorDocumentKeys = new Set([
+  "artworkMask",
+  "artworkMaskEffects",
   "card",
   "layers",
   "mode",
@@ -99,8 +104,18 @@ async function jsonCard(card: CardData): Promise<Record<string, unknown>> {
 }
 
 export async function serializeEditorDocument(document: EditorDocumentState) {
+  requireCompletedArtworkMask(document, editorArtworkField)
+  const artworkMask = {
+    ...document.artworkMask,
+    ...(document.artworkMask.automaticMask
+      ? { automaticMask: await blobDataUrl(document.artworkMask.automaticMask) }
+      : {}),
+    ...(document.artworkMask.manualMask
+      ? { manualMask: await blobDataUrl(document.artworkMask.manualMask) }
+      : {}),
+  }
   const file: EditorDocumentFile = {
-    document: { ...document, card: await jsonCard(document.card) },
+    document: { ...document, artworkMask, card: await jsonCard(document.card) },
     format: editorDocumentFormat,
     schemaVersion: currentEditorDocumentVersion,
   }
@@ -122,6 +137,8 @@ const migrationContext = {
 
 function currentDocument(): EditorDocumentState {
   return {
+    artworkMask: { mode: "automatic", points: [] },
+    artworkMaskEffects: {},
     card: createInitialCard(),
     layers: {},
     mode: "automatic",
@@ -185,7 +202,23 @@ export function parseEditorDocument(source: string): EditorDocumentState {
   }
 
   const document: EditorDocumentState = {
-    card: { ...initial.card, ...migrated.card },
+    artworkMask: parseArtworkMask(migrated.artworkMask),
+    // Current-schema mask metadata is never defaulted here; defaults belong to the adjacent legacy
+    // migrations. Forward whatever the file contained and let the strict validator below reject a
+    // missing or malformed value, exactly as it does for `artworkMask`.
+    artworkMaskEffects: migrated.artworkMaskEffects as EditorDocumentState["artworkMaskEffects"],
+    card: Object.fromEntries(
+      Object.entries({ ...initial.card, ...migrated.card }).map(([field, value]) => [
+        field,
+        editorTemplate.cardFields.some(
+          (definition) => definition.name === field && definition.kind === "image",
+        ) &&
+        typeof value === "string" &&
+        value.startsWith("data:")
+          ? dataUrlBlob(value)
+          : value,
+      ]),
+    ) as CardData,
     layers: migrated.layers ?? {},
     mode: migrated.mode ?? "automatic",
     presetOverrides: migrated.presetOverrides ?? {},
@@ -193,10 +226,40 @@ export function parseEditorDocument(source: string): EditorDocumentState {
     templateId: migrated.templateId,
     templateVersion,
   }
+  if (
+    Number(schemaVersion) < 21 &&
+    !document.artworkMask.automaticMask &&
+    !document.artworkMask.manualMask &&
+    document.card.artworkOverlay instanceof Blob
+  ) {
+    document.artworkMask = { ...document.artworkMask, automaticMask: document.card.artworkOverlay }
+    document.card = { ...document.card, artworkOverlay: "" }
+  }
   try {
     return validateEditorDocumentState(document)
   } catch (error) {
     throw new Error("Editor document contains invalid editor state.", { cause: error })
   }
 }
-import { isTemplateVersion } from "../../migrations/template"
+
+function dataUrlBlob(value: string) {
+  const match = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(value)
+  if (!match) throw new Error("Artwork mask must be an embedded data URL.")
+  const source = decodeURIComponent(match[3] ?? "")
+  const bytes = match[2]
+    ? Uint8Array.from(atob(source), (character) => character.charCodeAt(0))
+    : new TextEncoder().encode(source)
+  return new Blob([bytes], { type: match[1] ?? "application/octet-stream" })
+}
+
+function parseArtworkMask(value: unknown): EditorDocumentState["artworkMask"] {
+  if (!isRecord(value)) throw new Error("Editor artworkMask must be an object.")
+  const decoded = { ...value }
+  for (const key of ["automaticMask", "manualMask"] as const) {
+    if (value[key] === undefined) continue
+    if (typeof value[key] !== "string") throw new Error("Artwork masks must be embedded data URLs.")
+    decoded[key] = dataUrlBlob(value[key])
+  }
+  // Preserve all keys and values for the strict document validator.
+  return decoded as unknown as EditorDocumentState["artworkMask"]
+}

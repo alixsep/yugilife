@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  inventoryPreviewExportOptions,
-  inventoryPreviewFingerprint,
-  inventoryPreviewMatchesCard,
-} from "./inventory-preview"
+import { inventoryPreviewExportOptions, inventoryPreviewMatchesCard } from "./inventory-preview"
 
-const card = {
-  id: "card-id",
-  revision: 3,
-  templateId: "card/series-10",
-  templateVersion: "2026.08.23",
+const card = { id: "card-id", revision: 3 }
+
+function preview(overrides: Partial<{ cardId: string; cardRevision: number }> = {}) {
+  return {
+    cardId: card.id,
+    cardRevision: card.revision,
+    image: new Blob(["preview"], { type: "image/webp" }),
+    ...overrides,
+  }
 }
 
 describe("inventory preview format", () => {
@@ -20,36 +20,16 @@ describe("inventory preview format", () => {
       quality: 0.8,
       size: { scale: 0.5 },
     })
-    expect(inventoryPreviewFingerprint(card.templateId, card.templateVersion)).toBe(
-      "card/series-10@2026.08.23:preview-v2",
+  })
+
+  it("accepts the preview committed with the card's current revision", () => {
+    expect(inventoryPreviewMatchesCard(preview(), card)).toBe(true)
+  })
+
+  it("rejects a preview from another card or an older revision", () => {
+    expect(inventoryPreviewMatchesCard(preview({ cardId: "other" }), card)).toBe(false)
+    expect(inventoryPreviewMatchesCard(preview({ cardRevision: card.revision - 1 }), card)).toBe(
+      false,
     )
-  })
-
-  it("keeps a matching legacy preview available until the next save", () => {
-    expect(
-      inventoryPreviewMatchesCard(
-        {
-          cardId: card.id,
-          cardRevision: card.revision,
-          image: new Blob(["legacy"], { type: "image/png" }),
-          renderFingerprint: "card/series-10@2026.08.23:preview-v1",
-        },
-        card,
-      ),
-    ).toBe(true)
-  })
-
-  it("still rejects stale revisions and template identities", () => {
-    expect(
-      inventoryPreviewMatchesCard(
-        {
-          cardId: card.id,
-          cardRevision: card.revision - 1,
-          image: new Blob(["stale"], { type: "image/webp" }),
-          renderFingerprint: "card/series-10@2026.08.23:preview-v2",
-        },
-        card,
-      ),
-    ).toBe(false)
   })
 })

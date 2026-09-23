@@ -10,17 +10,18 @@ import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 
 import { templateManagerActionLabel } from "./template-manager-actions"
 
+import type { TemplateActivationProgress } from "./prepare-template-textures"
 import type {
   OriginStorageEstimate,
   StoredTemplateRecord,
   TemplateStorageMode,
 } from "./template-storage"
 import type { ChangeEvent } from "react"
-import type { TemplateLoadProgress } from "yugilife-templates"
 
 interface OfficialTemplateDescriptor {
   id: string
@@ -56,7 +57,7 @@ interface TemplateManagerProps {
   templateDraft: string
   templateEditorOpen: boolean
   templateLoadError: string | undefined
-  templateLoadProgress: TemplateLoadProgress | undefined
+  templateLoadProgress: TemplateActivationProgress | undefined
   templateLoading: boolean
   templateStorageError: string | undefined
   templateStorageMode: TemplateStorageMode
@@ -174,9 +175,8 @@ export function TemplateManager({
       </div>
 
       {templateLoading && templateLoadProgress?.phase === "downloading" && (
-        <progress
-          aria-label="Downloading template assets"
-          className="h-1 w-full accent-(--focus-ring)"
+        <Progress
+          label="Downloading template assets"
           max={templateLoadProgress.total}
           value={templateLoadProgress.loaded}
         />
@@ -298,7 +298,7 @@ export function TemplateManager({
           <Field>
             <FieldLabel>Template source</FieldLabel>
             <Textarea
-              className="min-h-80 font-mono text-xs"
+              className="text-caption min-h-80 font-mono"
               disabled={templateDocumentBusy}
               value={templateDraft}
               onChange={(event) => onTemplateDraftChange(event.target.value)}

@@ -26,6 +26,9 @@ export type {
   HistogramColorPreset,
   IdentityColorPreset,
   PolynomialColorPreset,
+  PreparedTexturePayload,
+  PreparedTextures,
+  TexturePreparation,
 } from "./color.js"
 export type {
   ArtworkLayer,
@@ -52,10 +55,13 @@ export type {
   TextFitProfilePatch,
   TextFormat,
   TextLayer,
+  TextStroke,
   TextTypography,
   TextTypographyPatch,
 } from "./layers.js"
 export type {
+  ArtworkTransform,
+  ArtworkTransformOverrides,
   CanvasMask,
   CanvasMaskChannel,
   LayerMaskOverrides,
@@ -68,6 +74,7 @@ export type {
   TextFitProfileOverrides,
   TextPosition,
   TextTypographyOverrides,
+  TransformModeCondition,
 } from "./presentation.js"
 export type {
   CardTemplateBundle,

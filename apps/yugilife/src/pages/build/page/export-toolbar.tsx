@@ -108,7 +108,7 @@ export function ExportToolbar({ controller }: ExportToolbarProps) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            disabled={documentTransferBusy}
+            disabled={documentTransferBusy || controller.artworkMaskPending}
             leadingIcon={FileDown}
             variant="secondary"
             onClick={() => void downloadJson()}
@@ -246,7 +246,11 @@ export function ExportToolbar({ controller }: ExportToolbarProps) {
           </div>
           <Button
             className="max-w-fit"
-            disabled={!templateBundle || (exportFormat !== "svg" && !rasterOutputDimensions)}
+            disabled={
+              controller.artworkMaskPending ||
+              !templateBundle ||
+              (exportFormat !== "svg" && !rasterOutputDimensions)
+            }
             leadingIcon={Download}
             loading={exporting}
             onClick={() => void downloadExport()}

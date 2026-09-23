@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="813" height="1185" viewBox="0 0 813 1185">
+  <defs>
+    <linearGradient id="transition" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" />
+      <stop offset="1" stop-color="#ffffff" />
+    </linearGradient>
+  </defs>
+  <rect width="813" height="1185" fill="#000000" />
+  <rect y="525" width="813" height="185" fill="url(#transition)" />
+  <rect y="710" width="813" height="475" fill="#ffffff" />
+</svg>

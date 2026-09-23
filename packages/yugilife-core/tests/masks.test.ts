@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { renderCard, resolveCardPresentation, validateCardTemplate } from "../src"
+import {
+  renderCard,
+  resolveCardPresentation,
+  validateCardTemplate,
+  validatePresentationOverrides,
+} from "../src"
+import { scopeMaskAlpha } from "../src/rendering/canvas-masks"
+import { clearScratchCanvasPool } from "../src/rendering/scratch-canvas"
 
 import { NAME_FIELD, testTemplate, testTemplateBundle } from "./fixtures"
 
@@ -12,11 +19,14 @@ type TestMock = Mock<(...args: unknown[]) => unknown>
 
 interface MockCanvasContext {
   canvas: HTMLCanvasElement
+  clearRect: TestMock
   drawImage: TestMock
   getImageData: TestMock
   putImageData: TestMock
   restore: TestMock
   save: TestMock
+  setTransform: TestMock
+  globalAlpha: number
   globalCompositeOperation: GlobalCompositeOperation
 }
 
@@ -29,6 +39,9 @@ function contextFor(canvas: HTMLCanvasElement) {
   if (!context) {
     context = {
       canvas,
+      // An isolation surface is borrowed from the scratch pool, which resets the state a previous
+      // holder left on it. A stub without these is not a canvas context.
+      clearRect: vi.fn(),
       drawImage: vi.fn(),
       getImageData: vi.fn(() => {
         if (canvas.width === 2 && canvas.height === 1) {
@@ -36,10 +49,12 @@ function contextFor(canvas: HTMLCanvasElement) {
         }
         return { data: new Uint8ClampedArray(canvas.width * canvas.height * 4) }
       }),
+      globalAlpha: 1,
       globalCompositeOperation: "source-over",
       putImageData: vi.fn(),
       restore: vi.fn(),
       save: vi.fn(),
+      setTransform: vi.fn(),
     }
     contexts.set(canvas, context)
     allContexts.add(context)
@@ -95,10 +110,19 @@ function maskTemplate(overrides: Partial<CardTemplate> = {}): CardTemplate {
 afterEach(() => {
   allContexts.clear()
   observedContexts.clear()
+  // Surfaces outlive a test through the pool, and with them the mock contexts and the calls
+  // recorded on them. Each test starts from an empty pool so it observes only its own render.
+  clearScratchCanvasPool()
   vi.restoreAllMocks()
 })
 
 describe("canvas masks", () => {
+  it("scopes attenuation to actual source-layer alpha", () => {
+    expect(scopeMaskAlpha(204, 255)).toBe(204)
+    expect(scopeMaskAlpha(204, 128)).toBe(229)
+    expect(scopeMaskAlpha(204, 0)).toBe(255)
+  })
+
   it("resolves arbitrary layer assignments and advanced removals", () => {
     const template = validateCardTemplate(maskTemplate())
     const semantics = { values: { variant: "masked" } }
@@ -241,14 +265,50 @@ describe("canvas masks", () => {
     expect(maskedA).not.toBe(middle)
     expect(maskedB).not.toBe(middle)
     expect(maskedB).not.toBe(after)
-    expect(maskedA?.save).toHaveBeenCalledTimes(1)
-    expect(maskedB?.save).toHaveBeenCalledTimes(1)
+    // Both masked layers composed away from the card, once each. They may well have done it on the
+    // same borrowed surface — the pooling test below is the one that pins that down.
+    const isolationSaves = new Set([maskedA, maskedB])
+    expect(
+      [...isolationSaves].reduce((total, c) => total + (c?.save.mock.calls.length ?? 0), 0),
+    ).toBe(2)
     expect(before?.save).not.toHaveBeenCalled()
     expect(middle?.save).not.toHaveBeenCalled()
     expect(after?.save).not.toHaveBeenCalled()
     expect(
       [...allContexts].filter((context) => context.getImageData.mock.calls.length > 0),
     ).toHaveLength(1)
+  })
+
+  it("composes consecutive masked layers on one borrowed surface, cleared between them", async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (
+      this: HTMLCanvasElement,
+    ) {
+      return contextFor(this) as unknown as CanvasRenderingContext2D
+    })
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue(
+      "data:image/png;base64,cmFzdGVy",
+    )
+    const mask = document.createElement("canvas")
+    mask.width = 100
+    mask.height = 150
+
+    await renderCard(
+      { name: "Masked card", variant: "masked" },
+      {
+        assets: { "mask.asset": mask },
+        layerRenderers: { "test-raster": rasterRenderer },
+        templateBundle: testTemplateBundle(maskTemplate()),
+      },
+    )
+
+    const maskedA = observedContexts.get("masked-a")
+    const maskedB = observedContexts.get("masked-b")
+    // The first masked layer is drawn into the card and its surface handed back before the second
+    // one asks for a surface, so the card pays for one isolation surface rather than one per layer.
+    expect(maskedB).toBe(maskedA)
+    // Which is only sound because a borrowed surface arrives empty: the second layer must not
+    // inherit the first one's pixels.
+    expect(maskedA?.clearRect).toHaveBeenCalledWith(0, 0, 100, 150)
   })
 
   it("coalesces masked raster output without crossing vector boundaries", async () => {
@@ -373,6 +433,28 @@ describe("canvas masks", () => {
     expect(() =>
       validateCardTemplate(
         maskTemplate({
+          masks: [
+            {
+              assetId: "mask.asset",
+              coverageLayerId: "missing",
+              id: "mask",
+            },
+          ],
+        }),
+      ),
+    ).toThrow(/references unknown coverage layer "missing"/)
+
+    expect(() =>
+      validateCardTemplate(
+        maskTemplate({
+          masks: [{ assetId: "mask.asset", coverageLayerId: "after", id: "bottom-half" }],
+        }),
+      ),
+    ).toThrow(/coverage layer "after" does not render before that layer/)
+
+    expect(() =>
+      validateCardTemplate(
+        maskTemplate({
           presentationRules: [
             {
               id: "unknown-mask",
@@ -383,5 +465,23 @@ describe("canvas masks", () => {
         }),
       ),
     ).toThrow(/references unknown mask "missing"/)
+  })
+
+  it("rejects an override that consults coverage which has not rendered yet", () => {
+    const template = validateCardTemplate(
+      maskTemplate({
+        masks: [
+          { assetId: "mask.asset", id: "bottom-half" },
+          { assetId: "mask.asset", coverageLayerId: "middle", id: "scoped" },
+        ],
+      }),
+    )
+
+    expect(() =>
+      validatePresentationOverrides({ layerMasks: { "masked-b": "scoped" } }, template),
+    ).not.toThrow()
+    expect(() =>
+      validatePresentationOverrides({ layerMasks: { "masked-a": "scoped" } }, template),
+    ).toThrow(/coverage layer "middle" does not render before that layer/)
   })
 })

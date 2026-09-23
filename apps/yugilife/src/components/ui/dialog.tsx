@@ -6,6 +6,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
+import { fontWeights } from "@/lib/font-weight"
 import { useIcon } from "@/lib/icon-context"
 import { useShape } from "@/lib/shape-context"
 import { useSize } from "@/lib/size-context"
@@ -151,7 +152,9 @@ function DialogHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 function DialogFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("mt-6 flex justify-end gap-2", className)} {...props} />
+  // Buttons never shrink or wrap their labels, so a footer too narrow for its actions wraps into
+  // stacked rows here instead of squeezing them.
+  return <div className={cn("mt-6 flex flex-wrap justify-end gap-2", className)} {...props} />
 }
 
 const DialogTitle = forwardRef<
@@ -164,7 +167,7 @@ const DialogTitle = forwardRef<
     <DialogPrimitive.Title
       ref={ref}
       className={cn("text-foreground leading-tight", sizeClasses.title, className)}
-      style={{ fontVariationSettings: "'wght' 700" }}
+      style={{ fontVariationSettings: fontWeights.bold }}
       {...props}
     />
   )

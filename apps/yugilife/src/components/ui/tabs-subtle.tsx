@@ -306,7 +306,7 @@ const TabsSubtleItem = forwardRef<HTMLButtonElement, TabsSubtleItemProps>(
     const labelContent = (
       // Both stacked spans carry the text-box trim so the invisible bold
       // sizer and the visible label keep identical boxes.
-      <span ref={measureLabel} className={cn("inline-grid whitespace-nowrap", sizeClasses.text)}>
+      <span ref={measureLabel} className="inline-grid whitespace-nowrap">
         <span
           className="invisible col-start-1 row-start-1 [text-box:trim-both_cap_alphabetic]"
           style={{ fontVariationSettings: fontWeights.semibold }}
@@ -350,6 +350,10 @@ const TabsSubtleItem = forwardRef<HTMLButtonElement, TabsSubtleItemProps>(
           // pills sit directly on the ladder's control height.
           "relative z-10 flex cursor-pointer items-center border-none bg-transparent outline-none",
           sizeClasses.control,
+          // The label's own size lives on the control rather than on the label span, so that a
+          // caller's `className` can move it — the span then inherits. Tabs sitting in prose need
+          // the type of the figure around them, not the type of an application panel.
+          sizeClasses.text,
           sizeClasses.px,
           !collapseLabel && sizeClasses.gap,
           shape.bg,

@@ -1,6 +1,5 @@
 import { validateEditorDocumentState } from "../../build/editor/model/editor-document-validation"
 import { createInitialEditorDocument } from "../../build/editor/model/editor-store"
-import { inventoryPreviewFingerprint } from "../model/inventory-preview"
 
 import calledArtworkUrl from "./assets/called-by-the-grave-artwork.webp"
 import calledPreviewUrl from "./assets/called-by-the-grave-preview.webp"
@@ -244,10 +243,6 @@ export async function createInventorySeed(): Promise<readonly InventorySeedSnaps
           cardId: definition.id,
           cardRevision: 1,
           image: previewImage,
-          renderFingerprint: inventoryPreviewFingerprint(
-            document.templateId,
-            document.templateVersion,
-          ),
         },
       }
     }),

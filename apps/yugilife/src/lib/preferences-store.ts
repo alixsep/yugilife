@@ -2,7 +2,10 @@ import { create } from "zustand"
 
 export type Theme = "system" | "light" | "dark"
 
-export const DEFAULT_ACCENT_COLOR = "#65D48A"
+/** `native` hands the pointer back to the OS; `custom` draws the app's own cursor. */
+export type CursorPreference = "custom" | "native"
+
+export const DEFAULT_ACCENT_COLOR = "#FF8A65"
 
 const THEME_STORAGE_KEY = "yugilife-theme"
 const ACCENT_COLOR_STORAGE_KEY = "yugilife-focus-ring-color"
@@ -11,15 +14,21 @@ const PREFERENCES_STORAGE_KEY = "yugilife-preferences"
 interface PersistedPreferences {
   theme: Theme
   accentColor: string
+  cursor: CursorPreference
 }
 
 interface PreferencesState extends PersistedPreferences {
   setTheme: (theme: Theme) => void
   setAccentColor: (color: string) => void
+  setCursor: (cursor: CursorPreference) => void
 }
 
 function isTheme(value: unknown): value is Theme {
   return value === "system" || value === "light" || value === "dark"
+}
+
+function isCursorPreference(value: unknown): value is CursorPreference {
+  return value === "custom" || value === "native"
 }
 
 function isCssColor(value: string) {
@@ -39,7 +48,11 @@ function validAccentColor(value: unknown, fallback: string) {
 }
 
 function readPreferences(): PersistedPreferences {
-  const defaults = { theme: "dark" as Theme, accentColor: DEFAULT_ACCENT_COLOR }
+  const defaults = {
+    theme: "dark" as Theme,
+    accentColor: DEFAULT_ACCENT_COLOR,
+    cursor: "custom" as CursorPreference,
+  }
   if (typeof window === "undefined") return defaults
 
   try {
@@ -52,6 +65,7 @@ function readPreferences(): PersistedPreferences {
         return {
           theme: isTheme(state.theme) ? state.theme : defaults.theme,
           accentColor: validAccentColor(state.accentColor, defaults.accentColor),
+          cursor: isCursorPreference(state.cursor) ? state.cursor : defaults.cursor,
         }
       }
     }
@@ -63,6 +77,7 @@ function readPreferences(): PersistedPreferences {
     return {
       theme: isTheme(storedTheme) ? storedTheme : defaults.theme,
       accentColor: validAccentColor(storedAccentColor, defaults.accentColor),
+      cursor: defaults.cursor,
     }
   } catch {
     return defaults
@@ -117,6 +132,7 @@ export const usePreferencesStore = create<PreferencesState>()((set, get) => ({
     schedulePreferencesPersist({
       theme,
       accentColor: get().accentColor,
+      cursor: get().cursor,
     })
   },
   setAccentColor: (color) => {
@@ -125,6 +141,16 @@ export const usePreferencesStore = create<PreferencesState>()((set, get) => ({
     schedulePreferencesPersist({
       theme: get().theme,
       accentColor: color,
+      cursor: get().cursor,
+    })
+  },
+  setCursor: (cursor) => {
+    if (get().cursor === cursor) return
+    set({ cursor })
+    schedulePreferencesPersist({
+      theme: get().theme,
+      accentColor: get().accentColor,
+      cursor,
     })
   },
 }))

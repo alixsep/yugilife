@@ -49,5 +49,23 @@ export default defineConfig({
         ...devices["Desktop Firefox"],
       },
     },
+    // Browser-storage behaviour the unit suites cannot reach: jsdom has no IndexedDB, so template
+    // caching and texture preparation are only ever exercised against their in-memory fallback.
+    // Both engines run it, because how a browser stores a Blob and decodes an image is exactly what
+    // is under test.
+    {
+      name: "app-storage-chromium",
+      testDir: "e2e/app",
+      use: {
+        ...devices["Desktop Chrome"],
+      },
+    },
+    {
+      name: "app-storage-firefox",
+      testDir: "e2e/app",
+      use: {
+        ...devices["Desktop Firefox"],
+      },
+    },
   ],
 })

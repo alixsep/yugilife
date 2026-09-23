@@ -68,7 +68,7 @@ describe("CLI argument boundary", () => {
     await expect(runCli(["templates", "list"], captured.io)).resolves.toBe(0)
     expect(captured.read()).toEqual({
       stderr: "",
-      stdout: "card/series-10@2026.08.30\tpackaged\tSeries 10\n",
+      stdout: "card/series-10@2026.09.23\tpackaged\tSeries 10\n",
     })
   })
 
@@ -76,11 +76,11 @@ describe("CLI argument boundary", () => {
     const captured = output()
 
     await expect(
-      runCli(["templates", "install", "card/series-10@2026.08.30"], captured.io),
+      runCli(["templates", "install", "card/series-10@2026.09.23"], captured.io),
     ).resolves.toBe(0)
     expect(captured.read()).toEqual({
       stderr: "",
-      stdout: "card/series-10@2026.08.30 is already available locally.\n",
+      stdout: "card/series-10@2026.09.23 is already available locally.\n",
     })
   })
 
@@ -210,12 +210,35 @@ describe("JSON transport", () => {
     expect(request.format).toBe("svg")
     expect(request.templateBundle.manifest).toMatchObject({
       id: "card/series-10",
-      version: "2026.08.30",
+      version: "2026.09.23",
     })
     expect(request.templateBundle.assets["card.series-10.sticker.00"]).toMatch(
       /^data:image\/webp;base64,/u,
     )
     expect(request.files.artwork).toMatch(/^data:image\/png;base64,/u)
+  })
+
+  it("transports presentation overrides for full-art and crop rendering", async () => {
+    const directory = await temporaryDirectory()
+    const inputPath = path.join(directory, "card.json")
+    await writeFile(
+      inputPath,
+      JSON.stringify({
+        card: { name: "Full-art transport" },
+        presentationOverrides: {
+          artworkTransforms: {
+            artwork: { mode: "full-art", scale: 1.5, x: 0, y: 0 },
+          },
+        },
+      }),
+    )
+
+    const request = await loadRenderRequest(inputPath, path.join(directory, "card.svg"))
+    expect(request.presentationOverrides).toEqual({
+      artworkTransforms: {
+        artwork: { mode: "full-art", scale: 1.5, x: 0, y: 0 },
+      },
+    })
   })
 
   it("decodes browser PNG data URLs", () => {

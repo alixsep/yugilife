@@ -190,7 +190,7 @@ export function AnimatedHeading({ lines, className, reveal }: AnimatedHeadingPro
               {line === "Yu-Gi-Oh!" ? (
                 <motion.span
                   aria-label="Yu-Gi-Oh!"
-                  className="inline-block rounded-[0.24em] bg-(--focus-ring) px-[0.18em] py-[0.08em] leading-[0.9] whitespace-nowrap text-(--background) will-change-[filter,opacity,transform]"
+                  className="inline-block rounded-[0.24em] bg-(--focus-ring) px-[0.18em] py-[0.08em] leading-[0.9] whitespace-nowrap text-(--user-accent-foreground) will-change-[filter,opacity,transform]"
                   variants={activeWordVariants}
                 >
                   Yu-Gi-Oh!
