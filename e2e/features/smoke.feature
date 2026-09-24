@@ -5,10 +5,10 @@ Feature: Smoke
     Then I see the card creation heading
 
   @timeout:60000
-  Scenario: The landing scene is ready when navigating home
+  Scenario: The landing page is ready when navigating home
     Given I open the inventory
     When I navigate to the Yugilife home
-    Then the landing scene is rendered
+    Then the landing page is shown
 
   Scenario: Saved card fields survive a browser refresh
     Given I open the card builder

@@ -2,6 +2,26 @@
   "name": "yugilife-monorepo",
   "version": "0.0.0",
   "private": true,
+  "description": "Yugilife: a free, open-source Yu-Gi-Oh! card maker, with its renderer, templates, and CLI.",
+  "keywords": [
+    "yugioh",
+    "yu-gi-oh",
+    "card-maker",
+    "card-generator",
+    "custom-cards",
+    "tcg",
+    "monorepo"
+  ],
+  "homepage": "https://alixsep.github.io/yugilife/",
+  "bugs": {
+    "url": "https://github.com/alixsep/yugilife/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alixsep/yugilife.git"
+  },
+  "license": "AGPL-3.0-only",
+  "author": "Alixsep (https://github.com/alixsep)",
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {

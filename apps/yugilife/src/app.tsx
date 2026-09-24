@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useState } from "react"
 
-import { BrowserRouter, HashRouter, Route, Routes } from "react-router"
+import { BrowserRouter, Route, Routes } from "react-router"
 
 import { ShapeProvider } from "@/lib/shape-context"
 import { ThemeProvider } from "@/lib/theme-context"
@@ -32,12 +32,11 @@ function RouteLoadingFallback() {
 }
 
 export default function App() {
-  const usesHashRouting = import.meta.env.BASE_URL !== "/"
-  const Router = usesHashRouting ? HashRouter : BrowserRouter
-  const routePath = usesHashRouting
-    ? window.location.hash.slice(1).split(/[?#]/, 1)[0] || "/"
-    : window.location.pathname
-  const landingEntry = routePath === "/"
+  // Every route is a real path below the deploy base (`/yugilife/` on GitHub Pages), so each page
+  // has its own address for search engines and link previews. See scripts/seo-pages.mjs.
+  const basename = import.meta.env.BASE_URL.replace(/\/$/, "")
+  const routePath = window.location.pathname.slice(basename.length).replace(/\/$/, "")
+  const landingEntry = routePath === ""
   const [startupComplete, setStartupComplete] = useState(
     () => document.documentElement.dataset.loadingComplete === "true",
   )
@@ -62,7 +61,7 @@ export default function App() {
           <>
             <CustomCursor />
             <ShapeProvider>
-              <Router>
+              <BrowserRouter basename={basename}>
                 <PageTransition>
                   {(displayLocation) => (
                     <Suspense fallback={<RouteLoadingFallback />}>
@@ -77,7 +76,7 @@ export default function App() {
                     </Suspense>
                   )}
                 </PageTransition>
-              </Router>
+              </BrowserRouter>
             </ShapeProvider>
           </>
         )}

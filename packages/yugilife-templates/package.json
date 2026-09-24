@@ -1,7 +1,28 @@
 {
   "name": "yugilife-templates",
   "version": "0.1.0",
+  "description": "Yugilife's Yu-Gi-Oh! card templates as open data: textures, fonts, layouts, and presentation rules for yugilife-core.",
+  "keywords": [
+    "yugioh",
+    "yu-gi-oh",
+    "card-maker",
+    "card-generator",
+    "custom-cards",
+    "tcg",
+    "templates",
+    "series-10"
+  ],
+  "homepage": "https://alixsep.github.io/yugilife/",
+  "bugs": {
+    "url": "https://github.com/alixsep/yugilife/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alixsep/yugilife.git",
+    "directory": "packages/yugilife-templates"
+  },
   "license": "AGPL-3.0-only",
+  "author": "Alixsep (https://github.com/alixsep)",
   "type": "module",
   "files": [
     "dist",

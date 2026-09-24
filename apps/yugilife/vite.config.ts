@@ -10,6 +10,8 @@ import { defineConfig } from "vite"
 import { yugilifeLosslessWebp } from "../../packages/yugilife-templates/scripts/lossless-webp.mjs"
 import { yugilifeWoff2 } from "../../packages/yugilife-templates/scripts/woff2.mjs"
 
+import { yugilifeSeoPages } from "./scripts/seo-pages.mjs"
+import { yugilifeServiceWorker } from "./scripts/service-worker.mjs"
 import { workspaceAliases } from "./workspace-aliases"
 
 import type { Dirent } from "node:fs"
@@ -51,9 +53,8 @@ function resolveBlogPublicationCommits() {
 }
 
 export default defineConfig(({ mode }) => ({
-  // GitHub Pages hosts this project below the repository name. Hash routing keeps every
-  // client-side route on this one real server path, so refreshing /build or /inventory never
-  // depends on a Pages-specific 404 fallback.
+  // GitHub Pages hosts this project below the repository name. Each public route is built as its
+  // own HTML file below that base, and anything else falls back to 404.html (scripts/seo-pages.mjs).
   base: mode === "pages" ? "/yugilife/" : "/",
 
   define: {
@@ -81,6 +82,8 @@ export default defineConfig(({ mode }) => ({
     },
     react(),
     tailwindcss(),
+    yugilifeSeoPages(),
+    yugilifeServiceWorker(),
   ],
 
   server: {

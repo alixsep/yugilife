@@ -5,7 +5,18 @@ import type { Transition } from "framer-motion"
 type ReleaseFlagProps = {
   label?: string
   className?: string
+  /**
+   * `inline` sits in a line of caption text; `display` is the same flag at headline scale, for a
+   * surface where it is the first thing read. The whole drawing is in `em`, so only the type size
+   * changes between them.
+   */
+  size?: "display" | "inline"
 }
+
+const sizeClasses = {
+  display: "text-[1.25rem]",
+  inline: "text-caption",
+} as const
 
 type Point = readonly [x: number, y: number]
 
@@ -94,7 +105,7 @@ function getLetterProjection(x: number, phase: number) {
   }
 }
 
-export function ReleaseFlag({ label = "RELEASE", className }: ReleaseFlagProps) {
+export function ReleaseFlag({ label = "RELEASE", className, size = "inline" }: ReleaseFlagProps) {
   const prefersReducedMotion = useReducedMotion() === true
   const flagLabel = label.toUpperCase()
   const letters = [...flagLabel]
@@ -110,18 +121,21 @@ export function ReleaseFlag({ label = "RELEASE", className }: ReleaseFlagProps) 
   return (
     <svg
       aria-label={flagLabel}
-      className={`text-caption inline-block h-[2.1667em] w-[5.8333em] shrink-0 -rotate-2 ${className ?? ""}`}
+      className={`${sizeClasses[size]} inline-block h-[2.1667em] w-[5.8333em] shrink-0 -rotate-2 ${className ?? ""}`}
       focusable="false"
       role="img"
       viewBox="0 0 70 26"
       xmlns="http://www.w3.org/2000/svg"
     >
       <title>{flagLabel}</title>
+      {/* The wave starts from its own first frame, which is the resting flag. `initial={false}`
+          would instead jump straight to the last keyframe and treat the loop as already done: it
+          only appeared to work in development, where StrictMode's second mount restarted it. */}
       <motion.path
         animate={{ d: prefersReducedMotion ? restingFlag : flagFrames }}
         d={restingFlag}
         fill="var(--user-accent)"
-        initial={false}
+        initial={{ d: restingFlag }}
         transition={waveTransition}
       />
       {letters.map((letter, index) => {
@@ -137,7 +151,15 @@ export function ReleaseFlag({ label = "RELEASE", className }: ReleaseFlagProps) 
               skewY: prefersReducedMotion ? 0 : projections.map(({ skewY }) => skewY),
               y: prefersReducedMotion ? 0 : projections.map(({ y }) => y),
             }}
-            initial={false}
+            initial={
+              prefersReducedMotion
+                ? { scaleX: 1, skewY: 0, y: 0 }
+                : {
+                    scaleX: projections[0]?.scaleX ?? 1,
+                    skewY: projections[0]?.skewY ?? 0,
+                    y: projections[0]?.y ?? 0,
+                  }
+            }
             style={{ transformOrigin: `${x}px 13px` }}
             transition={waveTransition}
           >

@@ -43,6 +43,16 @@ function roundedRectPath(width: number, height: number, radius: number) {
 
 type CursorMode = "default" | "button" | "text" | "drag"
 
+/**
+ * The cursor draws in the theme's foreground, which vanishes over a surface that keeps its own
+ * colour whatever the theme, such as the support screen's white. Such a surface declares itself
+ * with `data-cursor-surface="light"` or `"dark"`, and the cursor switches its own colour scheme to
+ * match, so the same `--foreground` token resolves to the ink the design system uses on that kind
+ * of surface. Only fixed-colour surfaces need it; everything that follows the theme is already
+ * covered.
+ */
+const DEFAULT_INK = "var(--foreground, #171717)"
+
 export type CustomCursorProps = {
   /** CSS selector for elements that provide a typed cursor state. */
   interactiveSelector?: string
@@ -50,7 +60,7 @@ export type CustomCursorProps = {
 }
 
 const cursorStyle: CSSProperties = {
-  color: "var(--foreground, #171717)",
+  color: DEFAULT_INK,
   height: CURSOR_SIZE,
   left: 0,
   opacity: 0,
@@ -129,6 +139,7 @@ export function CustomCursor({
     let lastPointerMoveAt = 0
     let lastPointerX = 0
     let lastPointerY = 0
+    let surfaceScheme = ""
 
     const interactiveElement = (node: EventTarget | null): Element | null => {
       if (!(node instanceof Element)) return null
@@ -170,8 +181,18 @@ export function CustomCursor({
       cursorMode = nextMode
     }
 
+    const syncInk = (node: Element | null) => {
+      const surface = node?.closest("[data-cursor-surface]")?.getAttribute("data-cursor-surface")
+      const nextScheme = surface === "dark" || surface === "light" ? surface : ""
+      if (nextScheme === surfaceScheme) return
+      surfaceScheme = nextScheme
+      cursor.style.colorScheme = nextScheme
+    }
+
     const syncCursorMode = (clientX: number, clientY: number) => {
-      setCursorMode(modeForElement(interactiveElement(document.elementFromPoint(clientX, clientY))))
+      const node = document.elementFromPoint(clientX, clientY)
+      syncInk(node)
+      setCursorMode(modeForElement(interactiveElement(node)))
     }
 
     const updatePosition = (clientX: number, clientY: number) => {

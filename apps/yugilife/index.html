@@ -11,7 +11,22 @@
     />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/yugilife-logo.svg" />
-    <title>Yugilife</title>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="application-name" content="Yugilife" />
+    <meta name="apple-mobile-web-app-title" content="Yugilife" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="author" content="Alixsep" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fafafa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#171717" />
+    <!-- seo -->
+    <script>
+      // Links from before path routing used `#/build`, `#/blog/…`. Move them onto the real path
+      // before the app reads the location, so every shared link still opens the right page.
+      if (location.hash.startsWith("#/")) {
+        history.replaceState(null, "", "%BASE_URL%" + location.hash.slice(2))
+      }
+    </script>
     <script>
       ;(() => {
         try {

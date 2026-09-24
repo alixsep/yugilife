@@ -1,8 +1,30 @@
 {
   "name": "yugilife",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
+  "description": "The Yugilife web app: a free, open-source Yu-Gi-Oh! card maker in the browser, with 14,000+ official cards, full art, rich text, and PNG, JPEG, WebP, and SVG export.",
+  "keywords": [
+    "yugioh",
+    "yu-gi-oh",
+    "card-maker",
+    "card-generator",
+    "custom-cards",
+    "tcg",
+    "card-editor",
+    "full-art",
+    "pwa"
+  ],
+  "homepage": "https://alixsep.github.io/yugilife/",
+  "bugs": {
+    "url": "https://github.com/alixsep/yugilife/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alixsep/yugilife.git",
+    "directory": "apps/yugilife"
+  },
   "license": "AGPL-3.0-only",
+  "author": "Alixsep (https://github.com/alixsep)",
   "type": "module",
   "scripts": {
     "dev": "vite",

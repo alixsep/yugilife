@@ -292,6 +292,8 @@ export function DonateButton() {
           >
             <section
               ref={screenRef}
+              // The screen is white and pink in either theme, so the cursor takes dark ink here.
+              data-cursor-surface="light"
               hidden={!screenShown}
               className={cn(
                 "fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto px-5 py-10",
@@ -304,6 +306,10 @@ export function DonateButton() {
                 "bg-white",
                 // Needed because display:flex otherwise beats the user agent's rule for [hidden].
                 "[&[hidden]]:hidden",
+                // The modal dialog turns pointer events off on the body and back on only for its
+                // content. This screen is its backdrop, so it takes them back too: otherwise
+                // anything off the sheet, the cursor's ink included, sees the page behind it.
+                "pointer-events-auto",
               )}
             >
               {/* Fixed, not absolute: the screen scrolls, and the fog is the sky behind it rather

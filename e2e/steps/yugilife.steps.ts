@@ -21,14 +21,15 @@ When("I navigate to the Yugilife home", async ({ page }) => {
   await expect(page).toHaveURL(/\/$/)
 })
 
-Then("the landing scene is rendered", async ({ page }) => {
+Then("the landing page is shown", async ({ page }) => {
   const landingPage = page.locator("main.landing-page")
   await expect(landingPage).toHaveAttribute("data-landing-ready", "true", {
     timeout: landingReadyTimeout,
   })
-  await expect(landingPage.locator(".landing-canvas-slot canvas")).toBeVisible({
-    timeout: landingReadyTimeout,
-  })
+  await expect(landingPage.getByRole("link", { name: /Start building/ })).toBeVisible()
+  for (const artwork of await landingPage.locator(".bento-breakout-image").all()) {
+    await expect(artwork).toHaveJSProperty("complete", true)
+  }
 })
 
 Given("I open the card builder", async ({ page }) => {

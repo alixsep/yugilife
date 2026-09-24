@@ -2,7 +2,29 @@
   "name": "yugilife-core",
   "version": "0.0.0",
   "private": true,
+  "description": "A template-driven card renderer with rich text, text fitting, layers, masks, and SVG, PNG, JPEG, and WebP export. It powers Yugilife.",
+  "keywords": [
+    "yugioh",
+    "yu-gi-oh",
+    "card-maker",
+    "card-generator",
+    "custom-cards",
+    "tcg",
+    "renderer",
+    "rich-text",
+    "svg"
+  ],
+  "homepage": "https://alixsep.github.io/yugilife/",
+  "bugs": {
+    "url": "https://github.com/alixsep/yugilife/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alixsep/yugilife.git",
+    "directory": "packages/yugilife-core"
+  },
   "license": "AGPL-3.0-only",
+  "author": "Alixsep (https://github.com/alixsep)",
   "type": "module",
   "sideEffects": [
     "**/*.css"

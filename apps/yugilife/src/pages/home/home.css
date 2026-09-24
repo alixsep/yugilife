@@ -1,0 +1,785 @@
+/* ==========================================================================
+   LANDING PAGE
+   --------------------------------------------------------------------------
+   A bento composition. On desktop the grid is exactly the viewport under the
+   navigation: twelve columns, six rows, named areas. Below the desktop
+   breakpoint it becomes a two-column stack whose tiles size to their content.
+
+   One tile is the full-art layout made visible: an artwork clipped to a
+   frame with its own cutout laid over it unclipped, so the subject steps out
+   of the frame. Everything else is type. The reveal is one staggered CSS
+   animation on the readiness edge; only the artwork's parallax runs after it,
+   and only as transforms.
+============================================================================ */
+
+@font-face {
+  font-family: "Matrix Small Caps";
+  font-display: swap;
+  src: url("../../assets/fonts/MatrixRegularSmallCaps.woff2") format("woff2");
+}
+
+.landing-page {
+  --bento-gap: 0.625rem;
+  --bento-pad: clamp(1.125rem, 1.7vw, 1.75rem);
+  /* Tiles are a raised surface on the page floor. The light ladder is flat
+     white above its first steps, so in light mode the floor is `--muted`
+     rather than `--surface-1`, or white tiles would vanish into it. */
+  --bento-surface: var(--surface-3);
+  --bento-ground: light-dark(var(--muted), var(--surface-1));
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  overflow-x: clip;
+  background-color: var(--bento-ground);
+}
+
+.bento {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "hero hero"
+    "window window"
+    "discord export"
+    "catalog catalog"
+    "cta cta"
+    "blog blog"
+    "hello hello";
+  gap: var(--bento-gap);
+  width: 100%;
+  max-width: 1920px;
+  margin-inline: auto;
+  padding: 0.25rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.bento-hero {
+  grid-area: hero;
+}
+.bento-window {
+  grid-area: window;
+}
+.bento-discord {
+  grid-area: discord;
+}
+.bento-export {
+  grid-area: export;
+}
+.bento-catalog {
+  grid-area: catalog;
+}
+.bento-blog {
+  grid-area: blog;
+}
+.bento-cta {
+  grid-area: cta;
+}
+.bento-hello {
+  grid-area: hello;
+}
+
+.bento-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--bento-pad);
+  border-radius: var(--bento-radius);
+  background-color: var(--bento-surface);
+  container-type: inline-size;
+}
+
+.bento-cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+}
+
+.bento-eyebrow {
+  font-size: var(--fs-caption, 12px);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Headline ─────────────────────────────────────────────────────────── */
+
+.bento-hero {
+  justify-content: space-between;
+  gap: 2.5rem;
+  min-height: 19rem;
+}
+
+.bento-hero-lede {
+  max-width: 34ch;
+  font-size: var(--fs-subtitle, 14px);
+  line-height: 1.45;
+}
+
+.bento-headline {
+  font-size: 15.5cqi;
+  font-weight: 600;
+  letter-spacing: -0.058em;
+  line-height: 0.86;
+  text-wrap: nowrap;
+}
+
+/* The name of the game is set in the typeface its cards print their names
+   in. It is a small-caps face, so it is sized up to meet the grotesk's caps. */
+.bento-headline-card {
+  font-family: "Matrix Small Caps", ui-serif, Georgia, serif;
+  font-size: 1.12em;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* ── Full-art artwork ─────────────────────────────────────────────────── */
+
+/* The tile is a size container so the artwork can be sized against both of
+   its sides, and it sits above its neighbours so the figure can reach them. */
+.bento-window {
+  z-index: 3;
+  aspect-ratio: 1;
+  container-type: size;
+  /* The square must cover the tile from wherever its centre sits: at a
+     centre y% down, that takes (100 + 2 × |50 − y|)% of the tile's height. */
+  --breakout-size: max(112cqw, 106cqh);
+  --breakout-x: 50%;
+  --breakout-y: 52%;
+}
+
+.bento-breakout,
+.bento-breakout-frame {
+  position: absolute;
+  inset: 0;
+}
+
+.bento-breakout-frame {
+  overflow: hidden;
+  border-radius: var(--bento-radius);
+  background-color: #fbf2ea;
+}
+
+/* Both layers are the same oversized square on the same centre, so the
+   cutout lands exactly on the artwork it was cut from. */
+.bento-breakout-image {
+  position: absolute;
+  top: var(--breakout-y);
+  left: var(--breakout-x);
+  width: var(--breakout-size);
+  max-width: none;
+  height: auto;
+  aspect-ratio: 1;
+  pointer-events: none;
+  translate: -50% -50%;
+  user-select: none;
+}
+
+/* The plate moves against the figure for depth, so it is drawn a little larger
+   than the frame and never shows an edge at the end of its travel. */
+.bento-breakout-plate {
+  scale: 1.04;
+}
+
+/* ── Discord ──────────────────────────────────────────────────────────── */
+
+/* The artwork is allowed to reach over its neighbours' text. Only the Discord
+   tile ever moves its text out of the way, and only on the screen shapes
+   where the figure would otherwise bury it; the clearance for each is set by
+   hand in the desktop section below. */
+.bento-discord {
+  padding-left: calc(var(--bento-pad) + var(--discord-clearance, 0px));
+}
+
+/* The mark takes the top edge alone: the tile's text keeps to the floor,
+   clear of whatever the artwork beside it reaches over. */
+.bento-link.bento-discord {
+  justify-content: flex-end;
+}
+
+.bento-discord .bento-eyebrow {
+  margin-bottom: -0.75rem;
+}
+
+.bento-discord-mark {
+  position: absolute;
+  top: var(--bento-pad);
+  right: var(--bento-pad);
+  width: 2.75rem;
+  /* The laugh lifts and stretches the mark past its own viewBox. */
+  overflow: visible;
+}
+
+/* Idle life: the mark blinks every few seconds and, now and then, spins
+   round once with a little overshoot. The two cycles have different
+   lengths, so they drift against each other and the tile never falls into
+   an obvious loop. */
+.bento-discord-mark {
+  animation: bento-discord-spin 7s cubic-bezier(0.45, 0, 0.3, 1) 4s infinite;
+}
+
+.bento-discord-eye {
+  fill: var(--bento-surface);
+  transition: fill 200ms ease;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bento-discord-blink 5.2s ease-in-out 1.5s infinite;
+}
+
+/* Hovered, it laughs: the eyes become two happy arcs and the body bounces
+   with a little squash and stretch. The bounce is on the inner group, which
+   pivots on its own floor, so it never disturbs the spin on the mark. */
+.bento-discord-laugh {
+  stroke: var(--bento-surface);
+  transition: stroke 200ms ease;
+  opacity: 0;
+}
+
+.bento-discord-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.bento-discord:is(:hover, :focus-visible) .bento-discord-eye {
+  opacity: 0;
+}
+
+.bento-discord:is(:hover, :focus-visible) .bento-discord-laugh {
+  opacity: 1;
+}
+
+.bento-discord:is(:hover, :focus-visible) .bento-discord-body {
+  animation: bento-discord-bounce 760ms ease-in-out infinite;
+}
+
+@keyframes bento-discord-bounce {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  14% {
+    transform: translateY(-5%) scale(0.97, 1.04);
+  }
+  28% {
+    transform: translateY(0) scale(1.05, 0.95);
+  }
+  42% {
+    transform: translateY(-3%) scale(0.98, 1.03);
+  }
+  56% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+}
+
+/* The spin throws accent sparks. They run on the spin's own cycle and delay,
+   so they always fire as it turns, starting from the mark's rim just after
+   the spin picks up speed and fading out before it settles. */
+.bento-discord-sparks {
+  position: absolute;
+  top: var(--bento-pad);
+  right: var(--bento-pad);
+  width: 2.75rem;
+  aspect-ratio: 440 / 300;
+  pointer-events: none;
+}
+
+.bento-discord-sparks > span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--spark-size);
+  height: var(--spark-size);
+  margin: calc(var(--spark-size) / -2);
+  border-radius: 999px;
+  background-color: var(--user-accent);
+  opacity: 0;
+  animation: bento-discord-spark 7s cubic-bezier(0.2, 0.7, 0.3, 1) calc(4s + var(--spark-lag))
+    infinite;
+}
+
+@keyframes bento-discord-spark {
+  0%,
+  83% {
+    opacity: 0;
+    scale: 0.4;
+    translate: calc(var(--spark-x) * 0.4) calc(var(--spark-y) * 0.4);
+  }
+  85% {
+    opacity: 1;
+    scale: 1;
+  }
+  89% {
+    opacity: 0.9;
+  }
+  95%,
+  100% {
+    opacity: 0;
+    scale: 0.5;
+    translate: var(--spark-x) var(--spark-y);
+  }
+}
+
+@keyframes bento-discord-spin {
+  0%,
+  80% {
+    rotate: 0deg;
+  }
+  92% {
+    rotate: 380deg;
+  }
+  96% {
+    rotate: 354deg;
+  }
+  100% {
+    rotate: 360deg;
+  }
+}
+
+@keyframes bento-discord-blink {
+  0%,
+  40%,
+  46%,
+  84%,
+  88%,
+  92%,
+  100% {
+    scale: 1;
+  }
+  43%,
+  86%,
+  90% {
+    scale: 1 0.1;
+  }
+}
+
+/* ── Figures ──────────────────────────────────────────────────────────── */
+
+.bento-stat {
+  gap: 0.625rem;
+}
+
+/* The eyebrow holds the top edge; the figure and its label sit on the floor. */
+.bento-stat .bento-eyebrow {
+  margin-bottom: auto;
+}
+
+.bento-stat-value {
+  font-size: min(5rem, 27cqi);
+  font-weight: 500;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+}
+
+.bento-export {
+  justify-content: space-between;
+  min-height: 11rem;
+}
+
+.bento-export .bento-eyebrow,
+.bento-export .bento-stat-label {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.bento-reel {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: calc(var(--reel-row) * 3);
+  translate: 0 -50%;
+  --reel-row: 1.25em;
+  font-size: min(2.75rem, 20cqi);
+  border-radius: 0.5rem;
+  outline: none;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.bento-reel:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+
+.bento-reel-window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  mask: linear-gradient(transparent 4%, #000 34%, #000 66%, transparent 96%);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: var(--reel-row);
+  text-align: center;
+}
+
+.bento-reel-item {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(50% - var(--reel-row) / 2 + var(--offset) * var(--reel-row));
+  color: var(--muted-foreground);
+  opacity: 0;
+  filter: blur(2px);
+  transition:
+    top 450ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 300ms ease,
+    filter 300ms ease,
+    opacity 300ms ease;
+}
+
+.bento-reel-item[data-near] {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.bento-reel-item[data-current] {
+  color: var(--user-accent);
+  opacity: 1;
+  filter: none;
+}
+
+.bento-stat-label {
+  max-width: 24ch;
+  font-size: var(--fs-body, 13px);
+  line-height: 1.4;
+}
+
+/* ── Links ────────────────────────────────────────────────────────────── */
+
+.bento-link {
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 11rem;
+  outline: none;
+  transition: background-color 200ms ease;
+}
+
+.bento-link:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--bento-ground),
+    0 0 0 4px var(--focus-ring);
+}
+
+/* Hover moves the tile one step along the surface ladder: up in dark mode,
+   and down to the faint grey in light mode, where every step above is white.
+   It changes the surface token itself, so anything drawn in the surface
+   colour, such as the Discord mark's eyes, follows along. */
+.bento-blog:hover,
+.bento-discord:hover {
+  --bento-surface: light-dark(var(--surface-1), var(--surface-4));
+}
+
+.bento-link-title {
+  max-width: 16ch;
+  padding-right: 3.5rem;
+  font-size: clamp(1.25rem, 1.6vw, 1.75rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+/* Sized from the title's own type, so it stays one word of the line at every
+   breakpoint; nudged down onto the baseline the words sit on. */
+.bento-blog .bento-link-title {
+  font-size: clamp(1.25rem, 7.5cqi, 2.25rem);
+}
+
+.bento-title-flag.bento-title-flag {
+  font-size: 0.5em;
+  vertical-align: -0.35em;
+}
+
+.bento-cta {
+  background-color: var(--user-accent);
+  color: var(--user-accent-foreground);
+}
+
+.bento-cta .bento-eyebrow {
+  color: color-mix(in oklab, var(--user-accent-foreground) 62%, transparent);
+}
+
+.bento-cta:hover {
+  background-color: color-mix(in oklab, var(--user-accent) 90%, var(--user-accent-foreground));
+}
+
+.bento-cta-title {
+  padding-right: 3.5rem;
+  font-size: min(3.75rem, 16cqi);
+  font-weight: 600;
+  letter-spacing: -0.055em;
+  line-height: 0.9;
+}
+
+.bento-arrow {
+  position: absolute;
+  right: var(--bento-pad);
+  bottom: var(--bento-pad);
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+  border-radius: 999px;
+  --bento-arrow-step: 24px;
+}
+
+.bento-arrow-ribbon {
+  position: absolute;
+  inset: 0;
+}
+
+.bento-arrow svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: -0.5625rem;
+  translate: calc(var(--step) * var(--bento-arrow-step))
+    calc(var(--step) * var(--bento-arrow-step) * -1);
+  transition: scale 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bento-arrow-inverse {
+  border-color: transparent;
+  background-color: var(--user-accent-foreground);
+  color: var(--user-accent);
+}
+
+/* A tile too narrow to hold its title beside the arrow, whether from the
+   viewport or from the Discord clearance, stacks the arrow under the title. */
+@container (max-width: 7.5rem) {
+  .bento-link-title,
+  .bento-cta-title {
+    padding-right: 0;
+  }
+
+  .bento-arrow {
+    position: relative;
+    inset: auto;
+    flex-shrink: 0;
+    align-self: flex-end;
+  }
+}
+
+/* On hover the arrow grows to fill its circle. The ribbon's run, and its
+   easing to a stop, are in pages/home/arrow-disc.tsx. */
+.bento-link:is(:hover, :focus-visible) .bento-arrow svg {
+  scale: 1.7;
+}
+
+.bento-hello {
+  gap: 0.75rem;
+  min-height: 11rem;
+  font-size: var(--fs-caption, 12px);
+}
+
+.bento-hello-links {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 0.25rem 2rem;
+  font-size: var(--fs-subtitle, 14px);
+  font-weight: 500;
+}
+
+.bento-hello-links a {
+  text-decoration-color: transparent;
+  text-decoration-line: underline;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 160ms ease;
+}
+
+.bento-hello-links a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ── Reveal ───────────────────────────────────────────────────────────── */
+
+@keyframes bento-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Tiles are hidden only until the page is ready, and the reveal fills
+   backwards only: once it ends, it leaves no transform behind. A lingering
+   identity transform would turn each tile into its own frame for `fixed`
+   backgrounds, which the optional edge highlight (pages/home/border-glow.css)
+   relies on. */
+.landing-page:not([data-landing-ready="true"]) .bento > * {
+  opacity: 0;
+}
+
+.landing-page[data-landing-ready="true"] .bento > * {
+  animation: bento-rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--order, 0) * 60ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page[data-landing-ready="true"] .bento > * {
+    animation: bento-fade 200ms ease backwards;
+  }
+
+  .bento-arrow svg,
+  .bento-reel-item {
+    transition: none;
+  }
+
+  .bento-discord-mark,
+  .bento-discord-eye,
+  .bento-discord-sparks > span,
+  .bento-discord:is(:hover, :focus-visible) .bento-discord-body {
+    animation: none;
+  }
+}
+
+/* ── Tablet: two columns of tiles, the artwork beside what it explains ─── */
+
+@media (min-width: 40rem) and (max-width: 63.99rem) {
+  .bento {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-areas:
+      "hero hero hero hero hero hero"
+      "window window window discord discord discord"
+      "window window window export export export"
+      "catalog catalog catalog cta cta cta"
+      "blog blog blog hello hello hello";
+    padding-inline: 1.25rem;
+    --discord-clearance: 44px;
+  }
+
+  .bento-window {
+    aspect-ratio: auto;
+    min-height: 26rem;
+    /* The tile meets the page's left edge here, so the figure reaches only
+       rightward, into the tile beside it. */
+    --breakout-size: max(140cqw, 106cqh);
+    --breakout-x: 58%;
+  }
+}
+
+/* ── Desktop: the viewport is the grid ────────────────────────────────── */
+
+@media (min-width: 64rem) {
+  html:has(.landing-page) {
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+
+  .landing-page {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .bento {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+    grid-template-areas:
+      "hero hero hero hero hero hero hero window window window discord discord"
+      "hero hero hero hero hero hero hero window window window discord discord"
+      "hero hero hero hero hero hero hero window window window export export"
+      "hero hero hero hero hero hero hero window window window export export"
+      "catalog catalog catalog blog blog blog blog cta cta cta hello hello"
+      "catalog catalog catalog blog blog blog blog cta cta cta hello hello";
+    min-height: 0;
+    padding: 0.25rem 1.25rem 1.25rem;
+  }
+
+  .bento-hero,
+  .bento-link,
+  .bento-export,
+  .bento-hello {
+    min-height: 0;
+  }
+
+  .bento-hello-links {
+    grid-template-columns: 1fr;
+  }
+
+  .bento-headline {
+    font-size: 15.2cqi;
+  }
+
+  .bento-window {
+    aspect-ratio: auto;
+    /* Sized from the tile's width, so the reach into the neighbours stays a
+       wing and a tuft of fur at every tile shape instead of growing with
+       the height and covering their text. */
+    --breakout-size: max(165cqw, 104cqh);
+    --breakout-y: 48%;
+  }
+}
+
+/* Between 1024 and 1200px wide, two of twelve columns leave the right-hand
+   tiles too narrow for their text, so they take three and the headline one
+   fewer; the bottom row evens out to four equal tiles. */
+@media (min-width: 64rem) and (max-width: 74.99rem) {
+  .bento {
+    grid-template-areas:
+      "hero hero hero hero hero hero window window window discord discord discord"
+      "hero hero hero hero hero hero window window window discord discord discord"
+      "hero hero hero hero hero hero window window window export export export"
+      "hero hero hero hero hero hero window window window export export export"
+      "catalog catalog catalog blog blog blog cta cta cta hello hello hello"
+      "catalog catalog catalog blog blog blog cta cta cta hello hello hello";
+  }
+
+  .bento-headline {
+    font-size: 17cqi;
+  }
+}
+
+/* Where the Kuriboh tile is tall for its width, the figure reaches far enough
+   into the Discord tile to bury its text, so that tile alone moves its text
+   aside. Each value is the figure's measured reach at the end of its parallax
+   travel, plus a margin. Everywhere else the figure only grazes the text,
+   which is intended. */
+@media (min-width: 64rem) and (max-width: 74.99rem) and (max-aspect-ratio: 3/2) {
+  .bento {
+    --discord-clearance: 56px;
+  }
+}
+
+@media (min-width: 75rem) and (max-width: 119.99rem) and (max-aspect-ratio: 33/20) {
+  .bento {
+    --discord-clearance: 60px;
+  }
+}
+
+@media (min-width: 75rem) and (max-width: 87.49rem) and (max-aspect-ratio: 4/3) {
+  .bento {
+    --discord-clearance: 72px;
+  }
+}
+
+@media (min-width: 87.5rem) and (max-width: 119.99rem) and (max-aspect-ratio: 3/2) {
+  .bento {
+    --discord-clearance: 80px;
+  }
+}
+
+/* Past 1920px the grid stops growing, so its shape follows the height alone. */
+@media (min-width: 120rem) and (min-height: 1300px) {
+  .bento {
+    --discord-clearance: 96px;
+    max-height: 90rem;
+    margin-block: auto;
+  }
+}

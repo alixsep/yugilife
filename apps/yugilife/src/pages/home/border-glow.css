@@ -1,0 +1,34 @@
+/* Pointer-lit tile borders, drawn only on a grid that `useBorderGlow` has
+   switched on (`data-border-glow`). Each tile's border is a 1px ring cut out
+   of a radial light that sits at the pointer in viewport coordinates
+   (`fixed`), so every tile reads the same two properties and the light
+   crosses from one tile to the next as one spot. Its strength follows the
+   pointer's speed; see border-glow.ts. */
+[data-border-glow] {
+  /* Half the theme's ink, half the accent. */
+  --bento-glow-color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--foreground) 60%, transparent),
+    var(--user-accent)
+  );
+}
+
+[data-border-glow] .bento-tile::after,
+[data-border-glow] .bento-breakout-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(
+      16rem circle at var(--bento-pointer-x, -100vw) var(--bento-pointer-y, -100vh),
+      var(--bento-glow-color),
+      transparent
+    )
+    fixed;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  opacity: var(--bento-glow, 0);
+  pointer-events: none;
+}

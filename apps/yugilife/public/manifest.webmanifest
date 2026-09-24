@@ -1,0 +1,37 @@
+{
+  "id": "./",
+  "name": "Yugilife: Yu-Gi-Oh! card maker",
+  "short_name": "Yugilife",
+  "description": "Free, open-source Yu-Gi-Oh! card maker in your browser. Start from 14,000+ official cards, use full art layouts, and export PNG, JPEG, WebP or SVG.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#171717",
+  "theme_color": "#171717",
+  "categories": ["design", "entertainment", "games"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    { "src": "yugilife-logo.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "screenshots": [
+    {
+      "src": "social-card.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Create high quality Yu-Gi-Oh! cards"
+    }
+  ],
+  "shortcuts": [
+    { "name": "New card", "url": "./build/" },
+    { "name": "Inventory", "url": "./inventory/" }
+  ]
+}
