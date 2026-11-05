@@ -2,6 +2,7 @@ import { createElement, useCallback, useEffect, useMemo, useRef, useState } from
 
 import {
   createLayerSourceFieldResolver,
+  flattenLayers,
   parseRichText,
   plainTextFromRichText,
   renderCard,
@@ -10,8 +11,10 @@ import {
 import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react"
 import type {
   CardData,
+  CardTemplate,
   LayerDefinition,
   LayerVisibility,
+  RenderedCard,
   RenderManifest,
   RenderOptions,
   RenderSegment,
@@ -21,6 +24,11 @@ import type {
 
 export interface CardRenderMetadata {
   createRenderManifest(): Promise<RenderManifest>
+  /**
+   * Render warnings the editor cannot find by parsing a field itself, keyed by the card field that
+   * supplied the layer's text. Rich-text warnings are left out; each field reports those directly.
+   */
+  readonly fieldWarnings: ReadonlyMap<string, readonly string[]>
   textFields(): readonly CardRenderedTextField[]
 }
 
@@ -91,7 +99,6 @@ function summarizeCard(card: CardData) {
 
 function summarizeRenderOptions({
   assets,
-  layerRenderers,
   layers,
   presetOverrides,
   presentationOverrides,
@@ -99,7 +106,6 @@ function summarizeRenderOptions({
   templateBundle,
 }: {
   assets: RenderOptions["assets"]
-  layerRenderers: RenderOptions["layerRenderers"]
   layers: RenderOptions["layers"]
   presetOverrides: RenderOptions["presetOverrides"]
   presentationOverrides: RenderOptions["presentationOverrides"]
@@ -108,13 +114,35 @@ function summarizeRenderOptions({
 }) {
   return {
     assets: assets ? Object.keys(assets).length : 0,
-    layerRenderers: layerRenderers ? Object.keys(layerRenderers).length : 0,
     layers: layers ? Object.keys(layers).length : 0,
     presetOverrides: presetOverrides ? Object.keys(presetOverrides).length : 0,
     presentationOverrides: presentationOverrides ? JSON.stringify(presentationOverrides).length : 0,
     suppliedSignal: Boolean(suppliedSignal),
     templateId: templateBundle.manifest.id,
   }
+}
+
+const noFieldWarnings: ReadonlyMap<string, readonly string[]> = new Map()
+
+function renderFieldWarnings(
+  template: CardTemplate,
+  rendered: RenderedCard,
+): ReadonlyMap<string, readonly string[]> {
+  const missingGlyphs = rendered.warnings.filter((warning) => warning.code === "missing-glyph")
+  if (missingGlyphs.length === 0) return noFieldWarnings
+  const fieldsForLayer = createLayerSourceFieldResolver(template, rendered.presentation)
+  const layers = new Map(flattenLayers(template.layers).map((layer) => [layer.id, layer]))
+  const warnings = new Map<string, string[]>()
+  for (const warning of missingGlyphs) {
+    const layer = layers.get(warning.layerId)
+    if (!layer) continue
+    for (const field of fieldsForLayer(layer)) {
+      const messages = warnings.get(field) ?? []
+      if (!messages.includes(warning.message)) messages.push(warning.message)
+      warnings.set(field, messages)
+    }
+  }
+  return warnings
 }
 
 function svgNode(element: SvgElementDefinition, key: string): ReactNode {
@@ -183,12 +211,10 @@ export function Card({
   card,
   className,
   debugLogging = false,
-  layerRenderers,
   layers,
   onError,
   onReady,
   onRenderMetadata,
-  preparedTextures,
   presetOverrides,
   presentationOverrides,
   renderRevision,
@@ -238,9 +264,7 @@ export function Card({
     }
     const options = {
       assets,
-      layerRenderers,
       layers,
-      preparedTextures,
       presetOverrides,
       presentationOverrides,
       signal: controller.signal,
@@ -250,9 +274,7 @@ export function Card({
     const effectInputs: Record<string, unknown> = {
       assets,
       card,
-      layerRenderers,
       layers,
-      preparedTextures,
       presetOverrides,
       presentationOverrides,
       renderRevision,
@@ -275,7 +297,6 @@ export function Card({
         card: summarizeCard(card),
         options: summarizeRenderOptions({
           assets,
-          layerRenderers,
           layers,
           presetOverrides,
           presentationOverrides,
@@ -314,6 +335,7 @@ export function Card({
         let textFields: readonly CardRenderedTextField[] | undefined
         callbacks.current.onRenderMetadata?.({
           createRenderManifest: () => rendered.createRenderManifest(),
+          fieldWarnings: renderFieldWarnings(templateBundle.template, rendered),
           textFields: () => {
             if (textFields) return textFields
             const fieldsForLayer = createLayerSourceFieldResolver(
@@ -386,9 +408,7 @@ export function Card({
     assets,
     card,
     debugLogging,
-    layerRenderers,
     layers,
-    preparedTextures,
     presetOverrides,
     presentationOverrides,
     renderRevision,

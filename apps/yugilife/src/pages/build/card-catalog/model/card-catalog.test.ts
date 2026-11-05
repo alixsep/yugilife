@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { readFileSync } from "node:fs"
 import { brotliDecompressSync } from "node:zlib"
 

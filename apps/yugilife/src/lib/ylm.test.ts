@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { createCipheriv, createHash } from "node:crypto"
 
 import { describe, expect, it } from "vitest"

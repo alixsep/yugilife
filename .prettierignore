@@ -12,3 +12,6 @@ packages/yugilife-templates/templates/**/color-presets.json
 packages/yugilife-templates/templates/**/presets
 packages/yugilife-templates/templates/**/report.json
 packages/yugilife-templates/templates/**/reports
+# A copy of the templates build output, embedded in the Rust CLI
+crates/yugilife-cli/templates
+target

@@ -9,15 +9,8 @@ import { isYugilifeRasterImage, losslessWebpFileName } from "./lossless-webp.mjs
 import { packageDirectory } from "./paths.mjs"
 import { isYugilifeConvertibleFont, woff2FileName } from "./woff2.mjs"
 
-const [{ textTypographies, walkLayers }, templateValidation] = await Promise.all([
-  tsImport("../../yugilife-core/src/rendering/layer-tree.js", import.meta.url),
-  tsImport("../../yugilife-core/src/schema/index.js", import.meta.url),
-])
-const {
-  validateCardTemplateShape,
-  validateColorPresetCollectionShape,
-  validateTemplateManifestShape,
-} = templateValidation
+const core = await tsImport("../../yugilife-core/src/index.ts", import.meta.url)
+const { textTypographies, walkLayers } = core
 
 export { packageDirectory }
 
@@ -98,11 +91,15 @@ function validateColorPresets(presets, manifest) {
   if (!isRecord(presets) || Object.keys(presets).length === 0) {
     throw new Error(`Template "${manifest.id}" color presets must be a non-empty object.`)
   }
-  validateColorPresetCollectionShape(presets, `Template "${manifest.id}" color presets`)
+  try {
+    core.validateColorPresetCollection(presets)
+  } catch (error) {
+    throw new Error(`Template "${manifest.id}" color presets: ${error.message}`, { cause: error })
+  }
 }
 
 function validateCardTemplate(template, manifest) {
-  const resolvedTemplate = validateCardTemplateShape(template)
+  const resolvedTemplate = core.validateCardTemplate(template)
   if (resolvedTemplate.layers.length === 0) {
     throw new Error(`Template "${manifest.id}" must own a non-empty ordered layer list.`)
   }
@@ -214,7 +211,7 @@ function validateTemplatePresetReferences(template, presets, manifest) {
 }
 
 function validateManifestShape(manifest, manifestFile) {
-  validateTemplateManifestShape(manifest)
+  core.validateTemplateManifest(manifest)
   const location = catalogRelative(manifestFile)
   if (manifest.status === undefined) {
     throw new Error(`Catalog template manifest at ${location} must declare a status.`)

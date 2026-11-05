@@ -8,7 +8,6 @@ import { artworkEditorConfig, projectCardForRender } from "../../build/editor/mo
 import { inventoryPreviewExportOptions } from "./inventory-preview"
 
 import type { EditorDocumentState } from "../../build/editor/model/editor-document"
-import type { PreparedTextures } from "yugilife-core"
 import type { LoadedTemplateBundle } from "yugilife-templates"
 
 export async function processedInventoryMask(
@@ -29,7 +28,6 @@ export async function renderInventoryPreview(
   document: EditorDocumentState,
   bundle: LoadedTemplateBundle,
   processedMask: Blob | undefined,
-  preparedTextures?: PreparedTextures,
 ) {
   return exportCardToImage(
     projectCardForRender(
@@ -42,7 +40,6 @@ export async function renderInventoryPreview(
     {
       ...inventoryPreviewExportOptions,
       layers: document.layers,
-      preparedTextures,
       presentationOverrides: document.presentationOverrides,
       presetOverrides: document.presetOverrides,
       templateBundle: bundle,

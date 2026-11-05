@@ -1,0 +1,135 @@
+import { BarChart } from "@/components/data-visualization"
+
+import { cliBatch, firstRender, framesWhileTyping, peakMemory } from "./chart-data"
+import { FerrisPlayground } from "./ferris-playground"
+
+<FerrisPlayground />
+
+Until now, Yugilife didn't really draw your cards. Your browser did. Yugilife told it what goes where, and the browser measured the text, decoded the images and drew everything itself. The problem is that every browser does those things a little differently. Chrome and Firefox measure the same line of text to slightly different widths, round pixels differently and smooth edges differently. So the same card came out slightly different depending on which browser you made it in, and sometimes different enough to push a word onto the next line.
+
+That is over now. Yugilife's renderer is written in Rust, the website runs it as WebAssembly, and the command line runs the exact same code natively. Chrome, Firefox and the CLI now produce the same PNG, down to the last byte. Here is how that happened, including the part where I didn't plan for any of it.
+
+## Fighting for RAM and time
+
+Yugilife has had a command line tool since it went open source. It was a thin wrapper: it started a headless Chromium, loaded the TypeScript renderer into a page, and asked the page to draw the card. It worked, and it was slow. Rendering 250 cards took a minute and a half and about 8 GB of RAM at peak, because, well, you're running a whole browser to draw a rectangle with some text on it.
+
+So I started a private side project: port the renderer to Rust, for the CLI only. The catch is that "port" here does not mean "write something that looks similar." The whole point of the CLI is that it produces the same card as the website, so the port had to reproduce what Chromium does, pixel for pixel. That turned out to mean reimplementing a surprising amount of Chromium: Skia's antialiasing for glyph outlines, its fixed-point image sampling that restarts every 127 pixels, the fonts' autohinted advances that FreeType computes, HarfBuzz's kerning math, and dav1d's exact AVIF output. Every one of those was probed against Chromium until the Rust output matched.
+
+On 250 benchmark cards, the SVGs came out identical, and the PNGs differed in 713 pixels out of 240 million, all of them on antialiased glyph edges, none of them visible. And the speed:
+
+<BarChart
+  title="Rendering 250 cards to PNG"
+  description="The same 250 catalog cards with their artworks, on an i7-12700H laptop."
+  goal={{ direction: "lower" }}
+  data={cliBatch}
+  unit="s"
+  format={(value) => `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })} s`}
+  categoryLabel="Renderer"
+  valueLabel="Time for 250 cards"
+/>
+
+45 times faster with all cores, 5.5 times on a single thread, and a single card renders in 119 ms including starting the process. The old CLI needed 887 ms just to launch Chromium before it could draw anything.
+
+Memory is where the difference really shows. I measured how much memory the whole process tree used at its peak while each renderer worked through the same 250 cards, and the old CLI was so hungry that my laptop ran out of memory trying to measure it again: the system killed the Chromium run partway through its third pass.
+
+<BarChart
+  title="Peak memory while rendering 250 cards"
+  description="Memory used by the whole process tree, same cards and laptop as above."
+  goal={{ direction: "lower" }}
+  data={peakMemory}
+  unit="MB"
+  format={(value) => `${value.toLocaleString("en-US")} MB`}
+  categoryLabel="Renderer"
+  valueLabel="Peak memory"
+  footnote="The Chromium figure comes from an earlier full run of the same benchmark, because the run beside the Rust measurements was killed for low memory before finishing."
+/>
+
+That is about 15 times less with every core busy, and 60 times less on one thread. A single card from a cold start peaks at 82 MB.
+
+## The crazy idea
+
+And then, while staring at all of this, the obvious question hit me: if I have a renderer that reproduces Chromium exactly, and it is faster, why is the website still using the browser?
+
+There was a better reason than speed, and I already had the evidence for it. I rendered the same 40 cards with the TypeScript renderer in Chromium and in Firefox. **All 40 came out different.** On 13 of them, words wrapped onto different lines: in Chrome a line of effect text ends with "then target," while Firefox pushes "target" down to the next line. When I exported two cards through the real Export tab in both browsers, about 100,000 pixels differed per card, in the type line, the effect text and the stats. Each browser measures and rasterizes text its own way, and the TypeScript renderer simply inherited whatever the browser did.
+
+This is not new, by the way. One of the emails I quoted in [my return post](/blog/return-after-six-years) was about the title text moving a few millimeters down when exporting. Different code, same family of problem: the browser decides, and you get to find out later.
+
+A renderer that brings its own text layout, its own font hinting and its own rasterizer doesn't have that problem. So: compile it to WebAssembly and use it on the website too.
+
+## Getting it into a browser
+
+Three C libraries were in the way.
+
+- **FreeType**, which computed those autohinted glyph widths. This was the scary one, because text fitting depends on those widths being exact. I replaced it with [skrifa](https://github.com/googlefonts/fontations), a pure Rust font library with a port of FreeType's autohinter. Then I checked every glyph of every autohinted font in the template against FreeType, about 67,000 advances, and every single one matched. FreeType is now gone from the native build as well.
+- **dav1d**, for AVIF artwork. [rav1d](https://github.com/memorysafety/rav1d), the Rust port of dav1d, compiles to WebAssembly and decodes to the same bytes. It doesn't build for plain `wasm32-unknown-unknown`, so the module targets `wasm32-wasip1` instead.
+- **libwebp**. Decoding works with a Rust decoder, which is exact for lossless WebP (every texture in the template is lossless). Encoding a WebP export is left to the browser, from the pixels the core composed.
+
+The module is 5.3 MB, 1.35 MB over the wire with brotli, and it starts in about 50–65 ms.
+
+Firefox gave me one scare that had nothing to do with my code: the Firefox build my test runner installs (Firefox 153) ran the WebAssembly about ten times slower than Firefox 155 does. For a moment I thought the whole idea was dead in Firefox. It wasn't, it was just an old browser.
+
+## Moving everything, then deleting the original
+
+Rendering was only half of the core. The editor also calls the core synchronously for validation, rich text parsing, card semantics and presentation rules, dozens of times as you type. Those had to move too, without making the app async everywhere. So importing `yugilife-core` now loads the WebAssembly module once up front, and after that `parseRichText` or `deriveCardSemantics` are plain synchronous calls again, just answered by Rust.
+
+Before deleting the TypeScript core, I wanted proof that nothing changed for anyone relying on it. So I ran both cores side by side on about **1.44 million inputs**: every card in the catalog, generated presentation overrides, rich text, and around 21,000 deliberately invalid templates, manifests, presets and cards. Every result, every thrown error class and every error message matched. Zero mismatches.
+
+After that, the TypeScript core and the old Chromium CLI were archived, and they remain in the repository's history. Fontkit and 18 other npm dependencies went with them. The command line tool is now the native Rust binary: no Chromium, no Playwright, and a new `render-batch` command that renders many cards across all your cores.
+
+## Off the main thread
+
+A web page has one main thread, and it does almost everything: it reacts to your keyboard and mouse, scrolls, plays animations, and runs the page's JavaScript. While it is busy with one of those, the rest wait.
+
+The TypeScript renderer had to run on that thread, because it leaned on the browser itself to measure text and to draw. So every time you typed a letter, the card re-rendered, and for that moment the whole page was frozen. You probably never noticed it as a freeze, more as the editor feeling a little heavy.
+
+The Rust core needs nothing from the page, so rendering now happens in a Web Worker, a separate thread that has its own copy of the module. The main thread only makes the quick synchronous calls, like parsing rich text, and then shows the finished card. If you type faster than a card renders, the worker skips the renders you have already typed past and only draws the latest one.
+
+To see what that changes, I typed a 40-character card name into the editor at about eight keys per second, three times in each version, and recorded how the page behaved.
+
+<BarChart
+  title="Frames the page drew while typing"
+  description="Typing a 40-character name, same time window in every run. Median of three runs."
+  goal={{ direction: "higher" }}
+  data={framesWhileTyping}
+  format={(value) => value.toLocaleString("en-US")}
+  categoryLabel="Browser and core"
+  valueLabel="Frames drawn"
+  footnote="Production builds, Chromium 151 and Firefox 155. A page running at a steady 60 frames per second would draw about 500 in this window."
+/>
+
+With the TypeScript core, Chromium reported a long task after every single keystroke, about 83 ms each, adding up to 3.3 seconds of frozen page over 40 keys. Every keystroke also caused one frame that took longer than 50 ms, in both browsers. With the Rust core in a worker there were no long tasks at all and not one frame over 50 ms. Chromium never dropped a single frame, and Firefox's slowest frame was 33 ms, a single missed frame.
+
+To be fair to the old version: at this typing speed, each letter showed up in the field about as quickly as before, because the freeze usually ended before the next key arrived. What changed is everything around it. Nothing stutters while the card catches up.
+
+## Making the first render fast
+
+Re-rendering a card was immediately great, around 40–50 ms in both browsers. The first render was the weak spot. In Chromium it took 255 ms, and about 220 ms of that was decoding the 2048 × 2048 AVIF artwork in WebAssembly. The same decode takes 47 ms natively.
+
+Browsers already ship a fast AV1 decoder, and [WebCodecs](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API) lets a page use it. But "fast" is not enough: the result must still be exact. AV1 decoding itself is exact by specification, so as long as the browser hands me the raw YUV planes, the core can do the color conversion itself, the same way it always did. The one missing piece was the color metadata, which lives in the AV1 sequence header, so I wrote a small parser for it in Rust and checked it against dav1d on 400 real artworks.
+
+<BarChart
+  title="First render of a card"
+  description="Median over 40 catalog cards with artwork, exporting a PNG."
+  goal={{ direction: "lower" }}
+  data={firstRender}
+  unit="ms"
+  format={(value) => `${value.toLocaleString("en-US")} ms`}
+  categoryLabel="Browser and core"
+  valueLabel="First render"
+  footnote="The TypeScript core was measured through the old command line's browser page; the Rust core in a production build of the app. Chromium 151 and Firefox 155."
+/>
+
+Chromium went from 255 ms to **78 ms**. Firefox gains nothing, because its decoder only returns finished RGB frames (BGRX, to be precise), and converting those back would not be exact. Yugilife notices that once per session and quietly decodes with rav1d instead. Even then, Firefox is more than twice as fast as it was with the TypeScript core.
+
+And the output stays exact either way: all 80 PNGs from both browsers were byte-identical to the native CLI's.
+
+## What it costs
+
+Nothing is free, so here is the honest list:
+
+- Building Yugilife now needs a Rust toolchain. The website build compiles the core from source every time instead of keeping a 5 MB binary in the repository that nobody could review.
+- Lossy WebP uploads are decoded by different libraries on the website and in the CLI, so those two can disagree slightly. Lossless WebP, PNG, JPEG and AVIF are exact.
+- Exports smaller than the card's native size are now downscaled with a bicubic filter instead of the browser's, so small exports look very slightly different from before.
+- I haven't tested Safari. It should work, but I don't know yet.
+
+There is also a bug I know about and can't find: on some cards, the effect text overflows its box, and I forgot which cards do it. I looked during this work and couldn't reproduce it. If you hit one, please send it to me. The good news is that if it still happens, it now happens the same way in every browser, which makes it a lot easier to fix.

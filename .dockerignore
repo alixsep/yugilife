@@ -65,3 +65,7 @@ Thumbs.db
 Dockerfile*
 docker-compose*
 .dockerignore
+
+# Rust build output (the image builds the core itself)
+target/
+materials/

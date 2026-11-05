@@ -1,0 +1,20 @@
+[package]
+name = "yugilife-snapshots"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "snapshot-diff"
+path = "src/main.rs"
+
+[dependencies]
+png = "0.18"
+rayon = "1"
+resvg = { version = "0.48", default-features = false, features = ["raster-images"] }
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+
+[lints]
+workspace = true

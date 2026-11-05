@@ -2,12 +2,26 @@ import { act } from "react"
 
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { MapAssetResolver } from "yugilife-core"
+import { renderCard } from "yugilife-core"
 
 import { Card } from "./card"
 
-import type { CardTemplate, CardTemplateBundle } from "yugilife-core"
-import type { LayerRenderer } from "yugilife-core/advanced"
+import type * as YugilifeCore from "yugilife-core"
+import type {
+  CardData,
+  CardTemplate,
+  CardTemplateBundle,
+  RenderedCard,
+  RenderOptions,
+  RenderSegment,
+} from "yugilife-core"
+
+// The renderer is the core's business; these tests cover what the component does with renders:
+// compositing order, superseded renders, cancellation, and when it asks for a new render.
+vi.mock("yugilife-core", async (importOriginal) => ({
+  ...(await importOriginal<typeof YugilifeCore>()),
+  renderCard: vi.fn(),
+}))
 
 const reactTestEnvironment = globalThis as typeof globalThis & {
   IS_REACT_ACT_ENVIRONMENT: boolean
@@ -48,8 +62,43 @@ function deferred() {
   return { promise, resolve }
 }
 
+function rendered(segments: readonly RenderSegment[]): RenderedCard {
+  return {
+    createRenderManifest: () => Promise.resolve({ elements: [] }),
+    presentation: {} as RenderedCard["presentation"],
+    renderSegments: segments,
+    template,
+    toImage: () => Promise.resolve(new Blob()),
+    toOutlinedSegments: () => Promise.resolve(segments),
+    toPng: () => Promise.resolve(new Blob()),
+    toSvg: () => Promise.resolve("<svg/>"),
+    vectorLayers: [],
+    warnings: [],
+  }
+}
+
+const rect = (id: string): RenderSegment => ({
+  elements: [{ attributes: { height: 1, id, width: 1 }, tag: "rect" }],
+  kind: "vector",
+})
+const raster = (): RenderSegment => ({ canvas: document.createElement("canvas"), kind: "raster" })
+
+function renderWith(
+  implementation: (card: CardData, options: RenderOptions) => Promise<RenderedCard>,
+) {
+  vi.mocked(renderCard).mockImplementation(implementation)
+}
+
+function mount() {
+  const container = document.createElement("div")
+  document.body.append(container)
+  return { container, root: createRoot(container) }
+}
+
 beforeEach(() => {
   reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
+  vi.mocked(renderCard).mockReset()
+  renderWith(() => Promise.resolve(rendered([])))
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     clearRect() {},
     drawImage() {},
@@ -64,38 +113,11 @@ afterEach(() => {
 
 describe("Card render ordering", () => {
   it("renders raster and vector segments in declared DOM compositing order", async () => {
-    const orderedTemplate: CardTemplate = {
-      ...template,
-      layers: [
-        { id: "raster-before", kind: "test-raster" },
-        { id: "vector-middle", kind: "vector" },
-        { id: "raster-after", kind: "test-raster" },
-      ],
-    }
-    const layerRenderers = {
-      "test-raster": { output: "raster" as const, render() {} },
-      vector: {
-        output: "vector" as const,
-        render({ vectorLayers }: Parameters<LayerRenderer["render"]>[0]) {
-          vectorLayers.push({
-            attributes: { height: 1, id: "middle", width: 1 },
-            tag: "rect",
-          })
-        },
-      },
-    }
-    const container = document.createElement("div")
-    document.body.append(container)
-    const root = createRoot(container)
+    renderWith(() => Promise.resolve(rendered([raster(), rect("middle"), raster()])))
+    const { container, root } = mount()
 
     await act(async () => {
-      root.render(
-        <Card
-          card={{ name: "Ordered" }}
-          layerRenderers={layerRenderers}
-          templateBundle={bundle(orderedTemplate)}
-        />,
-      )
+      root.render(<Card card={{ name: "Ordered" }} templateBundle={stableTemplateBundle} />)
       await Promise.resolve()
     })
 
@@ -112,36 +134,21 @@ describe("Card render ordering", () => {
     const first = deferred()
     const second = deferred()
     const onReady = vi.fn()
-    const renderer: LayerRenderer = {
-      output: "vector",
-      async render({ card, vectorLayers }) {
-        await (card.name === "First" ? first.promise : second.promise)
-        vectorLayers.push({ attributes: { id: card.name }, tag: "rect" })
-      },
-    }
-    const container = document.createElement("div")
-    document.body.append(container)
-    const root = createRoot(container)
+    renderWith(async (card) => {
+      await (card["name"] === "First" ? first.promise : second.promise)
+      return rendered([rect(String(card["name"]))])
+    })
+    const { container, root } = mount()
 
     await act(async () => {
       root.render(
-        <Card
-          card={{ name: "First" }}
-          layerRenderers={{ deferred: renderer }}
-          templateBundle={stableTemplateBundle}
-          onReady={onReady}
-        />,
+        <Card card={{ name: "First" }} templateBundle={stableTemplateBundle} onReady={onReady} />,
       )
       await Promise.resolve()
     })
     await act(async () => {
       root.render(
-        <Card
-          card={{ name: "Second" }}
-          layerRenderers={{ deferred: renderer }}
-          templateBundle={stableTemplateBundle}
-          onReady={onReady}
-        />,
+        <Card card={{ name: "Second" }} templateBundle={stableTemplateBundle} onReady={onReady} />,
       )
       await Promise.resolve()
     })
@@ -168,21 +175,19 @@ describe("Card render ordering", () => {
     const pending = deferred()
     const controller = new AbortController()
     const onReady = vi.fn()
-    const renderer: LayerRenderer = {
-      output: "raster",
-      async render() {
-        await pending.promise
-      },
-    }
-    const container = document.createElement("div")
-    document.body.append(container)
-    const root = createRoot(container)
+    let renderSignal: AbortSignal | undefined
+    renderWith(async (_card, options) => {
+      renderSignal = options.signal
+      await pending.promise
+      if (options.signal?.aborted) throw options.signal.reason
+      return rendered([])
+    })
+    const { container, root } = mount()
 
     await act(async () => {
       root.render(
         <Card
           card={{ name: "Aborted" }}
-          layerRenderers={{ deferred: renderer }}
           signal={controller.signal}
           templateBundle={stableTemplateBundle}
           onReady={onReady}
@@ -197,6 +202,7 @@ describe("Card render ordering", () => {
       await Promise.resolve()
     })
 
+    expect(renderSignal?.aborted).toBe(true)
     expect(onReady).not.toHaveBeenCalled()
     expect(container.firstElementChild?.hasAttribute("signal")).toBe(false)
     expect(container.querySelector('[role="alert"]')).toBeNull()
@@ -204,27 +210,16 @@ describe("Card render ordering", () => {
   })
 
   it("uses immutable input identity and ignores callback identity", async () => {
-    let renders = 0
-    const renderer: LayerRenderer = {
-      output: "raster",
-      render() {
-        renders += 1
-      },
-    }
     const card = { name: "Stable" }
-    const layerRenderers = { deferred: renderer }
     const layers = { deferred: true }
     const presetOverrides = { frame: "a" }
-    const container = document.createElement("div")
-    document.body.append(container)
-    const root = createRoot(container)
+    const { root } = mount()
 
     const paint = async () => {
       await act(async () => {
         root.render(
           <Card
             card={card}
-            layerRenderers={layerRenderers}
             layers={layers}
             presetOverrides={presetOverrides}
             templateBundle={stableTemplateBundle}
@@ -237,17 +232,16 @@ describe("Card render ordering", () => {
     }
 
     await paint()
-    expect(renders).toBe(1)
+    expect(renderCard).toHaveBeenCalledTimes(1)
 
     await paint()
     await paint()
-    expect(renders).toBe(1)
+    expect(renderCard).toHaveBeenCalledTimes(1)
 
     await act(async () => {
       root.render(
         <Card
           card={{ name: "Changed" }}
-          layerRenderers={layerRenderers}
           layers={layers}
           presetOverrides={presetOverrides}
           templateBundle={stableTemplateBundle}
@@ -255,36 +249,25 @@ describe("Card render ordering", () => {
       )
       await Promise.resolve()
     })
-    expect(renders).toBe(2)
+    expect(renderCard).toHaveBeenCalledTimes(2)
 
     act(() => root.unmount())
   })
 
   it("re-renders when object-backed artwork is replaced immutably", async () => {
-    const observed: unknown[] = []
-    const renderer: LayerRenderer = {
-      output: "raster",
-      render({ card }) {
-        observed.push(card["artwork"])
-      },
-    }
-    const layerRenderers = { deferred: renderer }
     const sources = [
       new Blob(["first"], { type: "image/png" }),
       document.createElement("img"),
       document.createElement("canvas"),
       { height: 1, width: 1 } as ImageBitmap,
     ]
-    const container = document.createElement("div")
-    document.body.append(container)
-    const root = createRoot(container)
+    const { root } = mount()
 
     for (const [index, artwork] of sources.entries()) {
       await act(async () => {
         root.render(
           <Card
             card={{ artwork, name: `Artwork ${index}` }}
-            layerRenderers={layerRenderers}
             templateBundle={stableTemplateBundle}
           />,
         )
@@ -292,92 +275,49 @@ describe("Card render ordering", () => {
       })
     }
 
-    expect(observed).toEqual(sources)
+    expect(vi.mocked(renderCard).mock.calls.map(([card]) => card["artwork"])).toEqual(sources)
     act(() => root.unmount())
   })
 
-  it("re-renders when a resolver-bearing immutable template is replaced", async () => {
-    const observed: unknown[] = []
-    const renderer: LayerRenderer = {
-      output: "raster",
-      render(_context, layer) {
-        const resolverLayer = layer as typeof layer & { resolver?: unknown }
-        observed.push(resolverLayer.resolver)
-      },
-    }
-    const layerRenderers = { deferred: renderer }
-    const firstResolver = new MapAssetResolver({})
-    const secondResolver = new MapAssetResolver({})
-    const container = document.createElement("div")
-    document.body.append(container)
-    const root = createRoot(container)
+  it("re-renders when an immutable template is replaced", async () => {
+    const bundles = [bundle({ ...template }), bundle({ ...template })]
+    const { root } = mount()
 
-    for (const resolver of [firstResolver, secondResolver]) {
+    for (const templateBundle of bundles) {
       await act(async () => {
-        root.render(
-          <Card
-            card={{ name: "Resolver" }}
-            layerRenderers={layerRenderers}
-            templateBundle={bundle({
-              ...template,
-              layers: [{ id: "deferred", kind: "deferred", resolver }],
-            })}
-          />,
-        )
+        root.render(<Card card={{ name: "Template" }} templateBundle={templateBundle} />)
         await Promise.resolve()
       })
     }
 
-    expect(observed).toEqual([firstResolver, secondResolver])
+    const rendered = vi.mocked(renderCard).mock.calls.map(([, options]) => options.templateBundle)
+    expect(rendered).toHaveLength(2)
+    expect(rendered[0]).toBe(bundles[0])
+    expect(rendered[1]).toBe(bundles[1])
     act(() => root.unmount())
   })
 
-  it("accepts circular custom layer options and supports explicit mutable invalidation", async () => {
-    let renders = 0
+  it("accepts circular layer options and supports explicit mutable invalidation", async () => {
     const circularOptions: Record<string, unknown> = {}
     circularOptions["self"] = circularOptions
     const mutableCard = { name: "Mutable" }
-    const circularTemplate: CardTemplate = {
+    const circularBundle = bundle({
       ...template,
       layers: [{ id: "deferred", kind: "deferred", options: circularOptions }],
-    }
-    const layerRenderers = {
-      deferred: {
-        output: "raster" as const,
-        render() {
-          renders += 1
-        },
-      },
-    }
-    const container = document.createElement("div")
-    document.body.append(container)
-    const root = createRoot(container)
+    })
+    const { root } = mount()
 
     await act(async () => {
-      root.render(
-        <Card
-          card={mutableCard}
-          layerRenderers={layerRenderers}
-          renderRevision={0}
-          templateBundle={bundle(circularTemplate)}
-        />,
-      )
+      root.render(<Card card={mutableCard} renderRevision={0} templateBundle={circularBundle} />)
       await Promise.resolve()
     })
     mutableCard.name = "Mutated in place"
     await act(async () => {
-      root.render(
-        <Card
-          card={mutableCard}
-          layerRenderers={layerRenderers}
-          renderRevision={1}
-          templateBundle={bundle(circularTemplate)}
-        />,
-      )
+      root.render(<Card card={mutableCard} renderRevision={1} templateBundle={circularBundle} />)
       await Promise.resolve()
     })
 
-    expect(renders).toBe(2)
+    expect(renderCard).toHaveBeenCalledTimes(2)
     act(() => root.unmount())
   })
 })

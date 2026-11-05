@@ -4,6 +4,8 @@ import GeneratingAlphaMasks from "./generating-alpha-masks-for-yugioh-artworks/i
 import generatingAlphaMasksMetadata from "./generating-alpha-masks-for-yugioh-artworks/metadata"
 import ReturnAfterSixYears from "./return-after-six-years/index.mdx"
 import returnAfterSixYearsMetadata from "./return-after-six-years/metadata"
+import YugilifeCoreIsNowInRust from "./yugilife-core-is-now-in-rust/index.mdx"
+import yugilifeCoreIsNowInRustMetadata from "./yugilife-core-is-now-in-rust/metadata"
 import YugilifeIsNowOpenSource from "./yugilife-is-now-open-source/index.mdx"
 import yugilifeIsNowOpenSourceMetadata from "./yugilife-is-now-open-source/metadata"
 
@@ -25,6 +27,7 @@ const sourcePosts: readonly BlogPost[] = [
   { ...yugilifeIsNowOpenSourceMetadata, Component: YugilifeIsNowOpenSource },
   { ...fullArtCardSearchAndMoreMetadata, Component: FullArtCardSearchAndMore },
   { ...generatingAlphaMasksMetadata, Component: GeneratingAlphaMasks },
+  { ...yugilifeCoreIsNowInRustMetadata, Component: YugilifeCoreIsNowInRust },
 ]
 
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/

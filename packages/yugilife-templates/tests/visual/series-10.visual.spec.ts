@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-import { checkPreparedTextures, showFixture, test } from "./visual-fixture"
+import { showFixture, test } from "./visual-fixture"
 
 import type { Locator } from "@playwright/test"
 
@@ -49,30 +49,11 @@ for (const [fixtureId, cardName] of realCardFixtures) {
   })
 }
 
-/**
- * The claim the prepared-texture cache rests on: a stored texture is the exact pixels grading
- * produces, not merely a similar-looking one. The screenshots cannot establish it, because a
- * texture is mostly covered by the layers drawn over it.
- */
-test("Series 10 prepared textures hold exactly the graded pixels", async ({ fixturePage }) => {
-  const { checked, mismatches } = await checkPreparedTextures(fixturePage)
-
-  expect(mismatches).toEqual([])
-  expect(checked).toBeGreaterThan(0)
-})
-
 test("Series 10 deterministic render", async ({ fixturePage }) => {
   const card = await showFixture(fixturePage, "")
   await expect(card).toHaveAttribute("data-ready", "true")
   await expectPortableOutlinedSvg(card)
   await expect(card).toHaveScreenshot("series-10.webp")
-})
-
-test("Series 10 renders without prepared textures", async ({ fixturePage }) => {
-  const card = await showFixture(fixturePage, "?prepared=false")
-  await expect(card).toHaveAttribute("data-ready", "true")
-  await expectPortableOutlinedSvg(card)
-  await expect(card.locator("image")).toHaveCount(1)
 })
 
 test("Series 10 XYZ Pendulum frame masks", async ({ fixturePage }) => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { DEFAULT_TEMPLATE_ID, getOfficialTemplate, TEMPLATE_CATALOG } from "yugilife-templates"
 
@@ -6,11 +6,6 @@ import { errorMessage } from "@/lib/utils"
 
 import { listInventoryCards } from "../../inventory/persistence/inventory-storage"
 import { editorTemplateVersion } from "../editor/model/editor-config"
-import {
-  acquirePreparedTextures,
-  preparedTexturesForBundle,
-  preparedTexturesSettled,
-} from "../templates/prepare-template-textures"
 import {
   templateEditorCompatibility,
   validateTemplateBundle,
@@ -25,16 +20,13 @@ import {
 } from "../templates/template-storage"
 
 import type {
-  ActivePreparedTextures,
-  TemplateActivationProgress,
-} from "../templates/prepare-template-textures"
-import type {
   OriginStorageEstimate,
   StoredTemplateRecord,
   TemplateStorageMode,
   TemplateStorageSnapshot,
 } from "../templates/template-storage"
 import type { CardTemplateBundle } from "yugilife-core"
+import type { TemplateLoadProgress } from "yugilife-templates"
 
 export const editorTemplateCatalog = TEMPLATE_CATALOG.filter(({ id }) => id === DEFAULT_TEMPLATE_ID)
 
@@ -67,18 +59,15 @@ export function useTemplateActivation({
 }: TemplateActivationInput) {
   const [selectedTemplateIdOverride, setSelectedTemplateId] = useState<string>()
   const [templateBundle, setTemplateBundle] = useState<CardTemplateBundle>()
-  const [activeTextures, setActiveTextures] = useState<ActivePreparedTextures>()
-  const activeTexturesRef = useRef<ActivePreparedTextures | undefined>(undefined)
   const [templateLoadError, setTemplateLoadError] = useState<string>()
   const [templateLoadPaused, setTemplateLoadPaused] = useState(false)
-  const [templateLoadProgress, setTemplateLoadProgress] = useState<TemplateActivationProgress>()
+  const [templateLoadProgress, setTemplateLoadProgress] = useState<TemplateLoadProgress>()
   const [templateLoading, setTemplateLoading] = useState(false)
   const templateLoadController = useRef<AbortController | undefined>(undefined)
   const automaticTemplateRestore = useRef<string | undefined>(undefined)
   const [storedTemplates, setStoredTemplates] = useState<readonly StoredTemplateRecord[]>([])
   const [templateStorageReady, setTemplateStorageReady] = useState(false)
   const [originStorage, setOriginStorage] = useState<OriginStorageEstimate>({})
-  const [preparedTextureBytes, setPreparedTextureBytes] = useState(0)
   const [templateStorageMode, setTemplateStorageMode] =
     useState<TemplateStorageMode>(getTemplateStorageMode())
   const [templateStorageError, setTemplateStorageError] = useState<string>()
@@ -101,7 +90,6 @@ export function useTemplateActivation({
     (snapshot: TemplateStorageSnapshot) => {
       setStoredTemplates(snapshot.templates)
       setOriginStorage(snapshot.originStorage)
-      setPreparedTextureBytes(snapshot.preparedTextureBytes)
       setTemplateStorageMode(snapshot.storageMode)
       setTemplateStorageReady(true)
       setTemplateStorageError(undefined)
@@ -260,31 +248,7 @@ export function useTemplateActivation({
     templateStorageReady,
   ])
 
-  // Preparation never blocks a card: on failure the renderer grades live.
-  useEffect(() => {
-    if (!templateBundle) return
-    const controller = new AbortController()
-    void acquirePreparedTextures(templateBundle, {
-      onProgress: (completed, total) => {
-        if (!controller.signal.aborted) {
-          setTemplateLoadProgress({ completed, phase: "preparing", total })
-        }
-      },
-      signal: controller.signal,
-    }).then((prepared) => {
-      if (controller.signal.aborted) return
-      activeTexturesRef.current = prepared
-      setActiveTextures(prepared)
-    })
-    return () => controller.abort()
-  }, [templateBundle])
-
   useEffect(() => () => templateLoadController.current?.abort(), [])
-
-  const preparedTextures = useMemo(
-    () => preparedTexturesForBundle(activeTextures, templateBundle),
-    [activeTextures, templateBundle],
-  )
 
   const deactivate = useCallback(() => setTemplateBundle(undefined), [])
 
@@ -350,14 +314,12 @@ export function useTemplateActivation({
   }
 
   return {
-    activeTexturesRef,
     activate,
     clearTemplate,
     deactivate,
     loadSelectedTemplate,
     openTemplate,
     originStorage,
-    preparedTextures,
     refreshTemplateStorage,
     removeSelectedTemplate,
     resetTemplateIdentity,
@@ -377,14 +339,12 @@ export function useTemplateActivation({
       selectedTemplateId,
       selectedTemplateVersion,
     ),
-    templateCacheBytes:
-      storedTemplates.reduce((total, template) => total + template.sizeBytes, 0) +
-      preparedTextureBytes,
+    templateCacheBytes: storedTemplates.reduce((total, template) => total + template.sizeBytes, 0),
     templateLoadError,
     templateLoadPaused,
     templateLoadProgress,
     templateLoading,
-    templateReady: preparedTexturesSettled(activeTextures, templateBundle),
+    templateReady: templateBundle !== undefined,
     templateStorageError,
     templateStorageMode,
   }

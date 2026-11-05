@@ -1,8 +1,10 @@
 const databaseName = "yugilife-template-cache"
-const databaseVersion = 2
+// Version 3 drops the "prepared-textures" store that version 2 added: the renderer grades
+// textures itself now, so browsers that kept graded textures get that space back.
+const databaseVersion = 3
 
 export const templateStore = "templates"
-export const preparedTextureStore = "prepared-textures"
+const retiredStores = ["prepared-textures"]
 
 export function openTemplateDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
@@ -16,8 +18,8 @@ export function openTemplateDatabase() {
       if (!database.objectStoreNames.contains(templateStore)) {
         database.createObjectStore(templateStore, { keyPath: "id" })
       }
-      if (!database.objectStoreNames.contains(preparedTextureStore)) {
-        database.createObjectStore(preparedTextureStore, { keyPath: "id" })
+      for (const store of retiredStores) {
+        if (database.objectStoreNames.contains(store)) database.deleteObjectStore(store)
       }
     })
     request.addEventListener("success", () => resolve(request.result))

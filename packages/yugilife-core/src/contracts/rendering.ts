@@ -1,60 +1,10 @@
-import type { RichTextWarning } from "../rich-text.js"
-import type { AssetResolver, AssetSourceMap } from "./assets.js"
-import type { CardData, CardFieldName } from "./card.js"
-import type { ColorPresetCollection, PreparedTextures } from "./color.js"
-import type {
-  CardTemplate,
-  LayerDefinition,
-  LayerVisibility,
-  SvgElementDefinition,
-} from "./layers.js"
+import type { AssetSourceMap } from "./assets.js"
+import type { CardFieldName } from "./card.js"
+import type { ColorPresetCollection } from "./color.js"
+import type { CardTemplate, LayerVisibility, SvgElementDefinition } from "./layers.js"
 import type { PresentationOverrides, ResolvedCardPresentation } from "./presentation.js"
-import type { Region, SemanticAssetId, TemplateManifest } from "./template.js"
-
-export interface RenderLayerContext {
-  assets: AssetResolver
-  /** Resolved presentation asset source per layer; falls back to the layer's declared assetId. */
-  assetSelections: Readonly<Record<string, SemanticAssetId>>
-  card: CardData
-  colorPresets: ColorPresetCollection
-  context: CanvasRenderingContext2D
-  /** Alpha-only recording target for the current raster layer; it never affects compositing. */
-  coverageContext?: CanvasRenderingContext2D | undefined
-  layerVisibility: LayerVisibility
-  /** Textures already graded for this bundle; a miss grades live against the source asset. */
-  preparedTextures?: PreparedTextures | undefined
-  presetOverrides: Readonly<Record<string, string>>
-  presentation: ResolvedCardPresentation
-  /** Rich-text diagnostics collected while text layers are parsed for this render. */
-  richTextWarnings: RichTextRenderWarning[]
-  renderLayer(layer: LayerDefinition): Promise<void>
-  signal?: AbortSignal | undefined
-  template: CardTemplate
-  /** Vector output for a renderer whose declared output is "vector". */
-  vectorLayers: SvgElementDefinition[]
-}
-
-export type LayerRendererOutput = "container" | "raster" | "vector"
-
-/**
- * Whether a renderer emitted output. Returning `false` suppresses an empty raster plane; returning
- * `true` or no value means the renderer emitted its declared output.
- */
-export type LayerRendererResult = boolean | void
-
-export interface LayerRenderer<TLayer extends LayerDefinition = LayerDefinition> {
-  /**
-   * The renderer's single compositing plane. A renderer may not emit both canvas and vector output;
-   * split mixed output into separate ordered template layers.
-   */
-  output: LayerRendererOutput
-  render(
-    context: RenderLayerContext,
-    layer: TLayer,
-  ): Promise<LayerRendererResult> | LayerRendererResult
-}
-
-export type LayerRendererMap = Readonly<Record<string, LayerRenderer>>
+import type { RichTextWarning } from "./rich-text.js"
+import type { Region, TemplateManifest } from "./template.js"
 
 export interface CardTemplateBundle {
   readonly assets: AssetSourceMap
@@ -68,13 +18,7 @@ export interface RenderOptions {
   templateBundle: CardTemplateBundle
   /** Per-render semantic assets, merged over the template bundle (for example, card artwork). */
   assets?: Partial<AssetSourceMap> | undefined
-  layerRenderers?: LayerRendererMap | undefined
   layers?: Partial<LayerVisibility> | undefined
-  /**
-   * Textures already graded for this exact bundle, keyed by `preparedTextureKey`. Purely an
-   * acceleration: a key this render does not find is graded from the source asset as usual.
-   */
-  preparedTextures?: PreparedTextures | undefined
   presetOverrides?: Readonly<Record<string, string>> | undefined
   presentationOverrides?: PresentationOverrides | undefined
   /**
@@ -137,8 +81,8 @@ export interface RenderedCard {
   renderSegments: readonly RenderSegment[]
   /** Lazily replays coverage capture once and caches exact absolute and final-visible alpha. */
   createRenderManifest(): Promise<RenderManifest>
-  /** Non-fatal rich-text diagnostics found while producing this card. */
-  warnings: readonly RichTextRenderWarning[]
+  /** Non-fatal diagnostics found while producing this card. */
+  warnings: readonly CardRenderWarning[]
   presentation: ResolvedCardPresentation
   /** Encodes the complete ordered composition as a raster image. Defaults to native-size PNG. */
   toImage(options?: RasterExportOptions): Promise<Blob>
@@ -183,6 +127,21 @@ export type RasterCardExportOptions = RenderOptions & RasterExportOptions
 export interface RichTextRenderWarning extends RichTextWarning {
   readonly layerId: string
 }
+
+/**
+ * A character that the layer's font has no glyph for. The card still renders: the character is
+ * measured and drawn as the font's own missing-glyph placeholder, usually an empty box. Reported
+ * once per character and font in each layer.
+ */
+export interface MissingGlyphRenderWarning {
+  readonly character: string
+  readonly code: "missing-glyph"
+  readonly fontFamily: string
+  readonly layerId: string
+  readonly message: string
+}
+
+export type CardRenderWarning = MissingGlyphRenderWarning | RichTextRenderWarning
 
 export type SvgTextMode = "paths" | "text"
 

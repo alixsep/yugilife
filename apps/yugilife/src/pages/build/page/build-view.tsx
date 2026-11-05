@@ -30,6 +30,21 @@ interface BuildViewProps {
   controller: ReturnType<typeof useBuildController>
 }
 
+const noFieldWarnings: ReadonlyMap<string, readonly string[]> = new Map()
+
+function sameFieldWarnings(
+  left: ReadonlyMap<string, readonly string[]>,
+  right: ReadonlyMap<string, readonly string[]>,
+) {
+  if (left.size !== right.size) return false
+  for (const [field, messages] of left) {
+    const other = right.get(field)
+    if (other?.length !== messages.length) return false
+    if (messages.some((message, index) => other[index] !== message)) return false
+  }
+  return true
+}
+
 export function BuildView({ controller }: BuildViewProps) {
   const shape = useShape()
   const artworkConfig = artworkEditorConfig(controller.activeEditorTemplate)
@@ -44,6 +59,8 @@ export function BuildView({ controller }: BuildViewProps) {
   const [exactAnalysisFailure, setExactAnalysisFailure] = useState<CardRenderMetadata>()
   const [showExactBounds, setShowExactBounds] = useState(false)
   const [showTextInteractionBounds, setShowTextInteractionBounds] = useState(false)
+  const [fieldWarnings, setFieldWarnings] =
+    useState<ReadonlyMap<string, readonly string[]>>(noFieldWarnings)
   const [artworkPinSize, setArtworkPinSize] = useState(24)
   const [artworkSelectedPinId, setArtworkSelectedPinId] = useState<number | null>(null)
   const [artworkTool, setArtworkTool] = useState<ArtworkEditorTool>("select")
@@ -132,6 +149,13 @@ export function BuildView({ controller }: BuildViewProps) {
 
   const acceptRenderMetadata = useCallback((metadata: CardRenderMetadata | undefined) => {
     renderMetadata.current = metadata
+    // A render starts by clearing its metadata; the warnings stay until the next render completes so
+    // they do not flicker while typing.
+    if (metadata) {
+      setFieldWarnings((current) =>
+        sameFieldWarnings(current, metadata.fieldWarnings) ? current : metadata.fieldWarnings,
+      )
+    }
     if (metadata || !showExactBoundsRef.current) return
     showExactBoundsRef.current = false
     setShowExactBounds(false)
@@ -301,6 +325,7 @@ export function BuildView({ controller }: BuildViewProps) {
                 artworkTool={artworkTool}
                 controller={controller}
                 exactBoundsBusy={exactBoundsBusy}
+                fieldWarnings={fieldWarnings}
                 onArtworkPinSizeChange={setArtworkPinSize}
                 onArtworkSelectedPinChange={setArtworkSelectedPinId}
                 onArtworkToolChange={changeArtworkTool}

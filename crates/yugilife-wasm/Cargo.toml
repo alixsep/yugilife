@@ -1,0 +1,20 @@
+[package]
+name = "yugilife-wasm"
+description = "WebAssembly entry points for yugilife-core (spike)"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+indexmap = "2"
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+tiny-skia = "0.12"
+yugilife-core = { path = "../yugilife-core" }
+
+[lints]
+workspace = true

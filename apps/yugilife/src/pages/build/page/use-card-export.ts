@@ -21,7 +21,6 @@ import type { ChangeEvent } from "react"
 import type {
   CardTemplate,
   CardTemplateBundle,
-  PreparedTextures,
   RasterImageFormat,
   RasterOutputSize,
 } from "yugilife-core"
@@ -45,7 +44,6 @@ interface CardExportInput {
   readonly download: (blob: Blob, fileName: string) => void
   readonly onDocumentImported: (document: EditorDocumentState) => void
   readonly plainCardName: string
-  readonly preparedTextures: PreparedTextures | undefined
   readonly processedMaskForDocument: (document: EditorDocumentState) => Promise<Blob | undefined>
   readonly syncTemplateStorageMode: () => void
   readonly template: CardTemplate
@@ -57,7 +55,6 @@ export function useCardExport({
   download,
   onDocumentImported,
   plainCardName,
-  preparedTextures,
   processedMaskForDocument,
   syncTemplateStorageMode,
   template,
@@ -94,7 +91,6 @@ export function useCardExport({
       const { layers, presentationOverrides, presetOverrides } = currentDocument
       const renderOptions = {
         layers,
-        preparedTextures,
         presetOverrides,
         presentationOverrides,
         templateBundle,

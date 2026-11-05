@@ -1,12 +1,8 @@
 import { createCardFromTemplate, exportCardToSvg } from "yugilife-core"
-import { prepareTemplateTextures } from "yugilife-core/color-grading"
 
 import { DEFAULT_TEMPLATE } from "../../src/index"
 
-import { verifyPreparedTextures } from "./prepared-texture-check"
-
-import type { PreparedTextureCheck } from "./prepared-texture-check"
-import type { CardData, PreparedTextures } from "yugilife-core"
+import type { CardData } from "yugilife-core"
 
 import "./style.css"
 
@@ -110,10 +106,21 @@ function fixtureCard(parameters: URLSearchParams) {
   return { card, id: "synthetic" }
 }
 
-let preparing: Promise<PreparedTextures> | undefined
-function preparedTextures() {
-  preparing ??= prepareTemplateTextures(DEFAULT_TEMPLATE).then(({ textures }) => textures)
-  return preparing
+let fontsRegistered: Promise<void> | undefined
+
+/**
+ * Text-mode SVG draws live text, so the page needs the template's fonts, as any page showing it
+ * would; the renderer itself outlines glyphs and never touches the page's fonts.
+ */
+function registerTemplateFonts() {
+  fontsRegistered ??= Promise.all(
+    Object.entries(DEFAULT_TEMPLATE.template.fonts ?? {}).map(async ([family, assetId]) => {
+      const source = DEFAULT_TEMPLATE.assets[assetId]
+      if (typeof source !== "string") throw new Error(`Font "${family}" has no URL.`)
+      document.fonts.add(await new FontFace(family, `url(${JSON.stringify(source)})`).load())
+    }),
+  ).then(() => undefined)
+  return fontsRegistered
 }
 
 function fixtureHost() {
@@ -129,11 +136,10 @@ async function drawFixture(search: string) {
   delete host.dataset.error
   try {
     const { card, id } = fixtureCard(parameters)
-    const textures = parameters.get("prepared") === "false" ? undefined : await preparedTextures()
+    if (parameters.get("textMode") === "text") await registerTemplateFonts()
     host.innerHTML = await exportCardToSvg(card, {
       templateBundle: DEFAULT_TEMPLATE,
       title: card.name,
-      ...(textures ? { preparedTextures: textures } : {}),
       ...(parameters.get("fullArt") === "true"
         ? {
             presentationOverrides: {
@@ -166,11 +172,9 @@ function renderFixture(search: string) {
 declare global {
   interface Window {
     renderVisualFixture(search: string): Promise<void>
-    verifyPreparedTextures(): Promise<PreparedTextureCheck>
   }
 }
 
 window.renderVisualFixture = renderFixture
-window.verifyPreparedTextures = async () => await verifyPreparedTextures(await preparedTextures())
 
 await renderFixture(window.location.search)

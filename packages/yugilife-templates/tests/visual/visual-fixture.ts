@@ -4,15 +4,14 @@ import type { Page } from "@playwright/test"
 
 interface FixtureWindow {
   renderVisualFixture(search: string): Promise<void>
-  verifyPreparedTextures(): Promise<{ checked: number; mismatches: string[] }>
 }
 
 /**
  * One loaded harness page per worker.
  *
- * Every case renders the same template through the same fonts and the same prepared textures, so
- * reloading the page for each of them re-paid the whole template setup — the download, the font
- * registration and the color grading — to change the card data. Rendering into one page instead
+ * Every case renders the same template through the same fonts and textures, so reloading the page
+ * for each of them re-paid the whole template setup — the download, loading the core, and the color
+ * grading — to change the card data. Rendering into one page instead
  * measures the renderer rather than the harness, and it is also how the application behaves: a
  * template is set up once and then draws card after card.
  */
@@ -26,6 +25,11 @@ export const test = base.extend<object, { fixturePage: Page }>({
       const context = await browser.newContext(contextOptions)
       const page = await context.newPage()
       await page.goto("/")
+      // The harness script waits for the renderer to load before it installs itself.
+      await page.waitForFunction(
+        () =>
+          typeof (window as unknown as Partial<FixtureWindow>).renderVisualFixture === "function",
+      )
       await use(page)
       await context.close()
     },
@@ -40,8 +44,4 @@ export async function showFixture(page: Page, search: string) {
     search,
   )
   return page.locator("[data-visual-fixture]")
-}
-
-export async function checkPreparedTextures(page: Page) {
-  return await page.evaluate(() => (window as unknown as FixtureWindow).verifyPreparedTextures())
 }

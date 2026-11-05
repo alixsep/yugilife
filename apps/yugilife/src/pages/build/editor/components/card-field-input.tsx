@@ -22,6 +22,8 @@ import type { CardFieldDefinition, CardFieldValue } from "yugilife-core"
 interface CardFieldInputProps {
   attachedFooter?: ReactNode
   field: CardFieldDefinition
+  /** Warnings the last render reported for this field, such as characters its font lacks. */
+  renderWarnings?: readonly string[] | undefined
   value: CardFieldValue
   onChange: (name: string, value: CardFieldValue) => void
 }
@@ -70,16 +72,23 @@ function richTextWarning(value: CardFieldValue) {
   return parseRichText(source).warnings
 }
 
-function TextWarnings({ value }: { value: CardFieldValue }) {
-  const warnings = richTextWarning(value)
-  if (warnings.length === 0) return null
-  return <FieldError>{warnings[0]?.message}</FieldError>
+function TextWarnings({
+  renderWarnings,
+  value,
+}: {
+  renderWarnings: readonly string[] | undefined
+  value: CardFieldValue
+}) {
+  const message = richTextWarning(value)[0]?.message ?? renderWarnings?.[0]
+  if (message === undefined) return null
+  return <FieldError>{message}</FieldError>
 }
 
 export const CardFieldInput = memo(function CardFieldInput({
   attachedFooter,
   field,
   onChange,
+  renderWarnings,
   value,
 }: CardFieldInputProps) {
   const label = `${field.label}${field.required ? " *" : ""}`
@@ -257,7 +266,7 @@ export const CardFieldInput = memo(function CardFieldInput({
             </div>
           ))}
         </div>
-        <TextWarnings value={value} />
+        <TextWarnings renderWarnings={renderWarnings} value={value} />
       </fieldset>
     )
   }
@@ -274,7 +283,7 @@ export const CardFieldInput = memo(function CardFieldInput({
             onChange(field.name, event.target.value === "" ? [] : event.target.value.split("\n"))
           }
         />
-        <TextWarnings value={value} />
+        <TextWarnings renderWarnings={renderWarnings} value={value} />
       </Field>
     )
   }
@@ -347,7 +356,7 @@ export const CardFieldInput = memo(function CardFieldInput({
           placeholder={`Search ${field.label.toLocaleLowerCase()}…`}
           onInputValueChange={(next) => onChange(field.name, next)}
         />
-        <TextWarnings value={value} />
+        <TextWarnings renderWarnings={renderWarnings} value={value} />
       </Field>
     )
   }
@@ -360,7 +369,7 @@ export const CardFieldInput = memo(function CardFieldInput({
         value={textValue(value)}
         onChange={(event) => onChange(field.name, event.target.value)}
       />
-      <TextWarnings value={value} />
+      <TextWarnings renderWarnings={renderWarnings} value={value} />
     </Field>
   )
 })

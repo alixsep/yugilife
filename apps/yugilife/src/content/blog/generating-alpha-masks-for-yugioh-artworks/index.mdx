@@ -34,7 +34,7 @@ For adding full art layout support, these were some of the questions I had in mi
 
 ## Attempt one: an interactive tool in the browser
 
-My first idea was interactive. If a person has to make judgement calls about where the foreground stops, give them a great tool for making them. This way anyone could cut out their own artwork inside Yugilife.
+My first idea was interactive. If a person has to make judgment calls about where the foreground stops, give them a great tool for making them. This way anyone could cut out their own artwork inside Yugilife.
 
 The first thing I reached for was MediaPipe's [Interactive Segmenter](https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter) v2, because it is small and is backed by Google, so I had a lot of hope. Unfortunately, no matter how hard I tried, the result quality was HORRIBLE! On CPU (an i7-12700H) it took 5 seconds to process each of my marks, and even then, the mask came back at the model's own resolution rather than the artwork's, which looked so low quality it was unusable. Even that aside, the click was the entire interface: it either came back with the region I wanted or it did not, and there was nothing in between to adjust. On an illustration it would take the character and leave the glow, or take the character and a third of the sky with it, and the only thing I could do was to click somewhere else and hope.
 
@@ -76,7 +76,7 @@ I read that result as a model problem rather than a placement problem. Pick some
 
 So I moved to [ZIM](https://github.com/naver-ai/ZIM), a zero-shot interactive matting model. Its [ViT-B](https://huggingface.co/naver-iv/zim-anything-vitb) ONNX encoder is 343.97 MiB, with an 18.44 MiB decoder next to it. I wanted it under about 70 MiB, so that a browser could download and cache it, but only if results were good enough to convince users to download it in the first place.
 
-I built a benchmark that turned out to be a very thorough way of proving the idea wrong. It pinned the official checkpoints by hash, inspected the graph, mirrored the model's exact preprocessing and postprocessing so that no variant could look good by accident, calibrated on real images rather than random tensors, and generated every quantization I could reach: FP16, INT8, and INT4 in RTN, HQQ, and GPTQ flavours. Then it scored each one against a deterministic subset of [MicroMat-3K](https://huggingface.co/datasets/naver-iv/MicroMat-3K), and scored it only inside the uncertain alpha bands (`0.05 < α < 0.95`), because that is where a matte lives, and a thresholded IoU will happily tell you everything is fine while the edges turn to mush.
+I built a benchmark that turned out to be a very thorough way of proving the idea wrong. It pinned the official checkpoints by hash, inspected the graph, mirrored the model's exact preprocessing and postprocessing so that no variant could look good by accident, calibrated on real images rather than random tensors, and generated every quantization I could reach: FP16, INT8, and INT4 in RTN, HQQ, and GPTQ flavors. Then it scored each one against a deterministic subset of [MicroMat-3K](https://huggingface.co/datasets/naver-iv/MicroMat-3K), and scored it only inside the uncertain alpha bands (`0.05 < α < 0.95`), because that is where a matte lives, and a thresholded IoU will happily tell you everything is fine while the edges turn to mush.
 
 Inspecting the graph made the problem pretty clear. Nearly all of the encoder's size comes from one place: 94.2% of its bytes are MatMul weights. So I could calculate the smallest the model could possibly get before trying anything. Even if I quantized every one of those weights all the way down to 4 bits (the most aggressive option I was considering) and left everything else untouched, the encoder would still be 60.47 MiB.
 
@@ -125,7 +125,7 @@ And the masks were wrong in a way I could not do anything about.
 
 <Sam3Comparison />
 
-SAM3 is a semantic segmenter, and it is excellent at being one. Given "dragon", it finds the dragon and draws a confident boundary around the dragon. But a Yu-Gi-Oh! artwork is not a photograph of an object on a background. The lightning, the aura, and even something like a magic circle halo is sometimes part of the foreground. Asking "where is the dragon" throws away half of what a person would see as foreground, and every phrase model made this mistake differently, so I could not even fail consistently. The phrases above are the evidence: results were dirty, inconsistent, and sometimes straight up wrong. I'm quite impressed by LFM2.5-VL though. It's actually the best performer, at least in my benchmark.
+SAM3 is a semantic segmenter, and it is excellent at being one. Given "dragon," it finds the dragon and draws a confident boundary around the dragon. But a Yu-Gi-Oh! artwork is not a photograph of an object on a background. The lightning, the aura, and even something like a magic circle halo is sometimes part of the foreground. Asking "where is the dragon" throws away half of what a person would see as foreground, and every phrase model made this mistake differently, so I could not even fail consistently. The phrases above are the evidence: results were dirty, inconsistent, and sometimes straight up wrong. I'm quite impressed by LFM2.5-VL though. It's actually the best performer, at least in my benchmark.
 
 I tried cleaning up the result afterward. SAM3 could cut too far into the foreground while still leaving a faint halo of background behind, so I tried correcting both problems. To give the foreground some room back, I first added a hard one-pixel ring around the mask, then tried a softer version that faded out instead of ending abruptly. To get rid of the remaining background, I suppressed the weakest alpha values until the residue disappeared without affecting the solid parts of the foreground. And when the boundary itself was ragged, I passed the mask through SAM2Matting to refine the edge.
 
@@ -158,7 +158,7 @@ There was a second surprise waiting in the same report. I had assumed the high-q
   valueLabel="Time per artwork"
 />
 
-SAM3's soft output is a confidence map: how sure the model is that a pixel belongs to the phrase. Threshold it and you get an ugly boundary; leave it alone and the character itself is semi-transparent. ToonOut's output is coverage, opaque where the character is, soft only where the character is actually soft. That is the whole distinction between a mask and a matte, measured rather than asserted: inside the subject, SAM3's map is between 71% and 97% mid-grey, and ToonOut's is 0%.
+SAM3's soft output is a confidence map: how sure the model is that a pixel belongs to the phrase. Threshold it and you get an ugly boundary; leave it alone and the character itself is semi-transparent. ToonOut's output is coverage, opaque where the character is, soft only where the character is actually soft. That is the whole distinction between a mask and a matte, measured rather than asserted: inside the subject, SAM3's map is between 71% and 97% mid-gray, and ToonOut's is 0%.
 
 <EdgeCloseUps />
 
@@ -203,7 +203,7 @@ That does not mean they are directly editing the existing mask. The two masks ma
 
 To turn the finished mask back into something the point-based tool can use, the pipeline has to choose where to place its plus and minus points. It begins with the large areas of the mask. Every foreground region gets a plus point, and every enclosed background region gets a minus point.
 
-Those first points are placed as far from the boundary as possible. For each region, the pipeline finds the centre of the largest circle that can fit entirely inside it and puts the point there. An exact Euclidean distance transform is used to find that position. This works even for long or irregular shapes, where the visual centre might otherwise end up uncomfortably close to an edge.
+Those first points are placed as far from the boundary as possible. For each region, the pipeline finds the center of the largest circle that can fit entirely inside it and puts the point there. An exact Euclidean distance transform is used to find that position. This works even for long or irregular shapes, where the visual center might otherwise end up uncomfortably close to an edge.
 
 After that, the pipeline adds more points around the boundary. For every selected location along the outline, it places one point just inside the foreground and another just outside it in the background. Farthest-point sampling decides where those pairs go, spreading them around the full outline rather than letting them cluster in one complicated section.
 

@@ -3,7 +3,6 @@ import { isTemplateVersion } from "yugilife-core"
 import { requestResult, transactionComplete } from "@/lib/indexed-db"
 import { isRecord } from "@/lib/utils"
 
-import { deletePreparedTextures, preparedTextureCacheBytes } from "./prepared-texture-storage"
 import { openTemplateDatabase, templateStore } from "./template-database"
 
 import type { AssetSource, CardTemplateBundle, TemplateId } from "yugilife-core"
@@ -51,7 +50,6 @@ export interface OriginStorageEstimate {
 
 export interface TemplateStorageSnapshot {
   originStorage: OriginStorageEstimate
-  preparedTextureBytes: number
   storageMode: TemplateStorageMode
   templates: readonly StoredTemplateRecord[]
 }
@@ -155,8 +153,6 @@ export async function storeTemplate(
   bundle: CardTemplateBundle,
   source: TemplateRecordSource = "official",
 ) {
-  // Edited user templates keep their identity, so their textures cannot be trusted to match.
-  await deletePreparedTextures(bundle.manifest.id)
   const record: StoredTemplateRecord = {
     bundle,
     id: bundle.manifest.id,
@@ -188,8 +184,6 @@ export async function storeTemplate(
 }
 
 export async function deleteStoredTemplate(id: TemplateId) {
-  // Textures are derived from the bundle being removed, so they go with it.
-  await deletePreparedTextures(id)
   if (storageMode === "memory") {
     memoryTemplates.delete(id)
     return
@@ -224,10 +218,9 @@ async function estimateOriginStorage(): Promise<OriginStorageEstimate> {
 }
 
 export async function readTemplateStorageSnapshot(): Promise<TemplateStorageSnapshot> {
-  const [templates, originStorage, preparedTextureBytes] = await Promise.all([
+  const [templates, originStorage] = await Promise.all([
     listStoredTemplates(),
     estimateOriginStorage(),
-    preparedTextureCacheBytes(),
   ])
-  return { originStorage, preparedTextureBytes, storageMode, templates }
+  return { originStorage, storageMode, templates }
 }

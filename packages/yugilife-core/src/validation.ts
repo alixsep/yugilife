@@ -1,110 +1,45 @@
-import { walkLayers } from "./rendering/layer-tree.js"
-import {
-  describeFieldValueViolation,
-  initialFieldValue,
-  validateCardTemplateShape,
-  validateColorPresetCollectionShape,
-  validatePresentationOverridesShape,
-  validateSvgElementShape,
-  validateTemplateManifestShape,
-} from "./schema/index.js"
+import { callSync, cardInput, templateKey } from "./core/sync"
 
 import type {
   CardData,
-  CardFieldValue,
   CardTemplate,
+  ColorPresetCollection,
   PresentationOverrides,
-  SvgElementDefinition,
   TemplateManifest,
 } from "./contracts/index.js"
 
-export class TemplateValidationError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options)
-    this.name = "TemplateValidationError"
-  }
-}
-
-function validate<T>(validator: (input: unknown) => T, input: unknown, subject?: string): T {
-  try {
-    return validator(input)
-  } catch (error) {
-    if (error instanceof TemplateValidationError) throw error
-    const detail = error instanceof Error ? error.message : "Template validation failed."
-    const message =
-      subject && !detail.startsWith(`Malformed ${subject}:`)
-        ? `Malformed ${subject}: ${detail}`
-        : detail
-    throw new TemplateValidationError(message, { cause: error })
-  }
-}
+export { TemplateValidationError } from "./errors"
 
 export function validateTemplateManifest(input: unknown): TemplateManifest {
-  return validate(validateTemplateManifestShape, input, "template manifest")
+  callSync("validateTemplateManifest", { input: input ?? null })
+  return input as TemplateManifest
 }
 
-export function validateSvgElementDefinition(
-  input: unknown,
-  location?: string,
-): asserts input is SvgElementDefinition {
-  validate((value) => validateSvgElementShape(value, location), input)
-}
-
+/** Validates an authored card template and returns its normalized form. */
 export function validateCardTemplate(input: unknown): CardTemplate {
-  return validate(validateCardTemplateShape, input, "card template")
+  return callSync("validateCardTemplate", { input: input ?? null })
 }
 
-export function validateColorPresetCollection(input: unknown) {
-  return validate(validateColorPresetCollectionShape, input, "color preset collection")
+export function validateColorPresetCollection(input: unknown): ColorPresetCollection {
+  callSync("validateColorPresetCollection", { input: input ?? null })
+  return input as ColorPresetCollection
 }
 
 export function validatePresentationOverrides(
   input: unknown,
   template: CardTemplate,
 ): PresentationOverrides {
-  return validate(
-    (value) => validatePresentationOverridesShape(value, template),
-    input,
-    "presentation overrides",
-  )
-}
-
-function repeatedImageViolations(card: CardData, template: CardTemplate) {
-  const violations: string[] = []
-  walkLayers(template.layers, ({ layer }) => {
-    if (layer.kind !== "repeated-image") return
-    const field = String(layer["field"])
-    const value = card[field]
-    if (
-      value !== undefined &&
-      value !== "" &&
-      (typeof value !== "number" || !Number.isInteger(value) || value < 0)
-    ) {
-      violations.push(`"${field}" must be a non-negative integer`)
-    }
+  callSync("validatePresentationOverrides", {
+    input: input ?? null,
+    template: templateKey(template),
   })
-  return violations
+  return input as PresentationOverrides
 }
 
-export function validateCardData(card: CardData, template: CardTemplate) {
-  const violations = [
-    ...template.cardFields
-      .map((field) => describeFieldValueViolation(field, card[field.name]))
-      .filter((violation): violation is string => violation !== undefined),
-    ...repeatedImageViolations(card, template),
-  ]
-  if (violations.length > 0) {
-    throw new TemplateValidationError(
-      `Card data does not satisfy this template: ${violations.join("; ")}.`,
-    )
-  }
+export function validateCardData(card: CardData, template: CardTemplate): void {
+  callSync("validateCardData", { card: cardInput(card), template: templateKey(template) })
 }
 
 export function createCardFromTemplate(template: CardTemplate): CardData {
-  const card: Record<string, CardFieldValue> = {}
-  for (const field of template.cardFields) {
-    card[field.name] = initialFieldValue(field)
-  }
-  if (typeof card["name"] !== "string") card["name"] = ""
-  return card as CardData
+  return callSync("createCardFromTemplate", { template: templateKey(template) })
 }

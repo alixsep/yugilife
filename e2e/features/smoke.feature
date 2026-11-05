@@ -49,6 +49,12 @@ Feature: Smoke
     And the inventory contains "Odd-Eyes Arc Pendulum Dragon"
     And the inventory contains "Dinowrestler Pankratops"
 
+  Scenario: A character missing from the card's font still renders and is reported on its field
+    Given I open the card builder
+    When I change the card name to "Yummy☆Surprise"
+    Then the card name field warns that "MatrixRegularSmallCaps" has no glyph for "☆"
+    And the card preview rendered without errors
+
   Scenario: Salamangreat preview uses outlined text
     Given I open the Salamangreat card builder
     Then the Salamangreat preview uses outlined glyphs

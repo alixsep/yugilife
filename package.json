@@ -29,14 +29,14 @@
     "pnpm": "^11.9.0"
   },
   "scripts": {
-    "dev": "pnpm check:generated && pnpm --filter yugilife dev",
+    "dev": "pnpm --filter yugilife-core build && pnpm check:generated && pnpm --filter yugilife dev",
     "generate": "pnpm generate:assets && pnpm generate:catalog",
     "generate:assets": "pnpm --filter yugilife-templates generate",
-    "generate:catalog": "pnpm --filter yugilife-templates generate:runtime",
+    "generate:catalog": "pnpm --filter yugilife-core build && pnpm --filter yugilife-templates generate:runtime",
     "generate:card-catalog": "pnpm --filter yugilife generate:card-catalog",
     "check:generated": "pnpm --recursive --stream --if-present check:generated",
     "build": "pnpm --recursive --stream --if-present build",
-    "build:pages": "pnpm --filter yugilife build:pages",
+    "build:pages": "pnpm --filter yugilife-core build && pnpm --filter yugilife build:pages",
     "typecheck": "pnpm --recursive --stream --if-present typecheck",
     "test": "pnpm test:scripts && pnpm --recursive --stream --if-present test",
     "test:scripts": "node --test ./scripts/*.test.mjs",
@@ -52,8 +52,9 @@
     "format:check": "prettier --check .",
     "setup:browsers": "playwright install chromium firefox",
     "setup:browsers:with-deps": "playwright install --with-deps chromium firefox",
-    "check:portable": "node ./scripts/check-playwright-browsers.mjs chromium firefox && node ./scripts/check-port.mjs 4173 && pnpm check:generated && pnpm build && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm --filter yugilife-cli verify:packed && bddgen && playwright test",
-    "check": "node ./scripts/check-visual-platform.mjs && node ./scripts/check-port.mjs 4174 && pnpm check:portable && pnpm test:visual"
+    "check:portable": "node ./scripts/check-playwright-browsers.mjs chromium firefox && node ./scripts/check-port.mjs 4173 && pnpm --filter yugilife-core build && pnpm check:generated && pnpm build && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm check:rust && bddgen && playwright test",
+    "check": "node ./scripts/check-visual-platform.mjs && node ./scripts/check-port.mjs 4174 && pnpm check:portable && pnpm test:visual",
+    "check:rust": "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace"
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",

@@ -32,6 +32,8 @@ interface EditorSidebarProps {
   artworkTool: ArtworkEditorTool
   controller: ReturnType<typeof useBuildController>
   exactBoundsBusy: boolean
+  /** Render warnings for each card field, from the last completed render. */
+  fieldWarnings: ReadonlyMap<string, readonly string[]>
   onArtworkPinSizeChange: (size: number) => void
   onArtworkSelectedPinChange: (id: number | null) => void
   onArtworkToolChange: (tool: ArtworkEditorTool) => void
@@ -76,6 +78,7 @@ export function EditorSidebar({
   artworkTool,
   controller,
   exactBoundsBusy,
+  fieldWarnings,
   onArtworkPinSizeChange,
   onArtworkSelectedPinChange,
   onArtworkToolChange,
@@ -232,6 +235,7 @@ export function EditorSidebar({
             ) : undefined
           }
           field={field}
+          renderWarnings={fieldWarnings.get(field.name)}
           value={card[field.name]}
           onChange={setCardField}
         />

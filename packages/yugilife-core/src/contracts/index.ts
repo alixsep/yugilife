@@ -1,15 +1,4 @@
-export type {
-  RichTextDocument,
-  RichTextElementNode,
-  RichTextLength,
-  RichTextNode,
-  RichTextParseResult,
-  RichTextTagName,
-  RichTextTextNode,
-  RichTextWarning,
-  RichTextWarningCode,
-} from "../rich-text.js"
-export type { AssetResolver, AssetSource, AssetSourceMap } from "./assets.js"
+export type { AssetSource, AssetSourceMap } from "./assets.js"
 export type {
   CardData,
   CardFieldDefaultValue,
@@ -26,9 +15,6 @@ export type {
   HistogramColorPreset,
   IdentityColorPreset,
   PolynomialColorPreset,
-  PreparedTexturePayload,
-  PreparedTextures,
-  TexturePreparation,
 } from "./color.js"
 export type {
   ArtworkLayer,
@@ -77,11 +63,9 @@ export type {
   TransformModeCondition,
 } from "./presentation.js"
 export type {
+  CardRenderWarning,
   CardTemplateBundle,
-  LayerRenderer,
-  LayerRendererMap,
-  LayerRendererOutput,
-  LayerRendererResult,
+  MissingGlyphRenderWarning,
   PngCardExportOptions,
   PngExportOptions,
   RasterCardExportOptions,
@@ -93,7 +77,6 @@ export type {
   RenderedElementAlphaChannel,
   RenderedElementAlphaKind,
   RenderedElementManifestEntry,
-  RenderLayerContext,
   RenderManifest,
   RenderOptions,
   RenderSegment,
@@ -103,6 +86,17 @@ export type {
   SvgTextMode,
   VectorRenderSegment,
 } from "./rendering.js"
+export type {
+  RichTextDocument,
+  RichTextElementNode,
+  RichTextLength,
+  RichTextNode,
+  RichTextParseResult,
+  RichTextTagName,
+  RichTextTextNode,
+  RichTextWarning,
+  RichTextWarningCode,
+} from "./rich-text.js"
 export type {
   CardSemanticBindings,
   CardSemantics,

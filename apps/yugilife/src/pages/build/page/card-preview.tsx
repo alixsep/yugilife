@@ -14,7 +14,6 @@ import { spring } from "@/lib/springs"
 import { cn } from "@/lib/utils"
 
 import { ArtworkMaskWorkspace } from "../editor/components/artwork-mask-workspace"
-import { activationProgressPercent } from "../templates/prepare-template-textures"
 
 import { renderedTextBounds, renderedTextFieldAt } from "./card-preview-hit-test"
 
@@ -58,7 +57,6 @@ export function CardPreview({
     loadSelectedTemplate,
     mode,
     newCardBusy,
-    preparedTextures,
     presentationOverrides,
     presetOverrides,
     reference,
@@ -85,10 +83,11 @@ export function CardPreview({
   const cardShare = `${(cardWidth / comparisonWidth) * 100}%`
   const gapShare = `${(comparisonGap / comparisonWidth) * 100}%`
   const aspectRatio = `${activeEditorTemplate.dimensions.width} / ${activeEditorTemplate.dimensions.height}`
-  const preparing = templateLoadProgress?.phase === "preparing"
-  const activationPercent = templateLoadProgress
-    ? activationProgressPercent(templateLoadProgress)
-    : undefined
+  const loadTotal = templateLoadProgress?.total ?? 0
+  const activationPercent =
+    templateLoadProgress && loadTotal > 0
+      ? Math.min(100, Math.round((templateLoadProgress.loaded / loadTotal) * 100))
+      : undefined
 
   const acceptRenderMetadata = useCallback(
     (metadata: CardRenderMetadata | undefined) => {
@@ -216,7 +215,6 @@ export function CardPreview({
                   className="size-full"
                   debugLogging={mode === "advanced" && debugLoggingEnabled}
                   layers={layers}
-                  preparedTextures={preparedTextures}
                   presetOverrides={presetOverrides}
                   presentationOverrides={presentationOverrides}
                   templateBundle={templateBundle}
@@ -252,19 +250,10 @@ export function CardPreview({
                     ) : (
                       <>
                         <p role="status">
-                          {templateLoading && !preparing
-                            ? "Downloading template…"
-                            : "Preparing template…"}
+                          {templateLoading ? "Downloading template…" : "Loading template…"}
                           {activationPercent === undefined ? "" : ` ${activationPercent}%`}
                         </p>
-                        <Progress
-                          label={
-                            preparing
-                              ? "Preparing template textures"
-                              : "Downloading template assets"
-                          }
-                          value={activationPercent}
-                        />
+                        <Progress label="Downloading template assets" value={activationPercent} />
                       </>
                     )}
                   </div>

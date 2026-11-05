@@ -129,12 +129,10 @@ export function useBuildController(cardId: string) {
     [setSelectedTemplateId],
   )
   const inventory = useInventorySession({
-    activeTexturesRef: activation.activeTexturesRef,
     cardId,
     currentDocument,
     onCardOpened,
     onCardOpening: activation.deactivate,
-    preparedTextures: activation.preparedTextures,
     processedMaskForDocument: maskPreview.processedMaskForDocument,
     replaceDocument: actions.replaceDocument,
     setInventoryBusy,
@@ -154,7 +152,6 @@ export function useBuildController(cardId: string) {
       openTemplate(document.templateId)
     },
     plainCardName,
-    preparedTextures: activation.preparedTextures,
     processedMaskForDocument: maskPreview.processedMaskForDocument,
     syncTemplateStorageMode: activation.syncTemplateStorageMode,
     template: activeEditorTemplate,
@@ -343,7 +340,6 @@ export function useBuildController(cardId: string) {
     originStorage: activation.originStorage,
     paintableText,
     plainCardName,
-    preparedTextures: activation.preparedTextures,
     presentation,
     presentationOverrides,
     presetOverrides,

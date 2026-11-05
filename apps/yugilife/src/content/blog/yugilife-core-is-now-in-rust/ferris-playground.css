@@ -1,0 +1,207 @@
+.ferris-playground {
+  margin-block: 0 2.5rem;
+}
+
+/* No box: Ferris plays right on the page. Cards stay within the stage's width, and the simulation
+   keeps them from rising far above it, so only the sides need clipping. */
+.ferris-playground__stage {
+  position: relative;
+  height: clamp(15rem, 40vw, 19rem);
+  overflow-x: clip;
+  overflow-y: visible;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ferris-playground__stage:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Everything is placed by the frame loop; hide it until the first frame has positioned it. */
+.ferris-playground__stage:not([data-ready]) > :not(.ferris-playground__floor) {
+  visibility: hidden;
+}
+
+.ferris-playground__floor {
+  position: absolute;
+  inset: auto 0 0;
+  height: 44px;
+  border-top: 1px solid var(--border);
+}
+
+.ferris-playground__card,
+.ferris-playground__crab,
+.ferris-playground__particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.ferris-playground__card {
+  z-index: 1;
+  width: 46px;
+  height: 66px;
+  cursor: grab;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
+  touch-action: none;
+}
+
+.ferris-playground__card:active {
+  cursor: grabbing;
+}
+
+.ferris-playground__card svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ferris-playground__card[data-face="front"] .ferris-playground__card-back,
+.ferris-playground__card[data-face="back"] .ferris-playground__card-front {
+  display: none;
+}
+
+.ferris-playground__crab {
+  z-index: 2;
+  width: 150px;
+  height: 150px;
+  pointer-events: none;
+}
+
+.ferris-playground__crab-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Only Ferris's drawn shapes take clicks, not the empty corners of the box. */
+.ferris-playground__crab-svg :is(path, ellipse, circle) {
+  pointer-events: visiblePainted;
+  touch-action: none;
+}
+
+.ferris-playground__shell {
+  fill: #f74c00;
+  stroke: #c93a00;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.ferris-playground__leg {
+  fill: #e04600;
+  stroke: #b83500;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.ferris-playground__shine {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.35);
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+
+.ferris-playground__eyes-happy path,
+.ferris-playground__eyes-sleep path {
+  fill: none;
+  stroke: #1b1b1b;
+  stroke-linecap: round;
+  stroke-width: 2.6;
+}
+
+.ferris-playground__blush {
+  fill: #ff7aa8;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ferris-playground__eyes-happy,
+.ferris-playground__eyes-sleep {
+  display: none;
+}
+
+.ferris-playground__eyes-open {
+  transition: scale 0.06s;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ferris-playground__crab[data-mood="blink"] .ferris-playground__eyes-open {
+  scale: 1 0.1;
+}
+
+.ferris-playground__crab[data-mood="happy"] .ferris-playground__eyes-open,
+.ferris-playground__crab[data-mood="sleep"] .ferris-playground__eyes-open {
+  display: none;
+}
+
+.ferris-playground__crab[data-mood="happy"] .ferris-playground__eyes-happy,
+.ferris-playground__crab[data-mood="sleep"] .ferris-playground__eyes-sleep {
+  display: inline;
+}
+
+.ferris-playground__crab[data-mood="happy"] .ferris-playground__blush {
+  opacity: 0.75;
+}
+
+.ferris-playground__bubble {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.15s;
+  translate: 18px 0;
+}
+
+.ferris-playground__particle {
+  z-index: 5;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ferris-playground__particle[data-kind="dust"] {
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+}
+
+.ferris-playground__particle[data-kind="z"] {
+  color: var(--muted-foreground);
+  font-weight: 700;
+}
+
+.ferris-playground__hint {
+  margin-top: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ferris-playground__card,
+  .ferris-playground__crab,
+  .ferris-playground__particle {
+    will-change: auto;
+  }
+}
+
+.ferris-playground__crab-svg .ferris-playground__shadow {
+  fill: rgb(0 0 0 / 0.22);
+  pointer-events: none;
+}

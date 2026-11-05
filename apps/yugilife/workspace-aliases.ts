@@ -13,10 +13,5 @@ const templatesSource = path.resolve(appDirectory, "../../packages/yugilife-temp
 export const workspaceAliases = [
   { find: "@", replacement: appSource },
   { find: /^yugilife-core$/, replacement: path.join(coreSource, "index.ts") },
-  { find: /^yugilife-core\/advanced$/, replacement: path.join(coreSource, "advanced.ts") },
-  {
-    find: /^yugilife-core\/color-grading$/,
-    replacement: path.join(coreSource, "public/color-grading.ts"),
-  },
   { find: /^yugilife-templates$/, replacement: path.join(templatesSource, "index.ts") },
 ]

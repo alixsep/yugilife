@@ -36,6 +36,11 @@ jobs:
           node-version: 24.11.1
           cache: pnpm
 
+      # yugilife-core is the Rust core compiled to WebAssembly; `pnpm build:pages` builds it.
+      # The runner's rustup installs the release, components, and target rust-toolchain.toml pins.
+      - name: Set up Rust
+        run: rustup toolchain install && cargo --version
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:

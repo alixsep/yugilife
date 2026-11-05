@@ -49,10 +49,9 @@ export default defineConfig({
         ...devices["Desktop Firefox"],
       },
     },
-    // Browser behaviour the unit suites cannot reach: jsdom has no IndexedDB, so template caching
-    // and texture preparation are only ever exercised against their in-memory fallback, and it has
-    // no real navigation for the deploy reload. Both engines run it, because how a browser stores a
-    // Blob, decodes an image, and aborts loads while leaving a page is exactly what is under test.
+    // Browser behaviour the unit suites cannot reach: jsdom has no real navigation for the deploy
+    // reload. Both engines run it, because how a browser aborts loads while leaving a page is
+    // exactly what is under test.
     {
       name: "app-storage-chromium",
       testDir: "e2e/app",

@@ -1,0 +1,38 @@
+[package]
+name = "yugilife-core"
+description = "Native YugiLife card validation, rendering, and export"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+avif-parse = "2.1"
+base64 = "0.23"
+dav1d = "0.11"
+image = { version = "0.25", default-features = false, features = ["bmp", "gif", "jpeg", "png", "webp"] }
+indexmap = "2"
+jpeg-encoder = "0.7"
+png = "0.18"
+resvg = { version = "0.48", default-features = false }
+svgtypes = "0.16"
+rustybuzz = "0.20"
+skrifa = "0.49"
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+tiny-skia = "0.12"
+unicode-segmentation = "1.13"
+wuff = "0.2"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+webp = "0.3"
+
+# On WebAssembly, rav1d (the Rust port of dav1d) provides the dav1d C API that the dav1d crate
+# calls. The build must keep dav1d-sys from linking a system libdav1d; see crates/yugilife-wasm.
+[target.'cfg(target_family = "wasm")'.dependencies]
+rav1d = { version = "1.1", default-features = false, features = ["bitdepth_8", "bitdepth_16"] }
+
+[dev-dependencies]
+freetype-rs = "0.38"
+
+[lints]
+workspace = true

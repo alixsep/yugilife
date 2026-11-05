@@ -20,12 +20,9 @@ import {
   saveInventoryCardSnapshot,
 } from "../../inventory/persistence/inventory-storage"
 import { createInitialEditorDocument } from "../editor/model/editor-store"
-import { preparedTexturesForBundle } from "../templates/prepare-template-textures"
 
 import type { EditorDocumentState } from "../editor/model/editor-document"
-import type { ActivePreparedTextures } from "../templates/prepare-template-textures"
-import type { RefObject } from "react"
-import type { CardTemplateBundle, PreparedTextures } from "yugilife-core"
+import type { CardTemplateBundle } from "yugilife-core"
 
 type InventoryCard = NonNullable<Awaited<ReturnType<typeof readInventoryCard>>>
 
@@ -65,12 +62,10 @@ function bundleRendersDocument(
 }
 
 interface InventorySessionInput {
-  readonly activeTexturesRef: RefObject<ActivePreparedTextures | undefined>
   readonly cardId: string
   readonly currentDocument: EditorDocumentState
   readonly onCardOpened: (document: EditorDocumentState) => void
   readonly onCardOpening: () => void
-  readonly preparedTextures: PreparedTextures | undefined
   readonly processedMaskForDocument: (document: EditorDocumentState) => Promise<Blob | undefined>
   readonly replaceDocument: (document: EditorDocumentState) => void
   readonly setInventoryBusy: (busy: boolean) => void
@@ -78,12 +73,10 @@ interface InventorySessionInput {
 }
 
 export function useInventorySession({
-  activeTexturesRef,
   cardId,
   currentDocument,
   onCardOpened,
   onCardOpening,
-  preparedTextures,
   processedMaskForDocument,
   replaceDocument,
   setInventoryBusy,
@@ -179,8 +172,6 @@ export function useInventorySession({
           document,
           templateBundle,
           await processedInventoryMask(document, templateBundle),
-          // Read, not depended on, so late textures cannot restart a write already in flight.
-          preparedTexturesForBundle(activeTexturesRef.current, templateBundle),
         )
         if (!active()) return
         await saveInventoryCardSnapshot(card, {
@@ -198,7 +189,7 @@ export function useInventorySession({
     return () => {
       snapshotCommitToken.current += 1
     }
-  }, [activeTexturesRef, pendingSnapshotCardId, templateBundle])
+  }, [pendingSnapshotCardId, templateBundle])
 
   async function saveCard() {
     const current = inventoryCard.current
@@ -225,7 +216,6 @@ export function useInventorySession({
         document,
         templateBundle,
         await processedMaskForDocument(document),
-        preparedTextures,
       )
       await saveInventoryCardSnapshot(next, {
         cardId: next.id,

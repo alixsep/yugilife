@@ -38,17 +38,22 @@ overkill:
   stays sharp at any size, with outlined text so it looks the same on every computer.
 - **Yours, and open.** No account and no server: cards live in your browser's Inventory and export to
   an editable JSON project. Templates are open data, and
-  [`yugilife-cli`](packages/yugilife-cli) renders cards from the command line with the same
+  [`yugilife-cli`](crates/yugilife-cli) renders cards from the command line with the same
   renderer as the website.
 
 ## Repository
 
 ```
-apps/yugilife             the website
-packages/yugilife-core    the renderer: templates in, SVG, PNG, JPEG, or WebP out
+apps/yugilife                the website
+crates/yugilife-core         the renderer, in Rust: templates in, SVG, PNG, JPEG, or WebP out
+crates/yugilife-cli          the renderer on the command line
+crates/yugilife-wasm         the renderer compiled to WebAssembly for browsers
+packages/yugilife-core       the renderer's JavaScript API, running the WebAssembly build
 packages/yugilife-templates  card templates, textures, fonts, and layouts as data
-packages/yugilife-cli     yugilife-core on the command line
 ```
+
+One renderer serves the website and the command line, so a card looks the same in every browser
+and in every export.
 
 The renderer knows nothing about Yu-Gi-Oh!. Everything a card looks like is declared by its
 template, so a template fix never needs a code change. How it was built is written up on the
@@ -56,14 +61,24 @@ template, so a template fix never needs a code change. How it was built is writt
 
 ## Run it locally
 
-Requires Node.js 24 and pnpm 11.
+Requires Node.js 24, pnpm 11, and [rustup](https://rustup.rs) with `~/.cargo/bin` on your `PATH`.
+`rust-toolchain.toml` pins the Rust release and the WebAssembly target, and rustup installs them
+on first use.
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-`pnpm check` runs the full verification (lint, types, unit, and browser tests); it needs the test
+The command-line renderer builds with Cargo; it also needs the `libdav1d` shared library
+(`dnf install dav1d` on Fedora, `apt install libdav1d-dev` on Debian):
+
+```bash
+cargo build --release -p yugilife-cli
+target/release/yugilife-cli render card.json --output card.png
+```
+
+`pnpm check` runs the full verification (lint, types, unit, Rust, and browser tests); it needs the test
 browsers from `pnpm setup:browsers` first.
 
 ## License

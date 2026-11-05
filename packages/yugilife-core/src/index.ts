@@ -1,124 +1,10 @@
-export { MapAssetResolver } from "./asset-resolver.js"
-export type {
-  ArtworkLayer,
-  ArtworkTransform,
-  ArtworkTransformOverrides,
-  AssetResolver,
-  AssetSource,
-  AssetSourceMap,
-  CanvasLayer,
-  CanvasMask,
-  CanvasMaskChannel,
-  CardData,
-  CardDimensions,
-  CardFieldDefaultValue,
-  CardFieldDefinition,
-  CardFieldKind,
-  CardFieldName,
-  CardFieldSuggestion,
-  CardFieldValue,
-  CardSemanticBindings,
-  CardSemantics,
-  CardTemplate,
-  CardTemplateBundle,
-  ColorPreset,
-  ColorPresetCollection,
-  CoreLayerDefinition,
-  GroupLayer,
-  ImageLayer,
-  LayerBase,
-  LayerDefinition,
-  LayerGroup,
-  LayerGroupEntry,
-  LayerMaskOverrides,
-  LayerRendererOutput,
-  LayerVisibility,
-  PngCardExportOptions,
-  PngExportOptions,
-  PreparedTexturePayload,
-  PreparedTextures,
-  PresentationOverrides,
-  RasterCardExportOptions,
-  RasterExportOptions,
-  RasterImageFormat,
-  RasterLayer,
-  RasterOutputSize,
-  RasterRenderSegment,
-  Region,
-  RenderedCard,
-  RenderedElementAlphaChannel,
-  RenderedElementAlphaKind,
-  RenderedElementManifestEntry,
-  RenderManifest,
-  RenderOptions,
-  RenderSegment,
-  RepeatedImageLayer,
-  ResolvedCardPresentation,
-  ResolvedLayerMask,
-  ResolvedTextPresentation,
-  RichTextDocument,
-  RichTextElementNode,
-  RichTextLength,
-  RichTextNode,
-  RichTextParseResult,
-  RichTextRenderWarning,
-  RichTextSource,
-  RichTextTagName,
-  RichTextTextNode,
-  RichTextWarning,
-  RichTextWarningCode,
-  SemanticAllCondition,
-  SemanticAnyCondition,
-  SemanticAssetId,
-  SemanticBinding,
-  SemanticCondition,
-  SemanticEqualsCondition,
-  SemanticFallback,
-  SemanticInCondition,
-  SemanticListLengthFallback,
-  SemanticPath,
-  SemanticPrimitive,
-  SemanticSourceReference,
-  SemanticTextStyle,
-  SemanticTransform,
-  SemanticValue,
-  SemanticValueFallback,
-  SemanticValueSource,
-  SvgCardExportOptions,
-  SvgElementDefinition,
-  SvgExportOptions,
-  SvgLayer,
-  SvgTextMode,
-  TemplateId,
-  TemplateIdentity,
-  TemplateKind,
-  TemplateManifest,
-  TemplateStatus,
-  TemplateTextDefaults,
-  TextFitProfile,
-  TextFitProfileOverrides,
-  TextFitProfilePatch,
-  TextFormat,
-  TextLayer,
-  TextPosition,
-  TextStroke,
-  TextTypography,
-  TextTypographyOverrides,
-  TextTypographyPatch,
-  TexturePreparation,
-  TransformModeCondition,
-  VectorRenderSegment,
-} from "./contracts/index.js"
-export { matchesPresentationGate, resolveCardPresentation } from "./presentation.js"
-export {
-  exportCardToImage,
-  exportCardToPng,
-  exportCardToSvg,
-  renderCard,
-  resolveRasterOutputDimensions,
-} from "./rendering/index.js"
-export { createLayerSourceFieldResolver } from "./rendering/layer-source-fields.js"
-export type { LayerVisit } from "./rendering/layer-tree.js"
+// yugilife-core: template-driven card rendering, validation, semantics, presentation, and rich
+// text. The implementation is the Rust core (crates/yugilife-core) compiled to WebAssembly;
+// importing this module loads it once.
+
+export type * from "./contracts/index.js"
+export { createLayerSourceFieldResolver } from "./layer-source-fields"
+export type { LayerVisit } from "./layer-tree"
 export {
   collectLayerGroups,
   collectPresetTargets,
@@ -127,8 +13,12 @@ export {
   flattenDrawableLayers,
   flattenLayers,
   isLayerVisible,
+  textTypographies,
   walkLayers,
-} from "./rendering/layer-tree.js"
+} from "./layer-tree"
+export { matchesPresentationGate, resolveCardPresentation } from "./presentation"
+export { resolveRasterOutputDimensions } from "./raster-output"
+export { exportCardToImage, exportCardToPng, exportCardToSvg, renderCard } from "./render/render"
 export {
   graphemeCount,
   hasLeadingAuthoredLineFitSplit,
@@ -138,9 +28,9 @@ export {
   plainTextFromRichText,
   richTextHasFormatting,
   richTextLineLengths,
-} from "./rich-text.js"
-export { deriveCardSemantics, matchesSemanticCondition } from "./semantics.js"
-export { compareTemplateVersions, isTemplateVersion } from "./template-version.js"
+} from "./rich-text"
+export { deriveCardSemantics, matchesSemanticCondition } from "./semantics"
+export { compareTemplateVersions, isTemplateVersion } from "./template-version"
 export {
   createCardFromTemplate,
   TemplateValidationError,
@@ -149,4 +39,4 @@ export {
   validateColorPresetCollection,
   validatePresentationOverrides,
   validateTemplateManifest,
-} from "./validation.js"
+} from "./validation"

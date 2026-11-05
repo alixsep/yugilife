@@ -1,0 +1,7 @@
+libdir=${pcfiledir}/lib
+
+Name: dav1d
+Description: AV1 decoding library (system runtime shim)
+Version: 1.5.3
+Libs: -L${libdir} -ldav1d
+Cflags:

@@ -15,13 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 
 import { templateManagerActionLabel } from "./template-manager-actions"
 
-import type { TemplateActivationProgress } from "./prepare-template-textures"
 import type {
   OriginStorageEstimate,
   StoredTemplateRecord,
   TemplateStorageMode,
 } from "./template-storage"
 import type { ChangeEvent } from "react"
+import type { TemplateLoadProgress } from "yugilife-templates"
 
 interface OfficialTemplateDescriptor {
   id: string
@@ -57,7 +57,7 @@ interface TemplateManagerProps {
   templateDraft: string
   templateEditorOpen: boolean
   templateLoadError: string | undefined
-  templateLoadProgress: TemplateActivationProgress | undefined
+  templateLoadProgress: TemplateLoadProgress | undefined
   templateLoading: boolean
   templateStorageError: string | undefined
   templateStorageMode: TemplateStorageMode

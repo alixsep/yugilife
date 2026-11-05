@@ -1,6 +1,5 @@
 import { getOfficialTemplate } from "yugilife-templates"
 
-import { acquirePreparedTextures } from "../../build/templates/prepare-template-textures"
 import { readStoredTemplate } from "../../build/templates/template-storage"
 import {
   listInventoryCards,
@@ -12,7 +11,6 @@ import { migrateInventoryCardToCurrentTemplate } from "./inventory-card-migratio
 import { processedInventoryMask, renderInventoryPreview } from "./inventory-preview-render"
 
 import type { InventoryCard } from "./inventory-card"
-import type { PreparedTextures } from "yugilife-core"
 import type { LoadedTemplateBundle } from "yugilife-templates"
 
 export interface InventoryPreviewRefreshProgress {
@@ -36,21 +34,16 @@ function abortError() {
   return new DOMException("The preview refresh was cancelled.", "AbortError")
 }
 
-interface RefreshTemplate {
-  bundle: LoadedTemplateBundle
-  preparedTextures: PreparedTextures | undefined
-}
-
+/** One bundle object per template, so the renderer loads each template once for the refresh. */
 function templateLoader(signal: AbortSignal | undefined) {
-  const templates = new Map<string, RefreshTemplate>()
+  const templates = new Map<string, Promise<LoadedTemplateBundle>>()
   return async function templateFor(templateId: string) {
-    const cached = templates.get(templateId)
-    if (cached) return cached
-    const bundle = await loadBundle(templateId, signal)
-    const prepared = await acquirePreparedTextures(bundle, signal ? { signal } : {})
-    const resolved: RefreshTemplate = { bundle, preparedTextures: prepared?.textures }
-    templates.set(templateId, resolved)
-    return resolved
+    let bundle = templates.get(templateId)
+    if (!bundle) {
+      bundle = loadBundle(templateId, signal)
+      templates.set(templateId, bundle)
+    }
+    return await bundle
   }
 }
 
@@ -67,15 +60,14 @@ async function loadBundle(templateId: string, signal: AbortSignal | undefined) {
 
 async function refreshOne(
   card: InventoryCard,
-  templateFor: (templateId: string) => Promise<RefreshTemplate>,
+  templateFor: (templateId: string) => Promise<LoadedTemplateBundle>,
 ) {
   const migrated = await migrateInventoryCardToCurrentTemplate(card)
-  const { bundle, preparedTextures } = await templateFor(migrated.document.templateId)
+  const bundle = await templateFor(migrated.document.templateId)
   const image = await renderInventoryPreview(
     migrated.document,
     bundle,
     await processedInventoryMask(migrated.document, bundle),
-    preparedTextures,
   )
   await saveInventoryCardSnapshot(migrated, {
     cardId: migrated.id,

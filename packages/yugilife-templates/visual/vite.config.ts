@@ -14,13 +14,6 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: /^yugilife-core\/color-grading$/,
-        replacement: path.resolve(
-          fixtureDirectory,
-          "../../yugilife-core/src/public/color-grading.ts",
-        ),
-      },
-      {
         find: /^yugilife-core$/,
         replacement: path.resolve(fixtureDirectory, "../../yugilife-core/src/index.ts"),
       },

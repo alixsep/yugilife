@@ -367,6 +367,43 @@ describe("CardFieldInput", () => {
 
     act(() => root.unmount())
   })
+  it("shows a render warning for the field after its own rich-text warnings", () => {
+    reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
+    const container = document.createElement("div")
+    document.body.append(container)
+    const root = createRoot(container)
+    const missingGlyph =
+      'Font "MatrixRegularSmallCaps" has no glyph for "☆" (U+2606), so it is drawn as the font\'s missing-glyph placeholder.'
+
+    act(() => {
+      root.render(
+        <CardFieldInput
+          field={passcodeField}
+          onChange={vi.fn()}
+          renderWarnings={[missingGlyph]}
+          value="Yummy☆Surprise"
+        />,
+      )
+    })
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(missingGlyph)
+
+    act(() => {
+      root.render(
+        <CardFieldInput
+          field={passcodeField}
+          onChange={vi.fn()}
+          renderWarnings={[missingGlyph]}
+          value="Yummy☆<big>Surprise"
+        />,
+      )
+    })
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(
+      "Unknown rich-text tag <big>.",
+    )
+
+    act(() => root.unmount())
+  })
+
   it("does not add a clearing row to a field that declares its own None option", async () => {
     reactTestEnvironment.IS_REACT_ACT_ENVIRONMENT = true
     const container = document.createElement("div")

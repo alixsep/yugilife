@@ -131,6 +131,22 @@ Then("the Salamangreat preview uses outlined glyphs", async ({ page }) => {
   expect(await card.locator("svg path").count()).toBeGreaterThan(0)
 })
 
+Then(
+  "the card name field warns that {string} has no glyph for {string}",
+  async ({ page }, font: string, character: string) => {
+    const field = page.locator('[data-card-field="name"]')
+    await expect(field.getByRole("alert")).toContainText(
+      `Font "${font}" has no glyph for "${character}"`,
+    )
+  },
+)
+
+Then("the card preview rendered without errors", async ({ page }) => {
+  const card = page.locator('[data-template="card/series-10"]')
+  await expect(card.getByRole("alert")).toHaveCount(0)
+  expect(await card.locator("svg path").count()).toBeGreaterThan(0)
+})
+
 Then("the export dimensions are {string}", async ({ page }, value: string) => {
   await expect(page.getByText(value, { exact: true })).toBeVisible()
 })

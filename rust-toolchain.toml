@@ -1,0 +1,9 @@
+# The Rust release that builds the core, for the website (WebAssembly) and the command line alike.
+# rustup reads this file locally, in the Pages workflow, and in the Docker image, so every build of
+# the renderer uses the same compiler. Change it deliberately, together with `rust-version` in
+# Cargo.toml when raising the minimum.
+[toolchain]
+channel = "1.98.1"
+components = ["clippy", "rustfmt"]
+targets = ["wasm32-wasip1"]
+profile = "minimal"

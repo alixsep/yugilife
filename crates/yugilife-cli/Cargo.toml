@@ -1,0 +1,28 @@
+[package]
+name = "yugilife-cli"
+description = "Command-line renderer for YugiLife cards"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+build = "build.rs"
+
+[[bin]]
+name = "yugilife-cli"
+path = "src/main.rs"
+
+[dependencies]
+indexmap = "2"
+rayon = "1.12"
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+sha2 = "0.11"
+signal-hook = { version = "0.3", default-features = false }
+ureq = "3"
+yugilife-core = { path = "../yugilife-core" }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+base64 = "0.23"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
